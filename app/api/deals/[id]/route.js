@@ -15,7 +15,7 @@ function validateDealIncludes(menu, includes, businessType) {
       return { error: 'Each include needs valid itemId and qty >= 1' }
     }
     const item = menu.items.find((i) => i.id === row.itemId)
-    if (item && !itemMatchesBusiness(item, businessType)) {
+    if (item && businessType !== 'combined' && !itemMatchesBusiness(item, businessType)) {
       return { error: `Included item "${item.name}" is not available for ${businessTypeLabel(businessType)}.` }
     }
     out.push({ itemId: String(row.itemId), qty: Math.floor(qty) })
@@ -80,7 +80,7 @@ export async function PATCH(request, { params }) {
   }
 
   if (includes !== undefined) {
-    const validated = validateDealIncludes(menu, includes, effectiveBt === 'combined' ? 'cafe' : effectiveBt)
+    const validated = validateDealIncludes(menu, includes, effectiveBt)
     if (validated.error) return NextResponse.json({ error: validated.error }, { status: 400 })
     deal.includes = validated.includes
   }

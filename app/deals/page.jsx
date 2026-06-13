@@ -35,10 +35,12 @@ function includesFromQtyMap(qtyById) {
 
 export default function DealsPage() {
   const { menu, refreshAll, setError } = useOrders()
+  const addDialogRef = useRef(null)
   const editDialogRef = useRef(null)
   const [listFilter, setListFilter] = useState('all')
   const [archivingIds, setArchivingIds] = useState(new Set())
 
+  const [addOpen, setAddOpen] = useState(false)
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [cafeSplit, setCafeSplit] = useState('')
@@ -46,6 +48,7 @@ export default function DealsPage() {
   const [dealBusiness, setDealBusiness] = useState('cafe')
   const [qtyById, setQtyById] = useState({})
   const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
 
   const [editingDeal, setEditingDeal] = useState(null)
   const [editName, setEditName] = useState('')
@@ -83,11 +86,31 @@ export default function DealsPage() {
   const editCategorySections = useMemo(() => buildDealCategorySections(menu.items, editBusiness), [menu.items, editBusiness])
 
   useEffect(() => {
+    const el = addDialogRef.current
+    if (!el) return
+    if (addOpen) { if (!el.open) el.showModal() }
+    else if (el.open) { el.close() }
+  }, [addOpen])
+
+  useEffect(() => {
     const el = editDialogRef.current
     if (!el) return
     if (editingDeal) { if (!el.open) el.showModal() }
     else if (el.open) { el.close() }
   }, [editingDeal])
+
+  function openAddDialog() {
+    setCreateError('')
+    setName('')
+    setPrice('')
+    setCafeSplit('')
+    setBurgerSplit('')
+    setDealBusiness('cafe')
+    setQtyById({})
+    setAddOpen(true)
+  }
+
+  function closeAddDialog() { addDialogRef.current?.close() }
 
   function openEditDialog(deal) {
     setEditError('')
@@ -115,30 +138,30 @@ export default function DealsPage() {
   async function submitDeal(e) {
     e.preventDefault()
     const includes = includesFromQtyMap(qtyById)
-    if (!name.trim()) { setError('Enter a deal name.'); return }
-    if (!includes.length) { setError('Select at least one menu item with quantity ≥ 1.'); return }
+    if (!name.trim()) { setCreateError('Enter a deal name.'); return }
+    if (!includes.length) { setCreateError('Select at least one menu item with quantity ≥ 1.'); return }
     if (dealBusiness === 'combined') {
       const c = Number(cafeSplit); const b = Number(burgerSplit)
       if (!Number.isFinite(c) || c <= 0 || !Number.isFinite(b) || b <= 0) {
-        setError('Enter valid Cafe and Burger portion amounts.'); return
+        setCreateError('Enter valid Cafe and Burger portion amounts.'); return
       }
       const total = Math.round((c + b) * 100) / 100
-      setError(''); setCreating(true)
+      setCreateError(''); setCreating(true)
       try {
         await api.createDeal({ name: name.trim(), price: total, cafeSplit: c, burgerSplit: b, includes, businessType: 'combined' })
-        setName(''); setPrice(''); setCafeSplit(''); setBurgerSplit(''); setQtyById({})
         await refreshAll()
-      } catch (err) { setError(err.message) }
+        setAddOpen(false)
+      } catch (err) { setCreateError(err.message) }
       finally { setCreating(false) }
     } else {
       const p = Number(price)
-      if (!Number.isFinite(p) || p <= 0) { setError('Enter a valid price.'); return }
-      setError(''); setCreating(true)
+      if (!Number.isFinite(p) || p <= 0) { setCreateError('Enter a valid price.'); return }
+      setCreateError(''); setCreating(true)
       try {
         await api.createDeal({ name: name.trim(), price: p, includes, businessType: dealBusiness })
-        setName(''); setPrice(''); setQtyById({})
         await refreshAll()
-      } catch (err) { setError(err.message) }
+        setAddOpen(false)
+      } catch (err) { setCreateError(err.message) }
       finally { setCreating(false) }
     }
   }
@@ -203,14 +226,17 @@ export default function DealsPage() {
     <>
       <main className="grid single deals-page">
         <section className="card saved-deals-card">
-          <h2>
-            Saved deals ({activeDeals.length})
-            {archivedDeals.length > 0 && (
-              <span className="muted" style={{ fontSize: '0.85em', fontWeight: 'normal', marginLeft: '0.5rem' }}>
-                · {archivedDeals.length} archived
-              </span>
-            )}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0 }}>
+              Saved deals ({activeDeals.length})
+              {archivedDeals.length > 0 && (
+                <span className="muted" style={{ fontSize: '0.85em', fontWeight: 'normal', marginLeft: '0.5rem' }}>
+                  · {archivedDeals.length} archived
+                </span>
+              )}
+            </h2>
+            <button type="button" className="primary sm" onClick={openAddDialog}>+ Add deal</button>
+          </div>
           <p className="muted small saved-deals-lede">
             These appear on <strong>Take order</strong> in <strong>Add a deal to this order</strong>. Filter by
             business or use <strong>Edit</strong> to change name, price, items, or business. Archived deals are hidden
@@ -228,7 +254,7 @@ export default function DealsPage() {
           </div>
           {filteredDeals.length === 0 ? (
             <p className="muted">
-              {listFilter === 'archived' ? 'No archived deals.' : menu.deals.length === 0 ? 'No deals yet — create one with the form below.' : 'No deals for this filter.'}
+              {listFilter === 'archived' ? 'No archived deals.' : menu.deals.length === 0 ? 'No deals yet — click \u201c+ Add deal\u201d to create one.' : 'No deals for this filter.'}
             </p>
           ) : (
             <ul className="saved-deals-list">
@@ -287,9 +313,18 @@ export default function DealsPage() {
           )}
         </section>
 
-        <section className="card">
-          <h2>Create a new deal</h2>
-          <p className="muted">
+      </main>
+
+      <dialog
+        ref={addDialogRef}
+        className="confirm-dialog add-menu-item-dialog deal-edit-dialog"
+        aria-labelledby="add-deal-title"
+        onClose={() => setAddOpen(false)}
+        onCancel={(e) => { if (creating) e.preventDefault() }}
+      >
+        <div className="confirm-dialog-inner">
+          <h2 id="add-deal-title" className="confirm-dialog-title">Create a new deal</h2>
+          <p className="muted small add-menu-item-intro">
             Bundle price is what the customer pays. For combined deals, set how much goes to each business — the total is the sum of both portions.
           </p>
           <form className="deal-form" onSubmit={(e) => void submitDeal(e)}>
@@ -303,13 +338,18 @@ export default function DealsPage() {
               qtyById={qtyById} setQty={(id, q) => setQty(setQtyById, id, q)}
               categorySections={createCategorySections}
               disabled={creating}
+              showMenuHint={false}
             />
-            <button type="submit" className="primary" disabled={creating}>
-              {creating ? 'Saving…' : 'Save deal to menu'}
-            </button>
+            {createError ? <p className="banner error" role="alert">{createError}</p> : null}
+            <div className="confirm-dialog-actions add-menu-item-form-actions">
+              <button type="button" className="ghost" onClick={closeAddDialog} disabled={creating}>Cancel</button>
+              <button type="submit" className="primary" disabled={creating}>
+                {creating ? 'Saving…' : 'Save deal to menu'}
+              </button>
+            </div>
           </form>
-        </section>
-      </main>
+        </div>
+      </dialog>
 
       <dialog
         ref={editDialogRef}
