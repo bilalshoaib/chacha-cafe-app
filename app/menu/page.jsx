@@ -40,6 +40,9 @@ export default function MenuItemsPage() {
   const [addSaving, setAddSaving] = useState(false)
   const [addError, setAddError] = useState('')
 
+  const [searchQuery, setSearchQuery] = useState('')
+  const [businessFilter, setBusinessFilter] = useState('all')
+
   const categoryTabs = useMemo(() => buildCategoryTabs(menu.items), [menu.items])
 
   useEffect(() => {
@@ -83,21 +86,31 @@ export default function MenuItemsPage() {
     [menu.items],
   )
 
-  const allSelected = sortedItems.length > 0 && selectedIds.length === sortedItems.length
+  const filteredItems = useMemo(() => {
+    let items = sortedItems
+    if (businessFilter === 'cafe') items = items.filter((i) => i.businessType === 'cafe' || i.businessType === 'both')
+    else if (businessFilter === 'burger') items = items.filter((i) => i.businessType === 'burger' || i.businessType === 'both')
+    const q = searchQuery.trim().toLowerCase()
+    if (q) items = items.filter((i) => i.name.toLowerCase().includes(q) || (i.category ?? '').toLowerCase().includes(q))
+    return items
+  }, [sortedItems, businessFilter, searchQuery])
+
+  const allSelected = filteredItems.length > 0 && filteredItems.every((i) => selectedIds.includes(i.id))
 
   useEffect(() => {
     const el = selectAllRef.current
     if (!el) return
-    el.indeterminate = selectedIds.length > 0 && !allSelected
-  }, [selectedIds.length, allSelected])
+    const someSelected = filteredItems.some((i) => selectedIds.includes(i.id))
+    el.indeterminate = someSelected && !allSelected
+  }, [selectedIds, filteredItems, allSelected])
 
   function toggleSelected(id) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
   function toggleSelectAll() {
-    if (allSelected) setSelectedIds([])
-    else setSelectedIds(sortedItems.map((i) => i.id))
+    if (allSelected) setSelectedIds((prev) => prev.filter((id) => !filteredItems.some((i) => i.id === id)))
+    else setSelectedIds((prev) => [...new Set([...prev, ...filteredItems.map((i) => i.id)])])
   }
 
   function openEditDialog(item) {
@@ -229,7 +242,9 @@ export default function MenuItemsPage() {
       <main className="grid menu-manage menu-manage-list-only">
         <section className="card menu-items-list-card">
           <div className="menu-items-section-head">
-            <h2>All items ({menu.items.length})</h2>
+            <h2>
+              All items ({filteredItems.length}{filteredItems.length !== menu.items.length ? ` of ${menu.items.length}` : ''})
+            </h2>
             <div className="menu-items-toolbar">
               <button type="button" className="link-add-menu-item" onClick={openAddDialog}>
                 Add menu item
@@ -261,6 +276,21 @@ export default function MenuItemsPage() {
             Use <strong>Edit</strong> to change name, price, category, size, or flavour. Changes apply to new orders
             immediately.
           </p>
+          <div className="menu-filter-bar">
+            <div className="invoices-filter-tabs">
+              <button type="button" className={businessFilter === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setBusinessFilter('all')}>All</button>
+              <button type="button" className={businessFilter === 'cafe' ? 'primary sm' : 'ghost sm'} onClick={() => setBusinessFilter('cafe')}>Cafe</button>
+              <button type="button" className={businessFilter === 'burger' ? 'primary sm' : 'ghost sm'} onClick={() => setBusinessFilter('burger')}>Burger</button>
+            </div>
+            <input
+              type="search"
+              className="menu-search-input"
+              placeholder="Search items…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search menu items"
+            />
+          </div>
           {sortedItems.length === 0 ? (
             <p className="muted">
               No items yet.{' '}
@@ -269,9 +299,11 @@ export default function MenuItemsPage() {
               </button>
               .
             </p>
+          ) : filteredItems.length === 0 ? (
+            <p className="muted">No items match your search or filter.</p>
           ) : (
             <ul className="menu-item-admin-list">
-              {sortedItems.map((item) => {
+              {filteredItems.map((item) => {
                 const extras = formatItemExtras(item)
                 return (
                   <li key={item.id} className="menu-item-admin-row">

@@ -2073,6 +2073,37 @@ button.link-add-menu-item {
   margin: 0 0 0.75rem;
 }
 
+.menu-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.menu-filter-bar .invoices-filter-tabs {
+  margin: 0;
+}
+
+.menu-search-input {
+  flex: 1 1 180px;
+  min-width: 140px;
+  max-width: 280px;
+  padding: 0.38rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-input, var(--bg));
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  outline: none;
+}
+
+.menu-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
 .menu-item-admin-price {
   font-weight: 600;
   color: var(--text-h);
