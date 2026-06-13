@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext.jsx'
@@ -13,10 +13,13 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  if (authenticated) {
-    router.replace('/orders')
-    return null
-  }
+  useEffect(() => {
+    if (authenticated) {
+      router.replace('/orders')
+    }
+  }, [authenticated, router])
+
+  if (authenticated) return null
 
   async function handleSubmit(e) {
     e.preventDefault()

@@ -127,7 +127,11 @@ export default function AppShell({ children }) {
   }
 
   if (!authenticated) {
-    return <div className="app">{children}</div>
+    return (
+      <OrdersProvider>
+        <div className="app">{children}</div>
+      </OrdersProvider>
+    )
   }
 
   return (
