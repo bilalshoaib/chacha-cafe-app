@@ -7,9 +7,17 @@ function roundMoney(n) {
   return Math.round(Number(n) * 100) / 100
 }
 
+function forbidCashier(session) {
+  return session.role === 'counter_cashier'
+    ? NextResponse.json({ error: 'Access denied.' }, { status: 403 })
+    : null
+}
+
 export async function GET(_request, { params }) {
   const session = await requireAuth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(session)
+  if (denied) return denied
   const { id } = await params
   const expenses = await getExpenses()
   const row = expenses.find((e) => e.id === id)
@@ -20,6 +28,8 @@ export async function GET(_request, { params }) {
 export async function PATCH(request, { params }) {
   const session = await requireAuth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(session)
+  if (denied) return denied
   const { id } = await params
   const expenses = await getExpenses()
   const existing = expenses.find((e) => e.id === id)
@@ -58,6 +68,8 @@ export async function PATCH(request, { params }) {
 export async function DELETE(_request, { params }) {
   const session = await requireAuth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(session)
+  if (denied) return denied
   const { id } = await params
   const deleted = await deleteExpenseById(id)
   if (!deleted) return NextResponse.json({ error: 'Expense not found.' }, { status: 404 })

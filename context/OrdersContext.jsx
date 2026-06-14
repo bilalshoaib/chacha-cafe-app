@@ -201,11 +201,11 @@ export function OrdersProvider({ children }) {
     }
   }
 
-  async function doCheckout(paymentMethod) {
+  async function doCheckout() {
     if (!activeOrderId) return
     setError('')
     try {
-      const { invoice, order } = await api.checkout(activeOrderId, customerNote, paymentMethod)
+      const { invoice, order } = await api.checkout(activeOrderId, customerNote, null)
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)))
       router.push(`/invoices/${invoice.id}`)
       setActiveOrderId(null)

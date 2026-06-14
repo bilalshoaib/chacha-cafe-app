@@ -8,9 +8,17 @@ function roundMoney(n) {
   return Math.round(Number(n) * 100) / 100
 }
 
+function forbidCashier(session) {
+  return session.role === 'counter_cashier'
+    ? NextResponse.json({ error: 'Access denied.' }, { status: 403 })
+    : null
+}
+
 export async function GET(request) {
   const session = await requireAuth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(session)
+  if (denied) return denied
 
   const { searchParams } = new URL(request.url)
   let list = await getExpenses()
@@ -40,6 +48,8 @@ export async function GET(request) {
 export async function POST(request) {
   const session = await requireAuth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(session)
+  if (denied) return denied
 
   const body = await request.json().catch(() => ({}))
   const titleTrim = String(body.title ?? '').trim()

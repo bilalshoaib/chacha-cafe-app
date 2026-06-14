@@ -28,7 +28,7 @@ export default function TeamUserEditPage() {
         const u = await api.getUser(userId)
         if (cancelled) return
         setEmail(u.email ?? ''); setDisplayName(u.displayName ?? '')
-        setRole(u.role === 'admin' ? 'admin' : 'staff')
+        setRole(['admin', 'staff', 'counter_cashier'].includes(u.role) ? u.role : 'staff')
         setIsSuperAdmin(u.role === 'super_admin')
       } catch (e) {
         if (!cancelled) setLoadError(e.message || 'Could not load user')
@@ -90,6 +90,7 @@ export default function TeamUserEditPage() {
                   <select className="select" value={role} onChange={(e) => setRole(e.target.value)} disabled={saving}>
                     <option value="staff">Staff</option>
                     <option value="admin">Admin</option>
+                    <option value="counter_cashier">Counter cashier</option>
                   </select>
                 </label>
               ) : <p className="muted small field-hint">Role: super admin (fixed)</p>}

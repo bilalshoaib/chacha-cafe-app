@@ -7,6 +7,7 @@ import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import { businessTypeLabel, invoiceBusinessType } from '@/constants/businessTypes.js'
 import { categoryLabel, formatItemExtras, formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
+import { useAuth } from '@/context/AuthContext.jsx'
 
 function buildReceiptHtml(invoice, itemLabelById) {
   const businessName = invoiceBusinessType(invoice) === 'burger' ? 'Chacha Burger' : 'Chacha Cafe'
@@ -32,6 +33,8 @@ function buildReceiptHtml(invoice, itemLabelById) {
 export default function InvoiceDetailPage() {
   const { invoiceId } = useParams()
   const { menu } = useOrders()
+  const { user } = useAuth()
+  const isCounterCashier = user?.role === 'counter_cashier'
   const [invoice, setInvoice] = useState(null)
   const [invoiceLoading, setInvoiceLoading] = useState(true)
   const [returnNoteDraft, setReturnNoteDraft] = useState('')
@@ -40,6 +43,7 @@ export default function InvoiceDetailPage() {
   const confirmDialogRef = useRef(null)
   const returnDialogRef = useRef(null)
   const [confirmAction, setConfirmAction] = useState(null)
+  const [showPayMethodModal, setShowPayMethodModal] = useState(false)
 
   const loadInvoice = useCallback(async () => {
     setInvoiceLoading(true)
@@ -79,7 +83,6 @@ export default function InvoiceDetailPage() {
   async function executeConfirmed() {
     const action = confirmAction; const inv = invoice; closeConfirm()
     if (!action || !inv) return
-    if (action === 'paid') { await runSetPaid(inv, true); return }
     if (action === 'unpaid') { await runSetPaid(inv, false); return }
     if (action === 'clearReturn') { await runClearReturn(inv) }
   }
@@ -95,9 +98,14 @@ export default function InvoiceDetailPage() {
     finally { setSaving(false) }
   }
 
-  async function runSetPaid(inv, paid) {
+  async function runSetPaid(inv, paid, paymentMethod) {
     setSaving(true); setError('')
-    try { await api.updateInvoice(inv.id, { paid }); await loadInvoice() }
+    try {
+      const patch = { paid }
+      if (paid && paymentMethod) patch.paymentMethod = paymentMethod
+      await api.updateInvoice(inv.id, patch)
+      await loadInvoice()
+    }
     catch (e) { setError(e.message) }
     finally { setSaving(false) }
   }
@@ -110,7 +118,6 @@ export default function InvoiceDetailPage() {
   }
 
   const confirmCopy = {
-    paid: { title: 'Mark this invoice as paid?', body: 'This records that payment was received. You can change it back to unpaid later if needed.', confirm: 'Mark as paid' },
     unpaid: { title: 'Mark this invoice as unpaid?', body: 'The paid timestamp will be removed. Use this if payment was marked by mistake.', confirm: 'Mark as unpaid' },
     clearReturn: { title: 'Clear return status?', body: 'Only use this if the return was recorded by mistake. Lines will become editable again on the edit screen.', confirm: 'Clear return status' },
   }
@@ -277,9 +284,11 @@ export default function InvoiceDetailPage() {
               <h2 className="sub">Payment</h2>
               <div className="invoice-actions invoice-payment-actions">
                 {invoice.paid ? (
-                  <button type="button" className="ghost sm" disabled={saving} onClick={() => setConfirmAction('unpaid')}>Mark as unpaid</button>
+                  !isCounterCashier ? (
+                    <button type="button" className="ghost sm" disabled={saving} onClick={() => setConfirmAction('unpaid')}>Mark as unpaid</button>
+                  ) : null
                 ) : (
-                  <button type="button" className="primary sm" disabled={saving} onClick={() => setConfirmAction('paid')}>Mark as paid</button>
+                  <button type="button" className="primary sm" disabled={saving} onClick={() => setShowPayMethodModal(true)}>Mark as paid</button>
                 )}
                 <button type="button" className="ghost danger sm" disabled={saving} onClick={openReturnDialog}>Return or refund</button>
               </div>
@@ -310,6 +319,42 @@ export default function InvoiceDetailPage() {
           </div>
         ) : null}
       </dialog>
+
+      {showPayMethodModal ? (
+        <div className="pay-modal-overlay" role="dialog" aria-modal="true" aria-label="Select payment method">
+          <div className="pay-modal">
+            <h3 className="pay-modal-title">How was this paid?</h3>
+            <p className="muted small pay-modal-sub">Choose the payment method to record with this invoice.</p>
+            <div className="pay-modal-options">
+              <button
+                type="button"
+                className="pay-method-btn"
+                disabled={saving}
+                onClick={() => { setShowPayMethodModal(false); void runSetPaid(invoice, true, 'cash') }}
+              >
+                <span className="pay-method-icon">💵</span>
+                <span className="pay-method-label">Cash</span>
+              </button>
+              <button
+                type="button"
+                className="pay-method-btn"
+                disabled={saving}
+                onClick={() => { setShowPayMethodModal(false); void runSetPaid(invoice, true, 'online') }}
+              >
+                <span className="pay-method-icon">💳</span>
+                <span className="pay-method-label">Online / Card</span>
+              </button>
+            </div>
+            <button
+              type="button"
+              className="ghost sm pay-modal-cancel"
+              onClick={() => setShowPayMethodModal(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <dialog ref={returnDialogRef} className="confirm-dialog invoice-return-dialog" aria-labelledby="invoice-return-dialog-title" onCancel={(e) => { if (saving) e.preventDefault() }}>
         <div className="confirm-dialog-inner">

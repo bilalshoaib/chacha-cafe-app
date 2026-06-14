@@ -47,7 +47,7 @@ export default function OrdersPage() {
   const [discountDraftByLine, setDiscountDraftByLine] = useState({})
   const [lineQtySaving, setLineQtySaving] = useState(null)
   const [lineDiscountSaving, setLineDiscountSaving] = useState(null)
-  const [showPayModal, setShowPayModal] = useState(false)
+
 
   const isCustomEntry = Boolean(!entryItem && entrySearch.trim())
   const customUnit = Number(entryCustomPrice)
@@ -554,50 +554,10 @@ export default function OrdersPage() {
               type="button"
               className="primary wide"
               disabled={!activeOrder.lines.length}
-              onClick={() => setShowPayModal(true)}
+              onClick={() => void onCheckout()}
             >
               Create {businessTypeLabel(orderBusinessType(activeOrder))} invoice
             </button>
-
-            {showPayModal ? (
-              <div className="pay-modal-overlay" role="dialog" aria-modal="true" aria-label="Select payment method">
-                <div className="pay-modal">
-                  <h3 className="pay-modal-title">How is this being paid?</h3>
-                  <p className="muted small pay-modal-sub">Choose the payment method before creating the invoice.</p>
-                  <div className="pay-modal-options">
-                    <button
-                      type="button"
-                      className="pay-method-btn"
-                      onClick={() => {
-                        setShowPayModal(false)
-                        onCheckout('cash')
-                      }}
-                    >
-                      <span className="pay-method-icon">💵</span>
-                      <span className="pay-method-label">Cash</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="pay-method-btn"
-                      onClick={() => {
-                        setShowPayModal(false)
-                        onCheckout('online')
-                      }}
-                    >
-                      <span className="pay-method-icon">💳</span>
-                      <span className="pay-method-label">Online / Card</span>
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    className="ghost sm pay-modal-cancel"
-                    onClick={() => setShowPayModal(false)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : null}
           </>
         )}
       </section>

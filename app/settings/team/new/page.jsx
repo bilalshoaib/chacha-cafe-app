@@ -29,7 +29,7 @@ export default function TeamUserAddPage() {
         <div className="team-page-head">
           <div>
             <p className="muted small team-detail-kicker">Add account</p>
-            <h2>New staff or admin</h2>
+            <h2>New team account</h2>
             <p className="muted small">Password must be at least 8 characters.</p>
           </div>
           <Link href="/settings/team" className="ghost sm">Cancel</Link>
@@ -53,6 +53,7 @@ export default function TeamUserAddPage() {
               <select className="select" value={role} onChange={(e) => setRole(e.target.value)} disabled={saving}>
                 <option value="staff">Staff</option>
                 <option value="admin">Admin</option>
+                <option value="counter_cashier">Counter cashier</option>
               </select>
             </label>
             {error ? <p className="banner error" role="alert">{error}</p> : null}

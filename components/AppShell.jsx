@@ -49,7 +49,9 @@ function AppNav({ user, onLogout }) {
             <NavLink href="/deals">Create deal</NavLink>
             <NavLink href="/menu">Menu items</NavLink>
             <Link href="/invoices" className={invoicesActive ? 'active' : undefined}>Invoices</Link>
-            <Link href="/expenses" className={expensesActive ? 'active' : undefined}>Expenses</Link>
+            {user?.role !== 'counter_cashier' ? (
+              <Link href="/expenses" className={expensesActive ? 'active' : undefined}>Expenses</Link>
+            ) : null}
             <Link href="/settings" className={settingsActive ? 'active' : undefined}>Settings</Link>
             {user?.role === 'super_admin' ? (
               <NavLink href="/settings/reports">Reports</NavLink>
@@ -92,7 +94,9 @@ function AppNav({ user, onLogout }) {
           <NavLink href="/deals" onClick={closeNav}>Create deal</NavLink>
           <NavLink href="/menu" onClick={closeNav}>Menu items</NavLink>
           <Link href="/invoices" className={invoicesActive ? 'active' : undefined} onClick={closeNav}>Invoices</Link>
-          <Link href="/expenses" className={expensesActive ? 'active' : undefined} onClick={closeNav}>Expenses</Link>
+          {user?.role !== 'counter_cashier' ? (
+            <Link href="/expenses" className={expensesActive ? 'active' : undefined} onClick={closeNav}>Expenses</Link>
+          ) : null}
           <Link href="/settings" className={settingsActive ? 'active' : undefined} onClick={closeNav}>Settings</Link>
           {user?.role === 'super_admin' ? (
             <NavLink href="/settings/reports" onClick={closeNav}>Reports</NavLink>

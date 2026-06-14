@@ -81,6 +81,9 @@ export async function PATCH(request, { params }) {
   }
   if (customerNote !== undefined) inv.customerNote = String(customerNote).slice(0, 200)
   if (paid !== undefined) {
+    if (!Boolean(paid) && session.role === 'counter_cashier') {
+      return NextResponse.json({ error: 'Counter cashier accounts cannot mark an invoice as unpaid.' }, { status: 403 })
+    }
     inv.paid = Boolean(paid)
     if (inv.paid) { if (!inv.paidAt) inv.paidAt = new Date().toISOString() }
     else delete inv.paidAt

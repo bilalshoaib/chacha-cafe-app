@@ -424,6 +424,12 @@ select {
   color: var(--text-muted);
 }
 
+.badge-role-cashier {
+  background: color-mix(in srgb, #059669 16%, transparent);
+  color: #065f46;
+  border: 1px solid color-mix(in srgb, #059669 28%, transparent);
+}
+
 .badge-role-returned {
   background: color-mix(in srgb, #b45309 16%, transparent);
   color: #92400e;

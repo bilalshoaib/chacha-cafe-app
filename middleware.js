@@ -17,6 +17,11 @@ function isSuperAdminPath(pathname) {
   return pathname.startsWith('/settings/team') || pathname.startsWith('/settings/reports')
 }
 
+/** Paths that counter_cashier cannot access. */
+function isExpensesPath(pathname) {
+  return pathname.startsWith('/expenses')
+}
+
 export async function middleware(request) {
   const { pathname } = request.nextUrl
 
@@ -40,6 +45,10 @@ export async function middleware(request) {
 
   if (session.userId && isSuperAdminPath(pathname) && session.role !== 'super_admin') {
     return NextResponse.redirect(new URL('/settings', request.url))
+  }
+
+  if (session.userId && isExpensesPath(pathname) && session.role === 'counter_cashier') {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   return response
