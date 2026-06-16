@@ -2,8 +2,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import ItemAutocomplete from '@/components/ItemAutocomplete.jsx'
-import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
-import { BUSINESS_TYPES, businessTypeLabel, orderBusinessType } from '@/constants/businessTypes.js'
 import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 
@@ -21,7 +19,7 @@ export default function OrdersPage() {
     setCustomerNote,
     setError,
     refreshAll,
-    startNewOrder: onNewOrder,
+    startNewOrder,
     addItemToOrder: onAddItem,
     createMenuItemAndAddLine: onCreateItemAndAddLine,
     addDealToOrder: onAddDeal,
@@ -215,8 +213,7 @@ export default function OrdersPage() {
                 <option value="">Select open order…</option>
                 {openOrders.map((o) => (
                   <option key={o.id} value={o.id}>
-                    {businessTypeLabel(orderBusinessType(o))} · {o.id} ·{' '}
-                    {new Date(o.createdAt).toLocaleString()}
+                    {o.id} · {new Date(o.createdAt).toLocaleString()}
                   </option>
                 ))}
               </select>
@@ -229,20 +226,14 @@ export default function OrdersPage() {
 
         {!activeOrder ? (
           <div className="business-type-picker">
-            <p className="muted">Start by choosing which business this order is for:</p>
-            <div className="business-type-cards">
-              {BUSINESS_TYPES.map((bt) => (
-                <button
-                  key={bt.id}
-                  type="button"
-                  className="business-type-card"
-                  onClick={() => void onNewOrder(bt.id)}
-                >
-                  <span className="business-type-card-title">{bt.label}</span>
-                  <span className="muted small business-type-card-desc">{bt.description}</span>
-                </button>
-              ))}
-            </div>
+            <p className="muted">Start a new order to add items from both Chacha Cafe and Chacha Burger.</p>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => void startNewOrder()}
+            >
+              New order
+            </button>
             {openOrders.length > 0 ? (
               <p className="muted small business-type-resume-hint">
                 Or pick an open order from the dropdown above to continue.
@@ -251,22 +242,6 @@ export default function OrdersPage() {
           </div>
         ) : (
           <>
-            <div className="order-business-banner">
-              <BusinessTypeBadge type={orderBusinessType(activeOrder)} />
-              <span className="muted small">
-                {businessTypeLabel(orderBusinessType(activeOrder))} order · only that menu&apos;s items and deals
-              </span>
-              <button
-                type="button"
-                className="ghost sm order-new-other-btn"
-                onClick={() => {
-                  setActiveOrderId(null)
-                  setCustomerNote('')
-                }}
-              >
-                Start different business
-              </button>
-            </div>
             <p className="muted small order-table-hint">
               <strong>Items:</strong> search below, set quantity, then <strong>Add line</strong>.{' '}
               <strong>Deals:</strong> use <strong>Add a deal to this order</strong> (above the table) to add a
@@ -556,7 +531,7 @@ export default function OrdersPage() {
               disabled={!activeOrder.lines.length}
               onClick={() => void onCheckout()}
             >
-              Create {businessTypeLabel(orderBusinessType(activeOrder))} invoice
+              Create invoice
             </button>
           </>
         )}

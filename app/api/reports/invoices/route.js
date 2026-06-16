@@ -9,9 +9,11 @@ function roundMoney(n) {
 }
 
 function invoiceBusinessType(inv) {
+  if (inv?.businessType === 'combined') return 'combined'
   const explicit = normalizeBusinessType(inv?.businessType)
   if (explicit) return explicit
   if (String(inv?.id ?? '').startsWith('inv-burger-')) return 'burger'
+  if (String(inv?.id ?? '').startsWith('inv-combined-')) return 'combined'
   return 'cafe'
 }
 
@@ -21,13 +23,23 @@ function calcInvoiceSplits(inv, invBt) {
   let burgerAmt = 0
   for (const line of lines) {
     const lt = roundMoney(line.lineTotal ?? 0)
+    // Combined deal with explicit per-item splits (existing mechanism)
     const lineCafe = roundMoney((line.cafeSplit ?? 0) * (line.qty ?? 1))
     const lineBurger = roundMoney((line.burgerSplit ?? 0) * (line.qty ?? 1))
     const splitsValid = line.isCombined && (lineCafe + lineBurger) > 0
     if (splitsValid) {
       cafeAmt += lineCafe
       burgerAmt += lineBurger
+    } else if (line.lineBusinessType) {
+      // Per-line attribution for combined orders (and back-filled on old single-business orders)
+      if (line.lineBusinessType === 'burger') {
+        burgerAmt += lt
+      } else {
+        // 'cafe' and 'both' (shared items) are attributed to Chacha Cafe
+        cafeAmt += lt
+      }
     } else {
+      // Legacy lines without lineBusinessType: fall back to invoice-level businessType
       if (invBt === 'burger') burgerAmt += lt
       else cafeAmt += lt
     }
@@ -76,7 +88,8 @@ export async function GET(request) {
     } else {
       netSalesTotal += total; cafeNetSales += cafePortion; burgerNetSales += burgerPortion
       if (businessType === 'burger') burgerInvoiceCount += 1
-      else cafeInvoiceCount += 1
+      else if (businessType === 'cafe') cafeInvoiceCount += 1
+      else { cafeInvoiceCount += 1; burgerInvoiceCount += 1 } // combined: counted in both
       if (inv.paid) paidCount += 1; else unpaidCount += 1
     }
     return { id: inv.id, orderId: inv.orderId, businessType, createdAt: inv.createdAt, total, cafePortion, burgerPortion, paid: Boolean(inv.paid), returned: ret, paymentMethod: inv.paymentMethod ?? null }

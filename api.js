@@ -65,8 +65,8 @@ export const api = {
   restoreDeal: (id) =>
     request(`/api/deals/${encodeURIComponent(id)}/restore`, { method: 'PATCH' }),
   getOrders: () => request('/api/orders'),
-  createOrder: (businessType) =>
-    request('/api/orders', { method: 'POST', body: JSON.stringify({ businessType }) }),
+  createOrder: () =>
+    request('/api/orders', { method: 'POST', body: JSON.stringify({ businessType: 'combined' }) }),
   addLine: (orderId, body) =>
     request(`/api/orders/${orderId}/lines`, { method: 'POST', body: JSON.stringify(body) }),
   updateOrderLine: (orderId, lineId, patch) =>

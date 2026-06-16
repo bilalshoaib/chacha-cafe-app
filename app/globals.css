@@ -1402,6 +1402,17 @@ a.invoice-edit-link:hover {
 
 .invoice-line-title {
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.invoice-line-business-badge {
+  font-size: 0.58rem;
+  padding: 0.1rem 0.35rem;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .invoice-view-total {

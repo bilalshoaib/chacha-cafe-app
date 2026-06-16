@@ -6,7 +6,7 @@ import { orderBusinessType } from '@/lib/businessTypes'
 import { randomUUID } from 'crypto'
 
 function newInvoiceId(businessType) {
-  const slug = businessType === 'burger' ? 'burger' : 'cafe'
+  const slug = businessType === 'burger' ? 'burger' : businessType === 'combined' ? 'combined' : 'cafe'
   return `inv-${slug}-${randomUUID().slice(0, 8)}`
 }
 

@@ -223,10 +223,21 @@ export default function InvoiceDetailPage() {
                     <tbody>
                       {invoice.lines.map((line) => {
                         const extras = formatItemExtras(line)
+                        const isCombinedInvoice = invoiceBusinessType(invoice) === 'combined'
                         return (
                           <tr key={line.id}>
                             <td>
-                              <div className="invoice-line-title">{line.kind === 'deal' ? 'Deal · ' : ''}{line.name}{extras ? ` · ${extras}` : ''}</div>
+                              <div className="invoice-line-title">
+                                {line.kind === 'deal' ? 'Deal · ' : ''}
+                                {line.name}
+                                {extras ? ` · ${extras}` : ''}
+                                {isCombinedInvoice && line.lineBusinessType ? (
+                                  <BusinessTypeBadge
+                                    type={line.lineBusinessType}
+                                    className="invoice-line-business-badge"
+                                  />
+                                ) : null}
+                              </div>
                               {line.kind === 'item' ? <div className="muted small">{categoryLabel(line.category)}</div> : null}
                               {line.kind === 'deal' && line.dealIncludes?.length ? (
                                 <ul className="includes">

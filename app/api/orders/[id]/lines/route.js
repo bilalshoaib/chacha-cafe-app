@@ -5,10 +5,6 @@ import { loadMenu } from '@/lib/repositories/menuRepository'
 import {
   dealBusinessType,
   itemBusinessType,
-  itemMatchesBusiness,
-  normalizeBusinessType,
-  orderBusinessType,
-  businessTypeLabel,
 } from '@/lib/businessTypes'
 import { randomUUID } from 'crypto'
 
@@ -39,19 +35,14 @@ export async function POST(request, { params }) {
   if (idx === -1) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   if (orders[idx].status !== 'open') return NextResponse.json({ error: 'Order is not open' }, { status: 400 })
 
-  const orderType = orderBusinessType(orders[idx])
   let line
 
   if (kind === 'item') {
     const item = menu.items.find((i) => i.id === refId)
     if (!item) return NextResponse.json({ error: 'Menu item not found' }, { status: 404 })
-    if (!itemMatchesBusiness(item, orderType)) {
-      return NextResponse.json({
-        error: `"${item.name}" is on the ${businessTypeLabel(itemBusinessType(item))} menu. This order is for ${businessTypeLabel(orderType)}.`,
-      }, { status: 400 })
-    }
     const gross = Math.round(item.price * quantity * 100) / 100
     const discountAmt = parseDiscount(discount, gross)
+    const lineBusinessType = itemBusinessType(item) // 'cafe', 'burger', or 'both'
     line = {
       id: newLineId(),
       kind: 'item',
@@ -62,6 +53,7 @@ export async function POST(request, { params }) {
       unitPrice: item.price,
       ...(discountAmt > 0 ? { discount: discountAmt } : {}),
       lineTotal: Math.round(Math.max(0, gross - discountAmt) * 100) / 100,
+      lineBusinessType,
       ...(item.size ? { size: item.size } : {}),
       ...(item.flavour ? { flavour: item.flavour } : {}),
     }
@@ -72,11 +64,6 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: `"${deal.name}" has been archived and cannot be added to orders.` }, { status: 400 })
     }
     const dealType = dealBusinessType(deal, menu.items)
-    if (dealType !== 'combined' && dealType !== orderType) {
-      return NextResponse.json({
-        error: `"${deal.name}" is a ${businessTypeLabel(dealType)} deal. This order is for ${businessTypeLabel(orderType)}.`,
-      }, { status: 400 })
-    }
     const gross = Math.round(deal.price * quantity * 100) / 100
     const discountAmt = parseDiscount(discount, gross)
     line = {
@@ -89,6 +76,7 @@ export async function POST(request, { params }) {
       ...(discountAmt > 0 ? { discount: discountAmt } : {}),
       lineTotal: Math.round(Math.max(0, gross - discountAmt) * 100) / 100,
       dealIncludes: deal.includes,
+      lineBusinessType: dealType, // 'cafe', 'burger', or 'combined'
       ...(dealType === 'combined' ? { isCombined: true, cafeSplit: deal.cafeSplit ?? 0, burgerSplit: deal.burgerSplit ?? 0 } : {}),
     }
   }

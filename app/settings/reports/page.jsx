@@ -54,6 +54,7 @@ function paymentLabel(method) {
 function businessLabel(type) {
   if (type === 'cafe') return 'Chacha Cafe'
   if (type === 'burger') return 'Chacha Burger'
+  if (type === 'combined') return 'Combined (Cafe + Burger)'
   return type
 }
 
@@ -174,7 +175,10 @@ export default function ReportsPage() {
   const filteredInvoices = useMemo(() => {
     if (!data?.invoices) return []
     let list = data.invoices
-    if (businessFilter !== 'all') list = list.filter((inv) => inv.businessType === businessFilter)
+    if (businessFilter !== 'all') {
+      // Combined invoices contain items from both businesses — include them in either filter
+      list = list.filter((inv) => inv.businessType === businessFilter || inv.businessType === 'combined')
+    }
     if (paymentFilter !== 'all') list = list.filter((inv) => inv.paymentMethod === paymentFilter)
     return list
   }, [data, businessFilter, paymentFilter])
@@ -198,7 +202,8 @@ export default function ReportsPage() {
         const burgerPortion = inv.burgerPortion ?? (inv.businessType === 'burger' ? total : 0)
         cafeNetSales += cafePortion; burgerNetSales += burgerPortion
         if (inv.businessType === 'burger') burgerInvoiceCount++
-        else cafeInvoiceCount++
+        else if (inv.businessType === 'cafe') cafeInvoiceCount++
+        else { cafeInvoiceCount++; burgerInvoiceCount++ } // combined: counted in both
         if (inv.paid) paidCount++; else unpaidCount++
       }
     }

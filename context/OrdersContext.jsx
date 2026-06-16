@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import { buildCategoryTabs } from '@/utils/formatting.js'
-import { dealBusinessType, itemMatchesBusiness, orderBusinessType } from '@/constants/businessTypes.js'
+import { orderBusinessType } from '@/constants/businessTypes.js'
 
 const OrdersContext = createContext(null)
 
@@ -40,24 +40,15 @@ export function OrdersProvider({ children }) {
     [orders, activeOrderId],
   )
 
-  const activeOrderBusinessType = useMemo(
-    () => (activeOrder ? orderBusinessType(activeOrder) : null),
-    [activeOrder],
-  )
-
   const orderMenuItems = useMemo(() => {
-    if (!activeOrderBusinessType) return []
-    return menu.items.filter((i) => itemMatchesBusiness(i, activeOrderBusinessType))
-  }, [menu.items, activeOrderBusinessType])
+    if (!activeOrderId) return []
+    return menu.items
+  }, [menu.items, activeOrderId])
 
   const orderDeals = useMemo(() => {
-    if (!activeOrderBusinessType) return []
-    return menu.deals.filter((d) => {
-      if (d.status === 'archived') return false
-      const bt = dealBusinessType(d, menu.items)
-      return bt === activeOrderBusinessType || bt === 'combined'
-    })
-  }, [menu.deals, menu.items, activeOrderBusinessType])
+    if (!activeOrderId) return []
+    return menu.deals.filter((d) => d.status !== 'archived')
+  }, [menu.deals, activeOrderId])
 
   const orderCategoryTabs = useMemo(() => buildCategoryTabs(orderMenuItems), [orderMenuItems])
 
@@ -66,14 +57,10 @@ export function OrdersProvider({ children }) {
     return Math.round(activeOrder.lines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100
   }, [activeOrder])
 
-  async function startNewOrder(businessType) {
-    if (!businessType) {
-      setError('Choose Chacha Cafe or Chacha Burger to start an order.')
-      return
-    }
+  async function startNewOrder() {
     setError('')
     try {
-      const o = await api.createOrder(businessType)
+      const o = await api.createOrder()
       setOrders((prev) => [...prev, o])
       setActiveOrderId(o.id)
       setCustomerNote('')
@@ -136,7 +123,7 @@ export function OrdersProvider({ children }) {
           name: trimmed,
           category: category || 'other',
           price: p,
-          businessType: orderBusinessType(activeOrder),
+          // businessType inferred from category on the server
         })
         itemId = created.id
         setMenu((prev) => ({ ...prev, items: [...prev.items, created] }))
@@ -221,7 +208,6 @@ export function OrdersProvider({ children }) {
     activeOrderId,
     setActiveOrderId,
     activeOrder,
-    activeOrderBusinessType,
     orderMenuItems,
     orderDeals,
     orderCategoryTabs,
@@ -242,7 +228,7 @@ export function OrdersProvider({ children }) {
     updateLineDiscount,
     doCheckout,
   }), [
-    menu, orders, activeOrderId, activeOrder, activeOrderBusinessType,
+    menu, orders, activeOrderId, activeOrder,
     orderMenuItems, orderDeals, orderCategoryTabs, orderTotal,
     categoryTabs, customerNote, error, loading, refreshAll,
   ])

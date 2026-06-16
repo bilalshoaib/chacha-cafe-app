@@ -4,9 +4,11 @@ import { getInvoices } from '@/lib/repositories/invoicesRepository'
 import { normalizeBusinessType } from '@/lib/businessTypes'
 
 function invoiceBusinessType(inv) {
+  if (inv?.businessType === 'combined') return 'combined'
   const explicit = normalizeBusinessType(inv?.businessType)
   if (explicit) return explicit
   if (String(inv?.id ?? '').startsWith('inv-burger-')) return 'burger'
+  if (String(inv?.id ?? '').startsWith('inv-combined-')) return 'combined'
   return 'cafe'
 }
 
@@ -45,7 +47,13 @@ export async function GET(request) {
   }
 
   const businessRaw = normalizeBusinessType(searchParams.get('businessType'))
-  if (businessRaw) list = list.filter((inv) => invoiceBusinessType(inv) === businessRaw)
+  if (businessRaw) {
+    list = list.filter((inv) => {
+      const bt = invoiceBusinessType(inv)
+      // Combined invoices contain items from both businesses — show them in either filter
+      return bt === businessRaw || bt === 'combined'
+    })
+  }
 
   const searchRaw = String(searchParams.get('search') ?? '').trim().toLowerCase()
   if (searchRaw) list = list.filter((inv) => String(inv.id).toLowerCase().includes(searchRaw))

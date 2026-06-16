@@ -87,7 +87,8 @@ export function dealBusinessType(deal, menuItems) {
 }
 
 export function orderBusinessType(order) {
-  return normalizeBusinessType(order?.businessType) || 'cafe'
+  if (order?.businessType === 'combined') return 'combined'
+  return normalizeBusinessType(order?.businessType) || 'combined'
 }
 
 export function invoiceBusinessType(invoice) {
