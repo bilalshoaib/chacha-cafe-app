@@ -1,6 +1,8 @@
 import './globals.css'
 import { AuthProvider } from '@/context/AuthContext.jsx'
+import { ToastProvider } from '@/context/ToastContext.jsx'
 import AppShell from '@/components/AppShell.jsx'
+import Toaster from '@/components/Toaster.jsx'
 
 export const metadata = {
   title: 'Chacha Burger Cafe',
@@ -12,7 +14,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <AuthProvider>
-          <AppShell>{children}</AppShell>
+          <ToastProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster />
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

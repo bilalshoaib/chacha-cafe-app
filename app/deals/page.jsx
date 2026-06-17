@@ -6,6 +6,7 @@ import DealFormFields from '@/components/DealFormFields.jsx'
 import { BUSINESS_TYPES, DEAL_BUSINESS_TYPE_OPTIONS, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
+import { useToast } from '@/context/ToastContext.jsx'
 
 function buildDealCategorySections(menuItems, business) {
   const byCat = new Map()
@@ -35,6 +36,7 @@ function includesFromQtyMap(qtyById) {
 
 export default function DealsPage() {
   const { menu, refreshAll, setError } = useOrders()
+  const toast = useToast()
   const addDialogRef = useRef(null)
   const editDialogRef = useRef(null)
   const [listFilter, setListFilter] = useState('all')
@@ -151,7 +153,8 @@ export default function DealsPage() {
         await api.createDeal({ name: name.trim(), price: total, cafeSplit: c, burgerSplit: b, includes, businessType: 'combined' })
         await refreshAll()
         setAddOpen(false)
-      } catch (err) { setCreateError(err.message) }
+        toast.success('Deal created')
+      } catch (err) { setCreateError(err.message); toast.error(err.message || 'Could not create deal') }
       finally { setCreating(false) }
     } else {
       const p = Number(price)
@@ -161,7 +164,8 @@ export default function DealsPage() {
         await api.createDeal({ name: name.trim(), price: p, includes, businessType: dealBusiness })
         await refreshAll()
         setAddOpen(false)
-      } catch (err) { setCreateError(err.message) }
+        toast.success('Deal created')
+      } catch (err) { setCreateError(err.message); toast.error(err.message || 'Could not create deal') }
       finally { setCreating(false) }
     }
   }
@@ -171,8 +175,9 @@ export default function DealsPage() {
     try {
       await api.archiveDeal(deal.id)
       await refreshAll()
+      toast.success(`"${deal.name}" archived`)
     } catch (err) {
-      setError(err.message || 'Could not archive deal')
+      toast.error(err.message || 'Could not archive deal')
     } finally {
       setArchivingIds((prev) => { const s = new Set(prev); s.delete(deal.id); return s })
     }
@@ -183,8 +188,9 @@ export default function DealsPage() {
     try {
       await api.restoreDeal(deal.id)
       await refreshAll()
+      toast.success(`"${deal.name}" restored`)
     } catch (err) {
-      setError(err.message || 'Could not restore deal')
+      toast.error(err.message || 'Could not restore deal')
     } finally {
       setArchivingIds((prev) => { const s = new Set(prev); s.delete(deal.id); return s })
     }
@@ -215,8 +221,10 @@ export default function DealsPage() {
       }
       await refreshAll()
       closeEditDialog()
+      toast.success('Deal updated')
     } catch (err) {
       setEditError(err.message || 'Could not save deal')
+      toast.error(err.message || 'Could not save deal')
     } finally {
       setEditSaving(false)
     }

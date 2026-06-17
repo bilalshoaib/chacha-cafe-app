@@ -7,10 +7,12 @@ import { api } from '@/api.js'
 import { expenseBusinessType } from '@/constants/businessTypes.js'
 import { expenseCategoryLabel } from '@/utils/expenses.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+import { useToast } from '@/context/ToastContext.jsx'
 
 export default function ExpenseDetailPage() {
   const { expenseId } = useParams()
   const router = useRouter()
+  const toast = useToast()
   const [row, setRow] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -36,8 +38,12 @@ export default function ExpenseDetailPage() {
   async function handleDelete() {
     if (!window.confirm('Delete this expense? This cannot be undone.')) return
     setDeleting(true); setError('')
-    try { await api.deleteExpense(expenseId); router.replace('/expenses') }
-    catch (e) { setError(e.message || 'Could not delete') }
+    try {
+      await api.deleteExpense(expenseId)
+      toast.success('Expense deleted')
+      router.replace('/expenses')
+    }
+    catch (e) { setError(e.message || 'Could not delete'); toast.error(e.message || 'Could not delete expense') }
     finally { setDeleting(false) }
   }
 

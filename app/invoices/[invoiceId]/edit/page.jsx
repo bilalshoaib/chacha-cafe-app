@@ -7,11 +7,13 @@ import { api } from '@/api.js'
 import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { cloneInvoiceLines, lineFromDeal, lineFromMenuItem, removeLineById, updateLineQty } from '@/utils/invoiceLines.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
+import { useToast } from '@/context/ToastContext.jsx'
 
 export default function InvoiceEditPage() {
   const { invoiceId } = useParams()
   const router = useRouter()
-  const { menu, setError: setGlobalError } = useOrders()
+  const { menu } = useOrders()
+  const toast = useToast()
   const [invoice, setInvoice] = useState(null)
   const [invoiceLoading, setInvoiceLoading] = useState(true)
   const [noteDraft, setNoteDraft] = useState('')
@@ -74,11 +76,12 @@ export default function InvoiceEditPage() {
 
   async function saveInvoiceEdits() {
     if (!invoice || invoice.returned) return
-    setSaving(true); setGlobalError('')
+    setSaving(true)
     try {
       await api.updateInvoice(invoice.id, { customerNote: noteDraft, lines: editedLines })
+      toast.success('Invoice saved')
       router.push(`/invoices/${invoice.id}`)
-    } catch (e) { setGlobalError(e.message) }
+    } catch (e) { toast.error(e.message || 'Could not save invoice') }
     finally { setSaving(false) }
   }
 

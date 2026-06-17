@@ -397,6 +397,73 @@ select {
   color: var(--text-muted);
 }
 
+/* ── Toast notifications ─────────────────────────────────── */
+.toaster {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(360px, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.13);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  animation: toast-in 0.22s ease;
+  pointer-events: auto;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.toast-success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.toast-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.toast-message { flex: 1; }
+
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  opacity: 0.55;
+  padding: 0;
+  line-height: 1;
+  color: inherit;
+  flex-shrink: 0;
+  margin: 0;
+}
+.toast-close:hover { opacity: 1; }
+
+/* ── Role badges ─────────────────────────────────────────── */
 .badge-role {
   display: inline-block;
   font-size: 0.65rem;

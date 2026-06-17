@@ -9,9 +9,11 @@ import { itemBusinessType } from '@/constants/businessTypes.js'
 import { clearAddMenuItemHash } from '@/utils/hashNavigation.js'
 import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
+import { useToast } from '@/context/ToastContext.jsx'
 
 export default function MenuItemsPage() {
   const { menu, refreshAll, setError } = useOrders()
+  const toast = useToast()
   const deleteDialogRef = useRef(null)
   const editDialogRef = useRef(null)
   const addDialogRef = useRef(null)
@@ -166,8 +168,10 @@ export default function MenuItemsPage() {
       await refreshAll()
       setAddOpen(false)
       closeAddDialog()
+      toast.success('Menu item added')
     } catch (err) {
       setAddError(err.message || 'Could not add item')
+      toast.error(err.message || 'Could not add item')
     } finally {
       setAddSaving(false)
     }
@@ -196,8 +200,10 @@ export default function MenuItemsPage() {
       })
       await refreshAll()
       closeEditDialog()
+      toast.success('Menu item updated')
     } catch (err) {
       setEditError(err.message || 'Could not save changes')
+      toast.error(err.message || 'Could not save changes')
     } finally {
       setEditSaving(false)
     }
@@ -223,15 +229,17 @@ export default function MenuItemsPage() {
       if (pendingDelete.mode === 'single') {
         await api.deleteMenuItem(pendingDelete.item.id)
         setSelectedIds((prev) => prev.filter((id) => id !== pendingDelete.item.id))
+        toast.success(`"${pendingDelete.item.name}" removed from menu`)
       } else {
         const ids = pendingDelete.items.map((i) => i.id)
         await api.deleteMenuItems(ids)
         setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)))
+        toast.success(`${ids.length} items removed from menu`)
       }
       await refreshAll()
       deleteDialogRef.current?.close()
     } catch (err) {
-      setError(err.message)
+      toast.error(err.message || 'Could not remove item')
     } finally {
       setDeleting(false)
     }

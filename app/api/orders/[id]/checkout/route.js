@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
 import { getOrders, saveOrders } from '@/lib/repositories/ordersRepository'
-import { getInvoices, saveInvoices } from '@/lib/repositories/invoicesRepository'
+import { getInvoices, saveInvoices, nextInvoiceNumber } from '@/lib/repositories/invoicesRepository'
 import { orderBusinessType } from '@/lib/businessTypes'
-import { randomUUID } from 'crypto'
 
-function newInvoiceId(businessType) {
-  const slug = businessType === 'burger' ? 'burger' : businessType === 'combined' ? 'combined' : 'cafe'
-  return `inv-${slug}-${randomUUID().slice(0, 8)}`
+function invoiceSlug(businessType) {
+  if (businessType === 'burger') return 'burger'
+  if (businessType === 'combined') return 'combined'
+  return 'cafe'
 }
 
 export async function POST(request, { params }) {
@@ -31,8 +31,11 @@ export async function POST(request, { params }) {
   const VALID_PAYMENT_METHODS = ['cash', 'online']
   const paymentMethod = VALID_PAYMENT_METHODS.includes(body.paymentMethod) ? body.paymentMethod : null
 
+  const slug = invoiceSlug(businessType)
+  const invoiceNum = await nextInvoiceNumber(slug)
+
   const invoice = {
-    id: newInvoiceId(businessType),
+    id: `inv-${slug}-${invoiceNum}`,
     businessType,
     orderId: order.id,
     createdAt: new Date().toISOString(),

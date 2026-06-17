@@ -6,10 +6,12 @@ import { api } from '@/api.js'
 import ExpenseFormFields from '@/components/ExpenseFormFields.jsx'
 import { expenseBusinessType } from '@/constants/businessTypes.js'
 import { expenseDateInputValue } from '@/utils/expenses.js'
+import { useToast } from '@/context/ToastContext.jsx'
 
 export default function ExpenseEditPage() {
   const { expenseId } = useParams()
   const router = useRouter()
+  const toast = useToast()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [title, setTitle] = useState('')
@@ -48,9 +50,11 @@ export default function ExpenseEditPage() {
     setSaving(true)
     try {
       await api.updateExpense(expenseId, { title: title.trim(), amount: Number(amount), category, businessType, note: note.trim(), spentAt: spentAt.toISOString() })
+      toast.success('Expense updated')
       router.replace(`/expenses/${expenseId}`)
     } catch (err) {
       setSaveError(err.message || 'Could not save')
+      toast.error(err.message || 'Could not save expense')
     } finally { setSaving(false) }
   }
 

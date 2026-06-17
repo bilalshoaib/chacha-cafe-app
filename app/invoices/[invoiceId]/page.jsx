@@ -8,6 +8,7 @@ import { businessTypeLabel, invoiceBusinessType } from '@/constants/businessType
 import { categoryLabel, formatItemExtras, formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
+import { useToast } from '@/context/ToastContext.jsx'
 
 function buildReceiptHtml(invoice, itemLabelById) {
   const businessName = invoiceBusinessType(invoice) === 'burger' ? 'Chacha Burger' : 'Chacha Cafe'
@@ -34,6 +35,7 @@ export default function InvoiceDetailPage() {
   const { invoiceId } = useParams()
   const { menu } = useOrders()
   const { user } = useAuth()
+  const toast = useToast()
   const isCounterCashier = user?.role === 'counter_cashier'
   const [invoice, setInvoice] = useState(null)
   const [invoiceLoading, setInvoiceLoading] = useState(true)
@@ -94,7 +96,8 @@ export default function InvoiceDetailPage() {
       await api.updateInvoice(invoice.id, { returned: true, returnNote: returnNoteDraft.trim() })
       await loadInvoice()
       closeReturnDialog()
-    } catch (e) { setError(e.message) }
+      toast.success('Return recorded')
+    } catch (e) { setError(e.message); toast.error(e.message || 'Could not record return') }
     finally { setSaving(false) }
   }
 
@@ -105,15 +108,20 @@ export default function InvoiceDetailPage() {
       if (paid && paymentMethod) patch.paymentMethod = paymentMethod
       await api.updateInvoice(inv.id, patch)
       await loadInvoice()
+      toast.success(paid ? `Invoice marked as paid${paymentMethod ? ` (${paymentMethod})` : ''}` : 'Invoice marked as unpaid')
     }
-    catch (e) { setError(e.message) }
+    catch (e) { setError(e.message); toast.error(e.message || 'Could not update invoice') }
     finally { setSaving(false) }
   }
 
   async function runClearReturn(inv) {
     setSaving(true); setError('')
-    try { await api.updateInvoice(inv.id, { returned: false }); await loadInvoice() }
-    catch (e) { setError(e.message) }
+    try {
+      await api.updateInvoice(inv.id, { returned: false })
+      await loadInvoice()
+      toast.success('Return status cleared')
+    }
+    catch (e) { setError(e.message); toast.error(e.message || 'Could not clear return') }
     finally { setSaving(false) }
   }
 

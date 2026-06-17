@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import ExpenseFormFields from '@/components/ExpenseFormFields.jsx'
 import { expenseDateInputValue } from '@/utils/expenses.js'
+import { useToast } from '@/context/ToastContext.jsx'
 
 export default function ExpenseAddPage() {
   const router = useRouter()
+  const toast = useToast()
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState('other')
@@ -25,9 +27,11 @@ export default function ExpenseAddPage() {
     setSaving(true)
     try {
       const created = await api.createExpense({ title: title.trim(), amount: Number(amount), category, businessType, note: note.trim(), spentAt: spentAt.toISOString() })
+      toast.success('Expense saved')
       router.replace(`/expenses/${created.id}`)
     } catch (err) {
       setError(err.message || 'Could not save')
+      toast.error(err.message || 'Could not save expense')
     } finally { setSaving(false) }
   }
 
