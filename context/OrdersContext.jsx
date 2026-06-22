@@ -15,6 +15,7 @@ export function OrdersProvider({ children }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [customerNote, setCustomerNote] = useState('')
+  const [orderType, setOrderType] = useState('dine_in')
 
   const refreshAll = useCallback(async () => {
     setError('')
@@ -192,11 +193,12 @@ export function OrdersProvider({ children }) {
     if (!activeOrderId) return
     setError('')
     try {
-      const { invoice, order } = await api.checkout(activeOrderId, customerNote, null)
+      const { invoice, order } = await api.checkout(activeOrderId, customerNote, null, orderType)
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)))
       router.push(`/invoices/${invoice.id}`)
       setActiveOrderId(null)
       setCustomerNote('')
+      setOrderType('dine_in')
     } catch (e) {
       setError(e.message)
     }
@@ -215,6 +217,8 @@ export function OrdersProvider({ children }) {
     categoryTabs,
     customerNote,
     setCustomerNote,
+    orderType,
+    setOrderType,
     error,
     setError,
     loading,
@@ -230,7 +234,7 @@ export function OrdersProvider({ children }) {
   }), [
     menu, orders, activeOrderId, activeOrder,
     orderMenuItems, orderDeals, orderCategoryTabs, orderTotal,
-    categoryTabs, customerNote, error, loading, refreshAll,
+    categoryTabs, customerNote, orderType, error, loading, refreshAll,
   ])
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>

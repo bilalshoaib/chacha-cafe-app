@@ -37,8 +37,8 @@ function AppNav({ user, onLogout }) {
         <div className="brand">
           <span className="brand-mark" aria-hidden="true" />
           <div>
-            <h1>Chacha burger Cafe</h1>
-            <p className="tagline">Pizzas, burgers, fries, wings, shawarmas &amp; rolls</p>
+            <h1>Chacha Burger &amp; Cafe</h1>
+            <p className="tagline">Good Food ★ Good Mood</p>
           </div>
         </div>
 
@@ -131,9 +131,11 @@ export default function AppShell({ children }) {
   }
 
   if (!authenticated) {
+    // Home page is full-screen (has its own layout); other public pages still get the app wrapper
+    const isHome = pathname === '/'
     return (
       <OrdersProvider>
-        <div className="app">{children}</div>
+        {isHome ? children : <div className="app">{children}</div>}
       </OrdersProvider>
     )
   }

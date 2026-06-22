@@ -10,8 +10,26 @@ import { useOrders } from '@/context/OrdersContext.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
+const ORDER_TYPE_META = {
+  dine_in:  { label: 'Dine In',  icon: '🍽️', cls: 'badge-order-type-dine' },
+  takeaway: { label: 'Takeaway', icon: '🛍️', cls: 'badge-order-type-take' },
+  delivery: { label: 'Delivery', icon: '🛵', cls: 'badge-order-type-delivery' },
+}
+
+function OrderTypeBadge({ type }) {
+  if (!type) return null
+  const meta = ORDER_TYPE_META[type] ?? { label: type, icon: '', cls: '' }
+  return (
+    <span className={`badge-order-type ${meta.cls}`}>
+      {meta.icon} {meta.label}
+    </span>
+  )
+}
+
 function buildReceiptHtml(invoice, itemLabelById) {
   const businessName = invoiceBusinessType(invoice) === 'burger' ? 'Chacha Burger' : 'Chacha Cafe'
+  const orderTypeLabels = { dine_in: 'Dine In', takeaway: 'Takeaway', delivery: 'Delivery' }
+  const orderTypeLine = invoice.orderType ? `Order: ${orderTypeLabels[invoice.orderType] ?? invoice.orderType}` : ''
   const paymentLine = invoice.paymentMethod === 'cash' ? 'Payment: Cash' : invoice.paymentMethod === 'online' ? 'Payment: Online / Card' : ''
   const lineRows = invoice.lines.map((line) => {
     const extras = formatItemExtras(line)
@@ -28,7 +46,7 @@ function buildReceiptHtml(invoice, itemLabelById) {
   const discountSummary = totalDiscountAmt > 0
     ? `<div class="total-row" style="font-size:10px;font-weight:normal;"><span>Subtotal</span><span>${formatMoney(invoice.lines.reduce((s, l) => s + l.unitPrice * l.qty, 0))}</span></div><div class="total-row" style="font-size:10px;font-weight:normal;"><span>Total Discount</span><span>-${formatMoney(totalDiscountAmt)}</span></div>`
     : ''
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Receipt ${invoice.id}</title><style>@page{size:80mm auto;margin:4mm 4mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',Courier,monospace;font-size:11px;color:#000;width:72mm;padding:0;background:#fff}.center{text-align:center}.right{text-align:right}.bold{font-weight:bold}.dashed{border-top:1px dashed #000;margin:4px 0}.solid{border-top:1px solid #000;margin:4px 0}.shop-name{font-size:16px;font-weight:bold;text-align:center;letter-spacing:1px;margin-bottom:2px}.shop-sub{text-align:center;font-size:9px;margin-bottom:3px}.meta-row{display:flex;justify-content:space-between;font-size:9px;margin:1px 0}table{width:100%;border-collapse:collapse;margin:2px 0}th{font-size:9px;text-align:left;border-bottom:1px solid #000;padding:1px 0}th.amt-col{text-align:right}td{vertical-align:top;padding:2px 0;font-size:10px}.item-col{width:80%}.amt-col{width:20%;text-align:right;white-space:nowrap}.item-name{font-weight:bold}.item-each{font-size:9px;color:#333}.item-disc{font-size:9px;color:#555}.inc-line{font-size:9px}.total-row{display:flex;justify-content:space-between;font-size:13px;font-weight:bold;margin:3px 0}.status-row{text-align:center;font-size:10px;margin:2px 0}.footer{text-align:center;font-size:9px;margin-top:6px}.note-box{font-size:9px;margin:2px 0}.returned-notice{text-align:center;font-weight:bold;font-size:11px;border:1px solid #000;padding:2px 4px;margin:3px 0}</style></head><body><div class="shop-name">${businessName}</div><div class="shop-sub">Chacha Burger Cafe</div><div class="dashed"></div><div class="meta-row"><span>Invoice:</span><span>${invoice.id}</span></div><div class="meta-row"><span>Date:</span><span>${new Date(invoice.createdAt).toLocaleString()}</span></div>${invoice.orderId ? `<div class="meta-row"><span>Order:</span><span>${invoice.orderId}</span></div>` : ''}<div class="dashed"></div><table><thead><tr><th class="item-col">Item</th><th class="amt-col">Amt</th></tr></thead><tbody>${lineRows}</tbody></table><div class="solid"></div>${discountSummary}<div class="total-row"><span>${invoice.paid || invoice.returned ? 'TOTAL' : 'TOTAL DUE'}</span><span>${formatMoney(invoice.total)}</span></div><div class="dashed"></div>${paymentLine ? `<div class="status-row">${paymentLine}</div>` : ''}<div class="status-row">${invoice.returned ? '** RETURNED **' : invoice.paid ? 'PAID' : 'UNPAID'}</div>${invoice.returned ? `<div class="returned-notice">** REFUNDED / RETURNED **</div>` : ''}${invoice.returnNote ? `<div class="note-box">Return note: ${invoice.returnNote}</div>` : ''}${invoice.customerNote ? `<div class="note-box">Note: ${invoice.customerNote}</div>` : ''}<div class="dashed"></div><div class="footer">Thank you for visiting!</div><div class="footer">Chacha Burger Cafe</div></body></html>`
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Receipt ${invoice.id}</title><style>@page{size:80mm auto;margin:4mm 4mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',Courier,monospace;font-size:11px;color:#000;width:72mm;padding:0;background:#fff}.center{text-align:center}.right{text-align:right}.bold{font-weight:bold}.dashed{border-top:1px dashed #000;margin:4px 0}.solid{border-top:1px solid #000;margin:4px 0}.shop-name{font-size:16px;font-weight:bold;text-align:center;letter-spacing:1px;margin-bottom:2px}.shop-sub{text-align:center;font-size:9px;margin-bottom:3px}.meta-row{display:flex;justify-content:space-between;font-size:9px;margin:1px 0}.order-type-banner{text-align:center;font-size:11px;font-weight:bold;letter-spacing:0.5px;margin:4px 0;padding:2px 0;border-top:1px dashed #000;border-bottom:1px dashed #000}table{width:100%;border-collapse:collapse;margin:2px 0}th{font-size:9px;text-align:left;border-bottom:1px solid #000;padding:1px 0}th.amt-col{text-align:right}td{vertical-align:top;padding:2px 0;font-size:10px}.item-col{width:80%}.amt-col{width:20%;text-align:right;white-space:nowrap}.item-name{font-weight:bold}.item-each{font-size:9px;color:#333}.item-disc{font-size:9px;color:#555}.inc-line{font-size:9px}.total-row{display:flex;justify-content:space-between;font-size:13px;font-weight:bold;margin:3px 0}.status-row{text-align:center;font-size:10px;margin:2px 0}.footer{text-align:center;font-size:9px;margin-top:6px}.note-box{font-size:9px;margin:2px 0}.returned-notice{text-align:center;font-weight:bold;font-size:11px;border:1px solid #000;padding:2px 4px;margin:3px 0}</style></head><body><div class="shop-name">${businessName}</div><div class="shop-sub">Chacha Burger Cafe</div><div class="dashed"></div><div class="meta-row"><span>Invoice:</span><span>${invoice.id}</span></div><div class="meta-row"><span>Date:</span><span>${new Date(invoice.createdAt).toLocaleString()}</span></div>${invoice.orderId ? `<div class="meta-row"><span>Order:</span><span>${invoice.orderId}</span></div>` : ''}${orderTypeLine ? `<div class="order-type-banner">${orderTypeLine}</div>` : '<div class="dashed"></div>'}<table><thead><tr><th class="item-col">Item</th><th class="amt-col">Amt</th></tr></thead><tbody>${lineRows}</tbody></table><div class="solid"></div>${discountSummary}<div class="total-row"><span>${invoice.paid || invoice.returned ? 'TOTAL' : 'TOTAL DUE'}</span><span>${formatMoney(invoice.total)}</span></div><div class="dashed"></div>${paymentLine ? `<div class="status-row">${paymentLine}</div>` : ''}<div class="status-row">${invoice.returned ? '** RETURNED **' : invoice.paid ? 'PAID' : 'UNPAID'}</div>${invoice.returned ? `<div class="returned-notice">** REFUNDED / RETURNED **</div>` : ''}${invoice.returnNote ? `<div class="note-box">Return note: ${invoice.returnNote}</div>` : ''}${invoice.customerNote ? `<div class="note-box">Note: ${invoice.customerNote}</div>` : ''}<div class="dashed"></div><div class="footer">Thank you for visiting!</div><div class="footer">Chacha Burger Cafe</div></body></html>`
 }
 
 export default function InvoiceDetailPage() {
@@ -180,6 +198,7 @@ export default function InvoiceDetailPage() {
               <h1 className="invoice-view-title">{invoice.id}</h1>
               <div className="invoice-status-badges">
                 <BusinessTypeBadge type={invoiceBusinessType(invoice)} />
+                <OrderTypeBadge type={invoice.orderType} />
                 {invoice.paid ? <span className="badge-paid">Paid</span> : <span className="badge-unpaid">Unpaid</span>}
                 {invoice.returned ? <span className="badge-returned">Returned</span> : null}
                 {invoice.paymentMethod === 'cash' ? <span className="badge-payment-method">💵 Cash</span> : invoice.paymentMethod === 'online' ? <span className="badge-payment-method">💳 Online / Card</span> : null}

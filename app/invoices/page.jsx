@@ -3,6 +3,22 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
+
+const ORDER_TYPE_META = {
+  dine_in:  { label: 'Dine In',  icon: '🍽️', cls: 'badge-order-type-dine' },
+  takeaway: { label: 'Takeaway', icon: '🛍️', cls: 'badge-order-type-take' },
+  delivery: { label: 'Delivery', icon: '🛵', cls: 'badge-order-type-delivery' },
+}
+
+function OrderTypeBadge({ type }) {
+  if (!type) return <span className="muted">—</span>
+  const meta = ORDER_TYPE_META[type] ?? { label: type, icon: '', cls: '' }
+  return (
+    <span className={`badge-order-type ${meta.cls}`}>
+      {meta.icon} {meta.label}
+    </span>
+  )
+}
 import { BUSINESS_TYPES, invoiceBusinessType } from '@/constants/businessTypes.js'
 import {
   INVOICE_PAGE_SIZE,
@@ -182,6 +198,7 @@ export default function InvoicesListPage() {
                   <tr>
                     <th scope="col">Business</th>
                     <th scope="col">Invoice</th>
+                    <th scope="col">Type</th>
                     <th scope="col">Date</th>
                     <th scope="col" className="num">Total</th>
                     <th scope="col" className="num">Discount</th>
@@ -206,6 +223,7 @@ export default function InvoicesListPage() {
                   >
                     <td><BusinessTypeBadge type={invoiceBusinessType(inv)} /></td>
                     <td className="invoices-table-id">{inv.id}</td>
+                    <td><OrderTypeBadge type={inv.orderType} /></td>
                     <td className="muted">{formatShortDateTime(inv.createdAt)}</td>
                     <td className="num invoices-table-total">{formatMoney(inv.total)}</td>
                     <td className="num invoices-table-discount">

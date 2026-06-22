@@ -73,10 +73,10 @@ export const api = {
     request(`/api/orders/${orderId}/lines/${lineId}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   removeLine: (orderId, lineId) =>
     request(`/api/orders/${orderId}/lines/${lineId}`, { method: 'DELETE' }),
-  checkout: (orderId, customerNote, paymentMethod) =>
+  checkout: (orderId, customerNote, paymentMethod, orderType) =>
     request(`/api/orders/${orderId}/checkout`, {
       method: 'POST',
-      body: JSON.stringify({ customerNote: customerNote || '', paymentMethod: paymentMethod ?? null }),
+      body: JSON.stringify({ customerNote: customerNote || '', paymentMethod: paymentMethod ?? null, orderType: orderType ?? null }),
     }),
   getInvoices: (params = {}) => {
     const q = new URLSearchParams()

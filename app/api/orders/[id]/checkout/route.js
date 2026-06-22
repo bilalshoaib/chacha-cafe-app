@@ -31,6 +31,9 @@ export async function POST(request, { params }) {
   const VALID_PAYMENT_METHODS = ['cash', 'online']
   const paymentMethod = VALID_PAYMENT_METHODS.includes(body.paymentMethod) ? body.paymentMethod : null
 
+  const VALID_ORDER_TYPES = ['takeaway', 'dine_in', 'delivery']
+  const orderType = VALID_ORDER_TYPES.includes(body.orderType) ? body.orderType : null
+
   const slug = invoiceSlug(businessType)
   const invoiceNum = await nextInvoiceNumber(slug)
 
@@ -44,6 +47,7 @@ export async function POST(request, { params }) {
     subtotal: total,
     total,
     ...(paymentMethod ? { paymentMethod } : {}),
+    ...(orderType ? { orderType } : {}),
   }
   invoices.push(invoice)
   order.status = 'invoiced'

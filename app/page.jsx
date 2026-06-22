@@ -17,10 +17,7 @@ export default function HomePage() {
     ;(async () => {
       try {
         const m = await api.getMenu()
-        if (!cancelled) {
-          setMenu(m)
-          setError('')
-        }
+        if (!cancelled) { setMenu(m); setError('') }
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load menu.')
       } finally {
@@ -40,103 +37,81 @@ export default function HomePage() {
       if (!byCat.has(k)) byCat.set(k, [])
       byCat.get(k).push(item)
     }
-    for (const list of byCat.values()) {
-      list.sort((a, b) => a.name.localeCompare(b.name))
-    }
+    for (const list of byCat.values()) list.sort((a, b) => a.name.localeCompare(b.name))
     const tabs = buildCategoryTabs(menu.items)
-    return tabs
-      .map(({ key, label }) => {
-        const items = byCat.get(key)
-        return items?.length ? { key, label, items } : null
-      })
-      .filter(Boolean)
+    return tabs.map(({ key, label }) => {
+      const items = byCat.get(key)
+      return items?.length ? { key, label, items } : null
+    }).filter(Boolean)
   }, [menu])
 
-  const deals = menu?.deals ?? []
+  const deals = useMemo(
+    () => (menu?.deals ?? []).filter((d) => d.status !== 'archived'),
+    [menu?.deals],
+  )
 
-  const body = (
+  const menuBody = (
     <>
-      <section className="home-hero card">
-        <p className="home-hero-kicker">Welcome</p>
-        <h2 className="home-hero-title">Fresh pizzas, burgers, shawarmas &amp; more</h2>
-        <p className="home-hero-lede">
-          We cook to order with quality ingredients. Browse our combo deals and full menu below — prices shown as
-          served at the counter.
-        </p>
-        <ul className="home-hero-points">
-          <li>Deals bundle your favourites at a set price</li>
-          <li>Build your own order when you visit</li>
-          <li>Ask staff about sizes, flavours, and daily specials</li>
-        </ul>
-      </section>
-
-      {error ? (
-        <p className="banner error home-banner" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className="banner error home-banner" role="alert">{error}</p> : null}
 
       {loading ? (
-        <p className="muted home-loading">Loading menu…</p>
+        <p className="muted home-loading hp-loading-text">Loading menu…</p>
       ) : (
         <>
-          <section className="home-section" id="deals">
-            <div className="home-section-head">
-              <h3>Deals</h3>
-              <p className="muted small">Bundles — one price for everything listed.</p>
-            </div>
-            {deals.length === 0 ? (
-              <p className="muted home-empty">No deals listed yet. Check back soon.</p>
-            ) : (
-              <ul className="home-deals-grid">
+          {deals.length > 0 ? (
+            <section className="hp-section" id="deals">
+              <div className="hp-section-head">
+                <h2 className="hp-section-title">
+                  <span className="hp-section-icon">🔥</span> Special Deals
+                </h2>
+                <p className="muted small">Bundles — one price for everything listed.</p>
+              </div>
+              <ul className="hp-deals-grid">
                 {deals.map((deal) => (
-                  <li key={deal.id} className="card home-deal-card">
-                    <div className="home-deal-head">
-                      <span className="home-deal-name">{deal.name}</span>
-                      <span className="home-deal-price">{formatMoney(deal.price)}</span>
+                  <li key={deal.id} className="hp-deal-card">
+                    <div className="hp-deal-badge">DEAL</div>
+                    <div className="hp-deal-head">
+                      <span className="hp-deal-name">{deal.name}</span>
+                      <span className="hp-deal-price">{formatMoney(deal.price)}</span>
                     </div>
-                    <p className="muted small home-includes-label">Includes</p>
-                    <ul className="home-deal-includes">
+                    <p className="muted small hp-deal-includes-label">Includes</p>
+                    <ul className="hp-deal-includes">
                       {deal.includes.map((inc, idx) => {
                         const item = itemById.get(inc.itemId)
                         const bits = item
                           ? [item.name, formatItemExtras(item)].filter(Boolean).join(' · ')
                           : inc.itemId
-                        return (
-                          <li key={`${deal.id}-${idx}`}>
-                            <strong>{inc.qty}×</strong> {bits}
-                          </li>
-                        )
+                        return <li key={`${deal.id}-${idx}`}><strong>{inc.qty}×</strong> {bits}</li>
                       })}
                     </ul>
                   </li>
                 ))}
               </ul>
-            )}
-          </section>
+            </section>
+          ) : null}
 
-          <section className="home-section" id="menu">
-            <div className="home-section-head">
-              <h3>Menu</h3>
-              <p className="muted small">Individual items and add-ons.</p>
-            </div>
-            {categorySections.length === 0 ? (
-              <p className="muted home-empty">No menu items to show yet.</p>
-            ) : (
-              <div className="home-menu-columns">
+          {categorySections.length > 0 ? (
+            <section className="hp-section" id="menu">
+              <div className="hp-section-head">
+                <h2 className="hp-section-title">
+                  <span className="hp-section-icon">🍽️</span> Our Menu
+                </h2>
+                <p className="muted small">Individual items and add-ons at counter prices.</p>
+              </div>
+              <div className="hp-menu-grid">
                 {categorySections.map(({ key, label, items }) => (
-                  <div key={key} className="card home-menu-category">
-                    <h4 className="home-menu-cat-title">{label}</h4>
-                    <ul className="home-menu-list">
+                  <div key={key} className="hp-menu-cat">
+                    <h3 className="hp-menu-cat-title">{label}</h3>
+                    <ul className="hp-menu-list">
                       {items.map((item) => {
                         const extras = formatItemExtras(item)
                         return (
-                          <li key={item.id} className="home-menu-row">
-                            <div className="home-menu-row-main">
-                              <span className="home-menu-name">{item.name}</span>
-                              {extras ? <span className="muted small home-menu-extras">{extras}</span> : null}
+                          <li key={item.id} className="hp-menu-row">
+                            <div className="hp-menu-row-main">
+                              <span className="hp-menu-name">{item.name}</span>
+                              {extras ? <span className="muted small">{extras}</span> : null}
                             </div>
-                            <span className="home-menu-price">{formatMoney(item.price)}</span>
+                            <span className="hp-menu-price">{formatMoney(item.price)}</span>
                           </li>
                         )
                       })}
@@ -144,43 +119,99 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-            )}
-          </section>
+            </section>
+          ) : null}
         </>
       )}
 
-      <section className="card home-about">
-        <h3 className="sub">About us</h3>
-        <p className="muted">
-          We are a neighbourhood cafe focused on pizzas, burgers, fries, wings, shawarmas, and rolls — made for quick
-          counter service and takeaway. Visit us to place an order; our team uses this same menu at the register.
-        </p>
+      <section className="hp-about">
+        <div className="hp-about-inner">
+          <h2 className="hp-about-title">Always Fresh &amp; Delicious</h2>
+          <p className="hp-about-text">
+            We are a neighbourhood cafe focused on pizzas, burgers, fries, wings, shawarmas, and rolls —
+            made with quality ingredients for quick counter service and takeaway. Visit us to place an order.
+          </p>
+          <div className="hp-about-badges">
+            <span className="hp-badge">🌿 Fresh Ingredients</span>
+            <span className="hp-badge">⭐ Quality Food</span>
+            <span className="hp-badge">⚡ Quick Service</span>
+          </div>
+        </div>
       </section>
     </>
   )
 
   if (!authenticated) {
     return (
-      <div className="home-public-shell">
-        <header className="home-public-header">
-          <div className="brand home-public-brand">
-            <span className="brand-mark" aria-hidden="true" />
-            <div>
-              <h1>Chacha burger Cafe</h1>
-              <p className="tagline">Pizzas, burgers, fries, wings, shawarmas &amp; rolls</p>
+      <div className="hp-shell">
+        {/* ── Hero ── */}
+        <div className="hp-hero" style={{ backgroundImage: 'url(/hero-bg.png)' }}>
+          <div className="hp-hero-overlay" />
+          <div className="hp-hero-content">
+            <div className="hp-hero-kicker">★ Always Fresh &amp; Delicious ★</div>
+            <h1 className="hp-logo-chacha">CHACHA</h1>
+            <div className="hp-logo-sub">
+              <span className="hp-logo-star">★</span>
+              BURGER &amp; CAFE
+              <span className="hp-logo-star">★</span>
+            </div>
+            <p className="hp-logo-tagline">Good Food ★ Good Mood</p>
+            <div className="hp-hero-actions">
+              <a href="#deals" className="hp-hero-btn-primary">View Deals</a>
+              <a href="#menu" className="hp-hero-btn-ghost">Full Menu</a>
             </div>
           </div>
-          <Link href="/login" className="primary sm home-staff-link">
-            Staff sign in
-          </Link>
-        </header>
-        <main className="home-page">{body}</main>
-        <footer className="home-public-footer muted small">
-          <span>Visit us at the cafe — hours and location can go here when you have them.</span>
+        </div>
+
+        {/* ── Category strip ── */}
+        <div className="hp-cat-strip">
+          {[
+            { icon: '🍔', label: 'Burgers' },
+            { icon: '🍕', label: 'Pizzas' },
+            { icon: '🌯', label: 'Shawarma' },
+            { icon: '🍗', label: 'Wings' },
+            { icon: '🥤', label: 'Drinks' },
+          ].map(({ icon, label }) => (
+            <div key={label} className="hp-cat-chip">
+              <span className="hp-cat-chip-icon">{icon}</span>
+              <span className="hp-cat-chip-label">{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Menu content ── */}
+        <main className="hp-main">{menuBody}</main>
+
+        <div className="hp-staff-bar">
+          <span className="hp-staff-bar-text">Are you staff?</span>
+          <Link href="/login" className="hp-staff-bar-link">Staff sign in →</Link>
+        </div>
+
+        <footer className="hp-footer">
+          <div className="hp-footer-logo">
+            <span className="hp-footer-chacha">CHACHA</span>
+            <span className="hp-footer-cafe"> BURGER &amp; CAFE</span>
+          </div>
+          <p className="hp-footer-tagline">Good Food ★ Good Mood</p>
+          <p className="hp-footer-copy muted small">Visit us at the cafe for counter service &amp; takeaway.</p>
         </footer>
       </div>
     )
   }
 
-  return <main className="home-page home-page-staff">{body}</main>
+  return (
+    <div className="hp-staff-shell">
+      <div className="hp-staff-hero" style={{ backgroundImage: 'url(/hero-bg.png)' }}>
+        <div className="hp-hero-overlay hp-hero-overlay--shallow" />
+        <div className="hp-hero-content hp-hero-content--staff">
+          <h1 className="hp-logo-chacha hp-logo-chacha--sm">CHACHA</h1>
+          <div className="hp-logo-sub hp-logo-sub--sm">
+            <span className="hp-logo-star">★</span> BURGER &amp; CAFE <span className="hp-logo-star">★</span>
+          </div>
+          <p className="hp-logo-tagline">Good Food ★ Good Mood</p>
+        </div>
+      </div>
+      <main className="hp-main hp-main--staff">{menuBody}</main>
+    </div>
+  )
 }

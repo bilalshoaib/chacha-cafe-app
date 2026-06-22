@@ -17,6 +17,8 @@ export default function OrdersPage() {
     orderTotal,
     customerNote,
     setCustomerNote,
+    orderType,
+    setOrderType,
     setError,
     refreshAll,
     startNewOrder,
@@ -28,6 +30,12 @@ export default function OrdersPage() {
     updateLineDiscount: onUpdateLineDiscount,
     doCheckout: onCheckout,
   } = useOrders()
+
+  const ORDER_TYPES = [
+    { value: 'dine_in',   label: 'Dine In',   icon: '🍽️' },
+    { value: 'takeaway',  label: 'Takeaway',  icon: '🛍️' },
+    { value: 'delivery',  label: 'Delivery',  icon: '🛵' },
+  ]
 
   const searchInputRef = useRef(null)
   const categorySelectRef = useRef(null)
@@ -516,6 +524,30 @@ export default function OrdersPage() {
               <span>Total</span>
               <strong>{formatMoney(orderTotal)}</strong>
             </div>
+
+            <div className="order-type-block">
+              <p className="order-type-label">Order type</p>
+              <div className="order-type-options" role="group" aria-label="Order type">
+                {ORDER_TYPES.map(({ value, label, icon }) => (
+                  <label
+                    key={value}
+                    className={`order-type-option${orderType === value ? ' order-type-option--active' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="orderType"
+                      value={value}
+                      checked={orderType === value}
+                      onChange={() => setOrderType(value)}
+                      className="order-type-radio"
+                    />
+                    <span className="order-type-icon">{icon}</span>
+                    <span className="order-type-text">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <label className="field">
               <span>Note on invoice (optional)</span>
               <input
@@ -531,7 +563,7 @@ export default function OrdersPage() {
               disabled={!activeOrder.lines.length}
               onClick={() => void onCheckout()}
             >
-              Create invoice
+              Create invoice · {ORDER_TYPES.find((t) => t.value === orderType)?.icon} {ORDER_TYPES.find((t) => t.value === orderType)?.label}
             </button>
           </>
         )}
