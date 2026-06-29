@@ -25,7 +25,7 @@ export async function POST(request, { params }) {
   if (!order.lines.length) return NextResponse.json({ error: 'Add at least one line before checkout' }, { status: 400 })
 
   const body = await request.json().catch(() => ({}))
-  const total = Math.round(order.lines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100
+  const subtotal = Math.round(order.lines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100
   const businessType = orderBusinessType(order)
 
   const VALID_PAYMENT_METHODS = ['cash', 'online']
@@ -33,6 +33,12 @@ export async function POST(request, { params }) {
 
   const VALID_ORDER_TYPES = ['takeaway', 'dine_in', 'delivery']
   const orderType = VALID_ORDER_TYPES.includes(body.orderType) ? body.orderType : null
+
+  const rawDeliveryCharge = Number(body.deliveryCharge)
+  const deliveryCharge = orderType === 'delivery' && Number.isFinite(rawDeliveryCharge) && rawDeliveryCharge > 0
+    ? Math.round(rawDeliveryCharge * 100) / 100
+    : 0
+  const total = Math.round((subtotal + deliveryCharge) * 100) / 100
 
   const slug = invoiceSlug(businessType)
   const invoiceNum = await nextInvoiceNumber(slug)
@@ -44,8 +50,9 @@ export async function POST(request, { params }) {
     createdAt: new Date().toISOString(),
     customerNote: body.customerNote ? String(body.customerNote).slice(0, 200) : '',
     lines: order.lines.map((l) => ({ ...l })),
-    subtotal: total,
+    subtotal,
     total,
+    deliveryCharge,
     ...(paymentMethod ? { paymentMethod } : {}),
     ...(orderType ? { orderType } : {}),
   }

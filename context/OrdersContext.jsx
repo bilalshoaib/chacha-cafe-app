@@ -16,6 +16,7 @@ export function OrdersProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [customerNote, setCustomerNote] = useState('')
   const [orderType, setOrderType] = useState('dine_in')
+  const [deliveryCharge, setDeliveryCharge] = useState('')
 
   const refreshAll = useCallback(async () => {
     setError('')
@@ -65,6 +66,7 @@ export function OrdersProvider({ children }) {
       setOrders((prev) => [...prev, o])
       setActiveOrderId(o.id)
       setCustomerNote('')
+      setDeliveryCharge('')
     } catch (e) {
       setError(e.message)
     }
@@ -193,12 +195,14 @@ export function OrdersProvider({ children }) {
     if (!activeOrderId) return
     setError('')
     try {
-      const { invoice, order } = await api.checkout(activeOrderId, customerNote, null, orderType)
+      const dc = orderType === 'delivery' ? (Number(deliveryCharge) || 0) : 0
+      const { invoice, order } = await api.checkout(activeOrderId, customerNote, null, orderType, dc)
       setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)))
       router.push(`/invoices/${invoice.id}`)
       setActiveOrderId(null)
       setCustomerNote('')
       setOrderType('dine_in')
+      setDeliveryCharge('')
     } catch (e) {
       setError(e.message)
     }
@@ -219,6 +223,8 @@ export function OrdersProvider({ children }) {
     setCustomerNote,
     orderType,
     setOrderType,
+    deliveryCharge,
+    setDeliveryCharge,
     error,
     setError,
     loading,
@@ -234,7 +240,7 @@ export function OrdersProvider({ children }) {
   }), [
     menu, orders, activeOrderId, activeOrder,
     orderMenuItems, orderDeals, orderCategoryTabs, orderTotal,
-    categoryTabs, customerNote, orderType, error, loading, refreshAll,
+    categoryTabs, customerNote, orderType, deliveryCharge, error, loading, refreshAll,
   ])
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>

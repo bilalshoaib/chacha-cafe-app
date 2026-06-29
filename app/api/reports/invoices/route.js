@@ -76,9 +76,11 @@ export async function GET(request) {
   let grossTotal = 0, returnedCount = 0, returnedTotal = 0, netSalesTotal = 0
   let paidCount = 0, unpaidCount = 0, cafeNetSales = 0, burgerNetSales = 0
   let cafeInvoiceCount = 0, burgerInvoiceCount = 0
+  let deliveryChargesTotal = 0, deliveryOrderCount = 0
 
   const rows = inRange.map((inv) => {
     const total = roundMoney(inv.total ?? 0)
+    const deliveryCharge = roundMoney(inv.deliveryCharge ?? 0)
     const businessType = invoiceBusinessType(inv)
     const { cafePortion, burgerPortion } = calcInvoiceSplits(inv, businessType)
     grossTotal += total
@@ -91,12 +93,15 @@ export async function GET(request) {
       else if (businessType === 'cafe') cafeInvoiceCount += 1
       else { cafeInvoiceCount += 1; burgerInvoiceCount += 1 } // combined: counted in both
       if (inv.paid) paidCount += 1; else unpaidCount += 1
+      if (deliveryCharge > 0) { deliveryChargesTotal += deliveryCharge; deliveryOrderCount += 1 }
     }
-    return { id: inv.id, orderId: inv.orderId, businessType, createdAt: inv.createdAt, total, cafePortion, burgerPortion, paid: Boolean(inv.paid), returned: ret, paymentMethod: inv.paymentMethod ?? null }
+    return { id: inv.id, orderId: inv.orderId, businessType, orderType: inv.orderType ?? null, createdAt: inv.createdAt, total, deliveryCharge, cafePortion, burgerPortion, paid: Boolean(inv.paid), returned: ret, paymentMethod: inv.paymentMethod ?? null }
   })
 
   grossTotal = roundMoney(grossTotal); returnedTotal = roundMoney(returnedTotal)
   netSalesTotal = roundMoney(netSalesTotal); cafeNetSales = roundMoney(cafeNetSales); burgerNetSales = roundMoney(burgerNetSales)
+  deliveryChargesTotal = roundMoney(deliveryChargesTotal)
+  const netSalesExclDelivery = roundMoney(netSalesTotal - deliveryChargesTotal)
   rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
   const allExpenses = await getExpenses()
@@ -115,7 +120,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     from: from.toISOString(), to: to.toISOString(),
-    summary: { invoiceCount: inRange.length, grossTotal, returnedCount, returnedTotal, netSalesTotal, cafeNetSales, burgerNetSales, cafeInvoiceCount, burgerInvoiceCount, paidCount, unpaidCount, expenseCount: expensesInRange.length, expensesTotal, netAfterExpenses: roundMoney(netSalesTotal - expensesTotal) },
+    summary: { invoiceCount: inRange.length, grossTotal, returnedCount, returnedTotal, netSalesTotal, netSalesExclDelivery, cafeNetSales, burgerNetSales, cafeInvoiceCount, burgerInvoiceCount, paidCount, unpaidCount, deliveryChargesTotal, deliveryOrderCount, expenseCount: expensesInRange.length, expensesTotal, netAfterExpenses: roundMoney(netSalesTotal - expensesTotal) },
     invoices: rows, expenses: expenseRows,
   })
 }

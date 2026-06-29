@@ -64,12 +64,15 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, businessFilter,
     paymentFilter !== 'all' ? `Payment: ${paymentLabel(paymentFilter)}` : '',
   ].filter(Boolean).join(' · ')
 
+  const orderTypeLabels = { dine_in: 'Dine In', takeaway: 'Takeaway', delivery: 'Delivery' }
   const invoiceRows = invoices.map((inv) => `
     <tr>
       <td>${businessLabel(inv.businessType)}</td>
       <td>${inv.id}</td>
       <td>${formatShortDateTime(inv.createdAt)}</td>
+      <td>${inv.orderType ? (orderTypeLabels[inv.orderType] ?? inv.orderType) : '—'}</td>
       <td style="text-align:right">${formatMoney(inv.total)}</td>
+      <td style="text-align:right">${(inv.deliveryCharge ?? 0) > 0 ? formatMoney(inv.deliveryCharge) : '—'}</td>
       <td>${inv.returned ? 'Returned' : inv.paid ? 'Paid' : 'Unpaid'}</td>
       <td>${paymentLabel(inv.paymentMethod)}</td>
     </tr>`).join('')
@@ -112,6 +115,8 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, businessFilter,
 <p class="sub">${rangeLabel}${filterNote ? ` · Filtered by: ${filterNote}` : ''}</p>
 <div class="stats">
   <div class="stat"><span class="stat-label">Net Sales</span><span class="stat-value">${formatMoney(summary.netSalesTotal)}</span><span class="stat-sub">Excl. returns</span></div>
+  <div class="stat"><span class="stat-label">Sales excl. delivery</span><span class="stat-value">${formatMoney(summary.netSalesExclDelivery ?? summary.netSalesTotal)}</span><span class="stat-sub">Net sales − delivery charges</span></div>
+  <div class="stat"><span class="stat-label">Delivery charges</span><span class="stat-value">${formatMoney(summary.deliveryChargesTotal ?? 0)}</span><span class="stat-sub">${summary.deliveryOrderCount ?? 0} delivery orders</span></div>
   <div class="stat"><span class="stat-label">Chacha Cafe</span><span class="stat-value">${formatMoney(summary.cafeNetSales)}</span><span class="stat-sub">${summary.cafeInvoiceCount} invoices</span></div>
   <div class="stat"><span class="stat-label">Chacha Burger</span><span class="stat-value">${formatMoney(summary.burgerNetSales)}</span><span class="stat-sub">${summary.burgerInvoiceCount} invoices</span></div>
   <div class="stat"><span class="stat-label">Invoices</span><span class="stat-value">${summary.invoiceCount}</span><span class="stat-sub">In range</span></div>
@@ -122,7 +127,7 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, businessFilter,
   <div class="stat"><span class="stat-label">Net after expenses</span><span class="stat-value">${formatMoney(summary.netAfterExpenses)}</span><span class="stat-sub">Net − expenses</span></div>
 </div>
 <h2>Invoices (${invoices.length})</h2>
-${invoices.length === 0 ? '<p style="color:#6b7280">No invoices match the selected filters.</p>' : `<table><thead><tr><th>Business</th><th>Invoice ID</th><th>Issued</th><th style="text-align:right">Total</th><th>Status</th><th>Payment</th></tr></thead><tbody>${invoiceRows}</tbody></table>`}
+${invoices.length === 0 ? '<p style="color:#6b7280">No invoices match the selected filters.</p>' : `<table><thead><tr><th>Business</th><th>Invoice ID</th><th>Issued</th><th>Order type</th><th style="text-align:right">Total</th><th style="text-align:right">Delivery</th><th>Status</th><th>Payment</th></tr></thead><tbody>${invoiceRows}</tbody></table>`}
 <h2>Expenses (${expenses.length})</h2>
 ${expenses.length === 0 ? '<p style="color:#6b7280">No expenses in this period.</p>' : `<table><thead><tr><th>Spent</th><th>Title</th><th>Business</th><th>Category</th><th style="text-align:right">Amount</th><th>Note</th></tr></thead><tbody>${expenseRows}</tbody></table>`}
 <p class="footer">Generated ${new Date().toLocaleString()} · Chacha Burger Cafe</p>
@@ -194,6 +199,7 @@ export default function ReportsPage() {
     const paymentList = paymentFilter !== 'all' ? allInvoices.filter((inv) => inv.paymentMethod === paymentFilter) : allInvoices
     let grossTotal = 0, returnedCount = 0, returnedTotal = 0, paidCount = 0, unpaidCount = 0
     let cafeNetSales = 0, burgerNetSales = 0, cafeInvoiceCount = 0, burgerInvoiceCount = 0
+    let deliveryChargesTotal = 0, deliveryOrderCount = 0
     for (const inv of paymentList) {
       const total = inv.total ?? 0; grossTotal += total
       if (inv.returned) { returnedCount++; returnedTotal += total }
@@ -205,16 +211,21 @@ export default function ReportsPage() {
         else if (inv.businessType === 'cafe') cafeInvoiceCount++
         else { cafeInvoiceCount++; burgerInvoiceCount++ } // combined: counted in both
         if (inv.paid) paidCount++; else unpaidCount++
+        const dc = inv.deliveryCharge ?? 0
+        if (dc > 0) { deliveryChargesTotal += dc; deliveryOrderCount++ }
       }
     }
     const netSalesTotal = businessFilter === 'cafe' ? cafeNetSales : businessFilter === 'burger' ? burgerNetSales : roundMoney(cafeNetSales + burgerNetSales)
+    const netSalesExclDelivery = roundMoney(netSalesTotal - deliveryChargesTotal)
     let expensesTotal = 0
     for (const ex of filteredExpenses) expensesTotal += ex.amount ?? 0
     return {
       invoiceCount: filteredInvoices.length, grossTotal: roundMoney(grossTotal),
       returnedCount, returnedTotal: roundMoney(returnedTotal), netSalesTotal: roundMoney(netSalesTotal),
+      netSalesExclDelivery,
       cafeNetSales: roundMoney(cafeNetSales), burgerNetSales: roundMoney(burgerNetSales),
       cafeInvoiceCount, burgerInvoiceCount, paidCount, unpaidCount,
+      deliveryChargesTotal: roundMoney(deliveryChargesTotal), deliveryOrderCount,
       expensesTotal: roundMoney(expensesTotal), expenseCount: filteredExpenses.length,
       netAfterExpenses: roundMoney(netSalesTotal - expensesTotal),
     }
@@ -300,6 +311,8 @@ export default function ReportsPage() {
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Gross total</span><strong className="reports-stat-value">{formatMoney(filteredSummary.grossTotal)}</strong><span className="muted small">All invoices</span></article>
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Returns</span><strong className="reports-stat-value">{filteredSummary.returnedCount}</strong><span className="muted small">{formatMoney(filteredSummary.returnedTotal)} refunded / voided</span></article>
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Paid vs unpaid</span><strong className="reports-stat-value">{filteredSummary.paidCount} / {filteredSummary.unpaidCount}</strong><span className="muted small">Non-returned only</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">🛵 Delivery charges</span><strong className="reports-stat-value">{formatMoney(filteredSummary.deliveryChargesTotal)}</strong><span className="muted small">{filteredSummary.deliveryOrderCount} delivery orders</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Sales excl. delivery</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netSalesExclDelivery)}</strong><span className="muted small">Net sales − delivery charges</span></article>
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Total expenses</span><strong className="reports-stat-value">{formatMoney(filteredSummary.expensesTotal)}</strong><span className="muted small">{filteredSummary.expenseCount} entries · date spent</span></article>
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net after expenses</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netAfterExpenses)}</strong><span className="muted small">Net sales − expenses</span></article>
             </section>
@@ -309,18 +322,23 @@ export default function ReportsPage() {
               {filteredInvoices.length === 0 ? <p className="muted">No invoices match the selected filters.</p> : (
                 <div className="table-scroll">
                   <table className="staff-accounts-table reports-invoice-table">
-                    <thead><tr><th scope="col">Business</th><th scope="col">Invoice</th><th scope="col">Issued</th><th scope="col" className="num">Total</th><th scope="col">Status</th><th scope="col">Payment</th></tr></thead>
+                    <thead><tr><th scope="col">Business</th><th scope="col">Invoice</th><th scope="col">Issued</th><th scope="col">Order type</th><th scope="col" className="num">Total</th><th scope="col" className="num">Delivery</th><th scope="col">Status</th><th scope="col">Payment</th></tr></thead>
                     <tbody>
-                      {filteredInvoices.map((inv) => (
-                        <tr key={inv.id}>
-                          <td><BusinessTypeBadge type={inv.businessType} /></td>
-                          <td><Link href={`/invoices/${inv.id}`} className="team-row-link">{inv.id}</Link></td>
-                          <td className="muted">{formatShortDateTime(inv.createdAt)}</td>
-                          <td className="num">{formatMoney(inv.total)}</td>
-                          <td>{inv.returned ? <span className="badge-role badge-role-returned">Returned</span> : inv.paid ? <span className="badge-role badge-role-super">Paid</span> : <span className="badge-role badge-role-staff">Unpaid</span>}</td>
-                          <td className="muted small">{inv.paymentMethod === 'cash' ? '💵 Cash' : inv.paymentMethod === 'online' ? '💳 Online' : '—'}</td>
-                        </tr>
-                      ))}
+                      {filteredInvoices.map((inv) => {
+                        const orderTypeLabels = { dine_in: '🍽️ Dine In', takeaway: '🛍️ Takeaway', delivery: '🛵 Delivery' }
+                        return (
+                          <tr key={inv.id}>
+                            <td><BusinessTypeBadge type={inv.businessType} /></td>
+                            <td><Link href={`/invoices/${inv.id}`} className="team-row-link">{inv.id}</Link></td>
+                            <td className="muted">{formatShortDateTime(inv.createdAt)}</td>
+                            <td className="muted small">{inv.orderType ? (orderTypeLabels[inv.orderType] ?? inv.orderType) : '—'}</td>
+                            <td className="num">{formatMoney(inv.total)}</td>
+                            <td className="num muted small">{(inv.deliveryCharge ?? 0) > 0 ? formatMoney(inv.deliveryCharge) : '—'}</td>
+                            <td>{inv.returned ? <span className="badge-role badge-role-returned">Returned</span> : inv.paid ? <span className="badge-role badge-role-super">Paid</span> : <span className="badge-role badge-role-staff">Unpaid</span>}</td>
+                            <td className="muted small">{inv.paymentMethod === 'cash' ? '💵 Cash' : inv.paymentMethod === 'online' ? '💳 Online' : '—'}</td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>

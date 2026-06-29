@@ -19,6 +19,8 @@ export default function OrdersPage() {
     setCustomerNote,
     orderType,
     setOrderType,
+    deliveryCharge,
+    setDeliveryCharge,
     setError,
     refreshAll,
     startNewOrder,
@@ -520,10 +522,27 @@ export default function OrdersPage() {
               </table>
             </div>
 
-            <div className="total-row">
-              <span>Total</span>
-              <strong>{formatMoney(orderTotal)}</strong>
-            </div>
+            {orderType === 'delivery' && Number(deliveryCharge) > 0 ? (
+              <>
+                <div className="total-row subtotal-row">
+                  <span>Subtotal</span>
+                  <span>{formatMoney(orderTotal)}</span>
+                </div>
+                <div className="total-row subtotal-row">
+                  <span>🛵 Delivery charge</span>
+                  <span>{formatMoney(Number(deliveryCharge))}</span>
+                </div>
+                <div className="total-row">
+                  <span>Total</span>
+                  <strong>{formatMoney(Math.round((orderTotal + Number(deliveryCharge)) * 100) / 100)}</strong>
+                </div>
+              </>
+            ) : (
+              <div className="total-row">
+                <span>Total</span>
+                <strong>{formatMoney(orderTotal)}</strong>
+              </div>
+            )}
 
             <div className="order-type-block">
               <p className="order-type-label">Order type</p>
@@ -547,6 +566,21 @@ export default function OrdersPage() {
                 ))}
               </div>
             </div>
+
+            {orderType === 'delivery' ? (
+              <label className="field delivery-charge-field">
+                <span>🛵 Delivery charge (PKR)</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={deliveryCharge}
+                  onChange={(e) => setDeliveryCharge(e.target.value)}
+                />
+              </label>
+            ) : null}
 
             <label className="field">
               <span>Note on invoice (optional)</span>
