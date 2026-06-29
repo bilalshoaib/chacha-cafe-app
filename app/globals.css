@@ -723,6 +723,81 @@ select {
   }
 }
 
+/* ── Page hero banners (menu, deals, settings, etc.) ── */
+.page-hero {
+  position: relative;
+  background: linear-gradient(135deg, #1e0f06 0%, #2e1608 60%, #1e0f06 100%);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.75rem 1.6rem;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(244, 162, 74, 0.22);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+}
+
+.page-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 80% 50%, rgba(196, 92, 38, 0.14) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.page-hero-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.page-hero-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.page-hero-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #f4a24a;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.page-hero-sub {
+  margin: 0;
+  color: rgba(245, 237, 224, 0.65);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.page-hero-deco {
+  position: absolute;
+  right: 1.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.8rem;
+  opacity: 0.1;
+  letter-spacing: 0.9rem;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+}
+
+@media (max-width: 600px) {
+  .page-hero {
+    padding: 1.15rem 1.15rem 1.2rem;
+  }
+  .page-hero-deco {
+    display: none;
+  }
+  .page-hero-title {
+    font-size: 1.35rem;
+  }
+}
+
 /* ── Legacy home-* kept for AppShell ── */
 .home-public-shell {
   min-height: 100svh;

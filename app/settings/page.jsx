@@ -54,12 +54,16 @@ export default function SettingsPage() {
 
   return (
     <main className="settings-page">
-      <div className="settings-head">
-        <div>
-          <h2>Settings</h2>
-          <p className="muted small">Your profile and password. Super admins manage staff and admin accounts from the team section.</p>
+      <div className="page-hero">
+        <div className="page-hero-deco" aria-hidden="true">🔒 👤 ⚙️</div>
+        <div className="page-hero-body">
+          <div className="page-hero-icon">⚙️</div>
+          <div style={{ flex: 1 }}>
+            <h1 className="page-hero-title">Settings</h1>
+            <p className="page-hero-sub">Manage your profile, password, and team accounts.</p>
+          </div>
+          <Link href="/orders" className="ghost sm" style={{ flexShrink: 0, alignSelf: 'flex-start' }}>← Back</Link>
         </div>
-        <Link href="/orders" className="ghost sm">← Back</Link>
       </div>
 
       {user.role === 'super_admin' ? (

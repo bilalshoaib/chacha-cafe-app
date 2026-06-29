@@ -247,6 +247,16 @@ export default function MenuItemsPage() {
 
   return (
     <>
+      <div className="page-hero">
+        <div className="page-hero-deco" aria-hidden="true">🍕 🍔 🌯</div>
+        <div className="page-hero-body">
+          <div className="page-hero-icon">🍽️</div>
+          <div>
+            <h1 className="page-hero-title">Menu Items</h1>
+            <p className="page-hero-sub">Add, edit, and manage items across your cafe &amp; burger menu.</p>
+          </div>
+        </div>
+      </div>
       <main className="grid menu-manage menu-manage-list-only">
         <section className="card menu-items-list-card">
           <div className="menu-items-section-head">

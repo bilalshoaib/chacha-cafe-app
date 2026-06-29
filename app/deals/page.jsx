@@ -232,6 +232,16 @@ export default function DealsPage() {
 
   return (
     <>
+      <div className="page-hero">
+        <div className="page-hero-deco" aria-hidden="true">🎁 💰 ⭐</div>
+        <div className="page-hero-body">
+          <div className="page-hero-icon">🔥</div>
+          <div>
+            <h1 className="page-hero-title">Special Deals</h1>
+            <p className="page-hero-sub">Create and manage bundle deals shown on the order screen.</p>
+          </div>
+        </div>
+      </div>
       <main className="grid single deals-page">
         <section className="card saved-deals-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
