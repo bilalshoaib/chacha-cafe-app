@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
+import { useAuth } from '@/context/AuthContext.jsx'
 import { buildCategoryTabs } from '@/utils/formatting.js'
 import { orderBusinessType } from '@/constants/businessTypes.js'
 
@@ -9,6 +10,7 @@ const OrdersContext = createContext(null)
 
 export function OrdersProvider({ children }) {
   const router = useRouter()
+  const { authenticated } = useAuth()
   const [menu, setMenu] = useState({ items: [], deals: [] })
   const [orders, setOrders] = useState([])
   const [activeOrderId, setActiveOrderId] = useState(null)
@@ -32,8 +34,12 @@ export function OrdersProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    void refreshAll()
-  }, [refreshAll])
+    if (authenticated) {
+      void refreshAll()
+    } else {
+      setLoading(false)
+    }
+  }, [authenticated, refreshAll])
 
   const categoryTabs = useMemo(() => buildCategoryTabs(menu.items), [menu.items])
 
