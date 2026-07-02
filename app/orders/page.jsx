@@ -21,6 +21,7 @@ export default function OrdersPage() {
     setOrderType,
     deliveryCharge,
     setDeliveryCharge,
+    checkingOut,
     setError,
     refreshAll,
     startNewOrder,
@@ -594,10 +595,12 @@ export default function OrdersPage() {
             <button
               type="button"
               className="primary wide"
-              disabled={!activeOrder.lines.length}
+              disabled={!activeOrder.lines.length || checkingOut}
               onClick={() => void onCheckout()}
             >
-              Create invoice · {ORDER_TYPES.find((t) => t.value === orderType)?.icon} {ORDER_TYPES.find((t) => t.value === orderType)?.label}
+              {checkingOut
+                ? 'Creating invoice…'
+                : `Create invoice · ${ORDER_TYPES.find((t) => t.value === orderType)?.icon} ${ORDER_TYPES.find((t) => t.value === orderType)?.label}`}
             </button>
           </>
         )}

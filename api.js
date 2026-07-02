@@ -64,20 +64,7 @@ export const api = {
     request(`/api/deals/${encodeURIComponent(id)}/archive`, { method: 'PATCH' }),
   restoreDeal: (id) =>
     request(`/api/deals/${encodeURIComponent(id)}/restore`, { method: 'PATCH' }),
-  getOrders: () => request('/api/orders'),
-  createOrder: () =>
-    request('/api/orders', { method: 'POST', body: JSON.stringify({ businessType: 'combined' }) }),
-  addLine: (orderId, body) =>
-    request(`/api/orders/${orderId}/lines`, { method: 'POST', body: JSON.stringify(body) }),
-  updateOrderLine: (orderId, lineId, patch) =>
-    request(`/api/orders/${orderId}/lines/${lineId}`, { method: 'PATCH', body: JSON.stringify(patch) }),
-  removeLine: (orderId, lineId) =>
-    request(`/api/orders/${orderId}/lines/${lineId}`, { method: 'DELETE' }),
-  checkout: (orderId, customerNote, paymentMethod, orderType, deliveryCharge) =>
-    request(`/api/orders/${orderId}/checkout`, {
-      method: 'POST',
-      body: JSON.stringify({ customerNote: customerNote || '', paymentMethod: paymentMethod ?? null, orderType: orderType ?? null, deliveryCharge: deliveryCharge ?? 0 }),
-    }),
+  checkout: (body) => request('/api/checkout', { method: 'POST', body: JSON.stringify(body) }),
   getInvoices: (params = {}) => {
     const q = new URLSearchParams()
     if (params.from) q.set('from', params.from)

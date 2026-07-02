@@ -119,7 +119,9 @@ export default function InvoiceEditPage() {
 
       <section className="card invoice-sheet invoice-view-card">
         <h2 className="sub">Line items</h2>
-        <p className="muted small invoice-order-ref">Order: {invoice.orderId}</p>
+        {invoice.orderId ? (
+          <p className="muted small invoice-order-ref">Order: {invoice.orderId}</p>
+        ) : null}
 
         {menu.deals.length > 0 ? (
           <label className="field deal-add-field deal-add-field-top">

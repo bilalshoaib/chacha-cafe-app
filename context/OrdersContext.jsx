@@ -4,9 +4,69 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { buildCategoryTabs } from '@/utils/formatting.js'
-import { orderBusinessType } from '@/constants/businessTypes.js'
 
 const OrdersContext = createContext(null)
+
+// Orders live purely in frontend state while being built — nothing is saved
+// to the database until "Create invoice" is pressed, which sends the whole
+// cart to /api/checkout in one call. This avoids the old flow that wrote a
+// DB row per order and per line, and that duplicated `lines` data into the
+// invoices table anyway.
+
+function randomId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return Math.random().toString(16).slice(2)
+}
+
+function newOrderId() {
+  return `o-${randomId().slice(0, 8)}`
+}
+
+function newLineId() {
+  return `l-${randomId().slice(0, 8)}`
+}
+
+function clampDiscount(raw, maxValue) {
+  const d = Number(raw)
+  if (!Number.isFinite(d) || d <= 0) return 0
+  return Math.round(Math.min(d, maxValue) * 100) / 100
+}
+
+function buildItemLine(item, qty, discount = 0) {
+  const q = Math.max(1, Math.floor(Number(qty)) || 1)
+  const gross = Math.round(item.price * q * 100) / 100
+  const discountAmt = clampDiscount(discount, gross)
+  return {
+    id: newLineId(),
+    kind: 'item',
+    refId: item.id,
+    name: item.name,
+    category: item.category,
+    qty: q,
+    unitPrice: item.price,
+    ...(discountAmt > 0 ? { discount: discountAmt } : {}),
+    lineTotal: Math.round(Math.max(0, gross - discountAmt) * 100) / 100,
+    ...(item.size ? { size: item.size } : {}),
+    ...(item.flavour ? { flavour: item.flavour } : {}),
+  }
+}
+
+function buildDealLine(deal, qty, discount = 0) {
+  const q = Math.max(1, Math.floor(Number(qty)) || 1)
+  const gross = Math.round(deal.price * q * 100) / 100
+  const discountAmt = clampDiscount(discount, gross)
+  return {
+    id: newLineId(),
+    kind: 'deal',
+    refId: deal.id,
+    name: deal.name,
+    qty: q,
+    unitPrice: deal.price,
+    ...(discountAmt > 0 ? { discount: discountAmt } : {}),
+    lineTotal: Math.round(Math.max(0, gross - discountAmt) * 100) / 100,
+    dealIncludes: deal.includes ? deal.includes.map((x) => ({ ...x })) : [],
+  }
+}
 
 export function OrdersProvider({ children }) {
   const router = useRouter()
@@ -19,13 +79,13 @@ export function OrdersProvider({ children }) {
   const [customerNote, setCustomerNote] = useState('')
   const [orderType, setOrderType] = useState('dine_in')
   const [deliveryCharge, setDeliveryCharge] = useState('')
+  const [checkingOut, setCheckingOut] = useState(false)
 
   const refreshAll = useCallback(async () => {
     setError('')
     try {
-      const [m, o] = await Promise.all([api.getMenu(), api.getOrders()])
+      const m = await api.getMenu()
       setMenu(m)
-      setOrders(o)
     } catch (e) {
       setError(e.message || 'Could not load data.')
     } finally {
@@ -65,17 +125,18 @@ export function OrdersProvider({ children }) {
     return Math.round(activeOrder.lines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100
   }, [activeOrder])
 
-  async function startNewOrder() {
+  function updateActiveOrderLines(updater) {
+    setOrders((prev) => prev.map((o) => (o.id === activeOrderId ? { ...o, lines: updater(o.lines) } : o)))
+  }
+
+  function startNewOrder() {
     setError('')
-    try {
-      const o = await api.createOrder()
-      setOrders((prev) => [...prev, o])
-      setActiveOrderId(o.id)
-      setCustomerNote('')
-      setDeliveryCharge('')
-    } catch (e) {
-      setError(e.message)
-    }
+    const order = { id: newOrderId(), status: 'open', createdAt: new Date().toISOString(), lines: [] }
+    setOrders((prev) => [...prev, order])
+    setActiveOrderId(order.id)
+    setCustomerNote('')
+    setOrderType('dine_in')
+    setDeliveryCharge('')
   }
 
   async function addItemToOrder(itemId, qty = 1, discount = 0) {
@@ -88,17 +149,14 @@ export function OrdersProvider({ children }) {
       setError('Quantity must be at least 1.')
       return false
     }
-    setError('')
-    try {
-      const body = { kind: 'item', refId: itemId, qty: quantity }
-      if (discount > 0) body.discount = discount
-      const updated = await api.addLine(activeOrderId, body)
-      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
-      return true
-    } catch (e) {
-      setError(e.message)
+    const item = menu.items.find((i) => i.id === itemId)
+    if (!item) {
+      setError('Menu item not found.')
       return false
     }
+    setError('')
+    updateActiveOrderLines((lines) => [...lines, buildItemLine(item, quantity, discount)])
+    return true
   }
 
   async function createMenuItemAndAddLine({ name, category, price, qty, discount = 0 }) {
@@ -124,23 +182,17 @@ export function OrdersProvider({ children }) {
     setError('')
     try {
       const exact = menu.items.find((i) => i.name.trim().toLowerCase() === trimmed.toLowerCase())
-      let itemId
-      if (exact) {
-        itemId = exact.id
-      } else {
-        const created = await api.createMenuItem({
+      let item = exact
+      if (!item) {
+        item = await api.createMenuItem({
           name: trimmed,
           category: category || 'other',
           price: p,
           // businessType inferred from category on the server
         })
-        itemId = created.id
-        setMenu((prev) => ({ ...prev, items: [...prev.items, created] }))
+        setMenu((prev) => ({ ...prev, items: [...prev.items, item] }))
       }
-      const body = { kind: 'item', refId: itemId, qty: quantity }
-      if (discount > 0) body.discount = discount
-      const updated = await api.addLine(activeOrderId, body)
-      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
+      updateActiveOrderLines((lines) => [...lines, buildItemLine(item, quantity, discount)])
       return true
     } catch (e) {
       setError(e.message)
@@ -148,69 +200,94 @@ export function OrdersProvider({ children }) {
     }
   }
 
-  async function addDealToOrder(dealId) {
+  function addDealToOrder(dealId) {
     if (!activeOrderId) {
       setError('Start a new order first.')
       return
     }
-    setError('')
-    try {
-      const updated = await api.addLine(activeOrderId, { kind: 'deal', refId: dealId, qty: 1 })
-      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
-    } catch (e) {
-      setError(e.message)
+    const deal = menu.deals.find((d) => d.id === dealId)
+    if (!deal) {
+      setError('Deal not found.')
+      return
     }
+    setError('')
+    updateActiveOrderLines((lines) => [...lines, buildDealLine(deal, 1)])
   }
 
-  async function removeLine(lineId) {
+  function removeLine(lineId) {
     if (!activeOrderId) return
     setError('')
-    try {
-      const updated = await api.removeLine(activeOrderId, lineId)
-      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
-    } catch (e) {
-      setError(e.message)
-    }
+    updateActiveOrderLines((lines) => lines.filter((l) => l.id !== lineId))
   }
 
-  async function updateLineQty(lineId, qty) {
+  function updateLineQty(lineId, qty) {
     if (!activeOrderId) return
-    setError('')
-    try {
-      const updated = await api.updateOrderLine(activeOrderId, lineId, { qty })
-      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
-    } catch (e) {
-      setError(e.message)
-      throw e
+    const quantity = Number(qty)
+    if (!Number.isFinite(quantity) || quantity < 1) {
+      const err = new Error('qty must be a number ≥ 1')
+      setError(err.message)
+      throw err
     }
+    const q = Math.floor(quantity)
+    setError('')
+    updateActiveOrderLines((lines) => lines.map((l) => {
+      if (l.id !== lineId) return l
+      const gross = Math.round(l.unitPrice * q * 100) / 100
+      const discountAmt = l.discount ?? 0
+      return { ...l, qty: q, lineTotal: Math.round(Math.max(0, gross - discountAmt) * 100) / 100 }
+    }))
   }
 
-  async function updateLineDiscount(lineId, discount) {
+  function updateLineDiscount(lineId, discount) {
     if (!activeOrderId) return
-    setError('')
-    try {
-      const updated = await api.updateOrderLine(activeOrderId, lineId, { discount })
-      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
-    } catch (e) {
-      setError(e.message)
-      throw e
+    const d = Number(discount)
+    if (!Number.isFinite(d) || d < 0) {
+      const err = new Error('discount must be a number ≥ 0')
+      setError(err.message)
+      throw err
     }
+    setError('')
+    updateActiveOrderLines((lines) => lines.map((l) => {
+      if (l.id !== lineId) return l
+      const gross = Math.round(l.unitPrice * l.qty * 100) / 100
+      const next = { ...l }
+      if (d === 0) delete next.discount
+      else next.discount = Math.round(d * 100) / 100
+      const discountAmt = next.discount ?? 0
+      next.lineTotal = Math.round(Math.max(0, gross - discountAmt) * 100) / 100
+      return next
+    }))
   }
 
   async function doCheckout() {
-    if (!activeOrderId) return
+    if (!activeOrderId || !activeOrder || checkingOut) return
     setError('')
+    setCheckingOut(true)
     try {
       const dc = orderType === 'delivery' ? (Number(deliveryCharge) || 0) : 0
-      const { invoice, order } = await api.checkout(activeOrderId, customerNote, null, orderType, dc)
-      setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)))
-      router.push(`/invoices/${invoice.id}`)
+      const lines = activeOrder.lines.map((l) => ({
+        kind: l.kind,
+        refId: l.refId,
+        qty: l.qty,
+        discount: l.discount ?? 0,
+      }))
+      const { invoice } = await api.checkout({
+        lines,
+        customerNote,
+        paymentMethod: null,
+        orderType,
+        deliveryCharge: dc,
+      })
+      setOrders((prev) => prev.filter((o) => o.id !== activeOrderId))
       setActiveOrderId(null)
       setCustomerNote('')
       setOrderType('dine_in')
       setDeliveryCharge('')
+      router.push(`/invoices/${invoice.id}`)
     } catch (e) {
       setError(e.message)
+    } finally {
+      setCheckingOut(false)
     }
   }
 
@@ -234,6 +311,7 @@ export function OrdersProvider({ children }) {
     error,
     setError,
     loading,
+    checkingOut,
     refreshAll,
     startNewOrder,
     addItemToOrder,
@@ -246,7 +324,7 @@ export function OrdersProvider({ children }) {
   }), [
     menu, orders, activeOrderId, activeOrder,
     orderMenuItems, orderDeals, orderCategoryTabs, orderTotal,
-    categoryTabs, customerNote, orderType, deliveryCharge, error, loading, refreshAll,
+    categoryTabs, customerNote, orderType, deliveryCharge, error, loading, checkingOut, refreshAll,
   ])
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>
