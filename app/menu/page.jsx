@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { api } from '@/api.js'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import MenuItemFormFields from '@/components/MenuItemFormFields.jsx'
@@ -256,6 +257,9 @@ export default function MenuItemsPage() {
             <p className="page-hero-sub">Add, edit, and manage items across your cafe &amp; burger menu.</p>
           </div>
         </div>
+        <Link href="/menu/board" className="page-hero-action">
+          🖼️ View menu board
+        </Link>
       </div>
       <main className="grid menu-manage menu-manage-list-only">
         <section className="card menu-items-list-card">

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { api } from '@/api.js'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import DealFormFields from '@/components/DealFormFields.jsx'
@@ -241,6 +242,9 @@ export default function DealsPage() {
             <p className="page-hero-sub">Create and manage bundle deals shown on the order screen.</p>
           </div>
         </div>
+        <Link href="/menu/board" className="page-hero-action">
+          🖼️ View menu board
+        </Link>
       </div>
       <main className="grid single deals-page">
         <section className="card saved-deals-card">
