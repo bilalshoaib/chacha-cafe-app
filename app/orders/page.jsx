@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import ItemAutocomplete from '@/components/ItemAutocomplete.jsx'
+import DealPicker from '@/components/DealPicker.jsx'
 import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 
@@ -208,6 +209,15 @@ export default function OrdersPage() {
 
   const openOrders = useMemo(() => orders.filter((o) => o.status === 'open'), [orders])
 
+  const itemLabelById = useMemo(() => {
+    const m = {}
+    for (const i of menuItems) {
+      const x = formatItemExtras(i)
+      m[i.id] = x ? `${i.name} · ${x}` : i.name
+    }
+    return m
+  }, [menuItems])
+
   return (
     <main className="order-flow">
       <section className="card order-card">
@@ -261,26 +271,14 @@ export default function OrdersPage() {
             </p>
 
             {deals.length > 0 ? (
-              <label className="field deal-add-field deal-add-field-top">
+              <div className="field deal-add-field deal-add-field-top">
                 <span>Add a deal to this order</span>
-                <select
-                  className="select deal-select"
-                  value=""
-                  onChange={(e) => {
-                    const id = e.target.value
-                    if (!id) return
-                    void onAddDeal(id)
-                  }}
-                  aria-label="Add a deal bundle to this order"
-                >
-                  <option value="">Choose a deal…</option>
-                  {deals.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name} — {formatMoney(d.price)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <DealPicker
+                  deals={deals}
+                  itemLabelById={itemLabelById}
+                  onSelect={(id) => void onAddDeal(id)}
+                />
+              </div>
             ) : (
               <p className="muted small deal-add-missing">
                 No deals saved yet —{' '}
