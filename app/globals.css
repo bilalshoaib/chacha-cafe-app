@@ -4052,23 +4052,29 @@ button.danger-ghost:hover:not(:disabled) {
 .menu-board-banner {
   position: relative;
   text-align: center;
-  padding: 1.75rem 1.5rem 1.4rem;
+  padding: 2.5rem 1.5rem 1.4rem;
   overflow: hidden;
+  background: radial-gradient(120% 100% at 50% 0%, rgba(196, 92, 38, 0.14) 0%, rgba(0, 0, 0, 0) 60%);
 }
 
 .menu-board-photo {
   position: absolute;
-  top: 0.9rem;
-  font-size: 3.2rem;
-  line-height: 1;
+  top: 0.5rem;
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.55));
+  z-index: 2;
 }
 
 .menu-board-photo-left {
-  left: 0.75rem;
+  left: 0.5rem;
+  transform: rotate(-6deg);
 }
 
 .menu-board-photo-right {
-  right: 6rem;
+  right: 0.5rem;
+  transform: rotate(6deg);
 }
 
 .menu-board-fresh-badge {
@@ -4108,9 +4114,24 @@ button.danger-ghost:hover:not(:disabled) {
   font-size: 0.8rem;
 }
 
-.menu-board-brand-name {
+.menu-board-brand-row {
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.menu-board-logo-emblem {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+  margin-bottom: 0.5rem;
+}
+
+.menu-board-brand-name {
   margin: 0.5rem 0 0;
   font-size: 3.4rem;
   font-weight: 900;
@@ -4126,14 +4147,14 @@ button.danger-ghost:hover:not(:disabled) {
   z-index: 1;
   display: inline-block;
   margin: 0.6rem 0 0.35rem;
-  padding: 0.4rem 1.5rem;
+  padding: 0.4rem 2.2rem;
   background: linear-gradient(135deg, #8a1f1f, #c42626);
   color: #fdf3e7;
   font-weight: 800;
   font-size: 1.15rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  border-radius: 3px;
+  clip-path: polygon(3% 0, 97% 0, 100% 50%, 97% 100%, 3% 100%, 0 50%);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
 }
 
@@ -4259,14 +4280,14 @@ button.danger-ghost:hover:not(:disabled) {
 
 .menu-board-deals-ribbon span {
   display: inline-block;
-  padding: 0.4rem 1.75rem;
+  padding: 0.4rem 2.4rem;
   background: linear-gradient(135deg, #c42626, #8a1f1f);
   color: #fdf3e7;
   font-weight: 800;
   font-size: 1.05rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  border-radius: 3px;
+  clip-path: polygon(3% 0, 97% 0, 100% 50%, 97% 100%, 3% 100%, 0 50%);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
 }
 
@@ -4277,6 +4298,8 @@ button.danger-ghost:hover:not(:disabled) {
 }
 
 .menu-board-deal-card {
+  display: flex;
+  flex-direction: column;
   border-radius: 10px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.04);
@@ -4288,7 +4311,7 @@ button.danger-ghost:hover:not(:disabled) {
   flex-direction: column;
   align-items: center;
   gap: 0.1rem;
-  padding: 0.4rem 0.5rem 0.5rem;
+  padding: 0.45rem 0.5rem 0.55rem;
   text-align: center;
 }
 
@@ -4306,21 +4329,107 @@ button.danger-ghost:hover:not(:disabled) {
   color: #fff;
 }
 
-.menu-board-deal-name {
-  margin: 0.5rem 0.6rem 0.2rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #f5ede0;
-  line-height: 1.3;
-}
-
 .menu-board-deal-includes {
+  flex: 1;
   list-style: none;
   margin: 0;
-  padding: 0 0.6rem 0.65rem;
+  padding: 0.55rem 0.6rem 0.4rem;
   font-size: 0.72rem;
-  line-height: 1.5;
-  color: rgba(245, 237, 224, 0.65);
+  line-height: 1.55;
+  color: rgba(245, 237, 224, 0.75);
+}
+
+.menu-board-deal-includes li {
+  position: relative;
+  padding-left: 0.85rem;
+}
+
+.menu-board-deal-includes li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #f4a24a;
+}
+
+.menu-board-deal-photo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.6rem 0.7rem;
+}
+
+.menu-board-deal-photo {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+.menu-board-deal-featured {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+}
+
+.menu-board-deal-featured-info {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 84px;
+  text-align: center;
+}
+
+.menu-board-deal-featured-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.menu-board-deal-featured-price {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.menu-board-deal-featured-includes {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fdf3e7;
+}
+
+.menu-board-deal-featured-includes li {
+  position: relative;
+  padding-left: 0.85rem;
+}
+
+.menu-board-deal-featured-includes li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.menu-board-deal-featured-photo {
+  flex-shrink: 0;
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
 }
 
 .menu-board-footer {
@@ -4397,11 +4506,13 @@ button.danger-ghost:hover:not(:disabled) {
   .menu-board-brand-name {
     font-size: 2.4rem;
   }
-  .menu-board-photo {
-    font-size: 2.2rem;
+  .menu-board-logo-emblem {
+    width: 46px;
+    height: 46px;
   }
-  .menu-board-photo-right {
-    right: 4.5rem;
+  .menu-board-photo {
+    width: 84px;
+    height: 84px;
   }
   .menu-board-fresh-badge {
     width: 68px;
@@ -4410,5 +4521,12 @@ button.danger-ghost:hover:not(:disabled) {
   }
   .menu-board-fresh-badge strong {
     font-size: 0.68rem;
+  }
+  .menu-board-deal-featured {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .menu-board-deal-featured-includes {
+    justify-content: center;
   }
 }

@@ -30,7 +30,9 @@ const CATEGORY_COLORS = {
   other: '#55483c',
 }
 
-const DEAL_COLORS = ['#c45c26', '#8a1f1f', '#1f7a5c', '#6b3fa0', '#b8860b', '#1f5f7a']
+const DEAL_COLORS = ['#c42626', '#8a1f1f', '#c45c26', '#a01f3a', '#c42626', '#8a1f1f']
+
+const DEAL_PHOTOS = ['/menu-board/pizza-photo.png', '/menu-board/burger-photo.png', '/menu-board/wings-photo.png', '/menu-board/drinks-photo.png']
 
 function categoryIcon(key) {
   return CATEGORY_ICONS[key] || '🍽️'
@@ -38,6 +40,15 @@ function categoryIcon(key) {
 
 function categoryColor(key) {
   return CATEGORY_COLORS[key] || CATEGORY_COLORS.other
+}
+
+function dealPhoto(deal, index) {
+  const name = (deal.name || '').toLowerCase()
+  if (name.includes('pizza')) return '/menu-board/pizza-photo.png'
+  if (name.includes('burger')) return '/menu-board/burger-photo.png'
+  if (name.includes('wing') || name.includes('broast')) return '/menu-board/wings-photo.png'
+  if (name.includes('drink') || name.includes('cola') || name.includes('shawarma')) return '/menu-board/drinks-photo.png'
+  return DEAL_PHOTOS[index % DEAL_PHOTOS.length]
 }
 
 function buildMenuBoardSections(items, business) {
@@ -76,6 +87,9 @@ export default function MenuBoardPage() {
 
   const ribbonLabel = business === 'burger' ? 'Burger' : business === 'cafe' ? 'Cafe' : 'Burger & Cafe'
   const hasContent = sections.length > 0 || visibleDeals.length > 0
+  const gridDeals = visibleDeals.length > 1 ? visibleDeals.slice(0, -1) : visibleDeals
+  const featuredDeal = visibleDeals.length > 1 ? visibleDeals[visibleDeals.length - 1] : null
+  const featuredIndex = visibleDeals.length - 1
 
   async function downloadImage() {
     if (!boardRef.current || downloading) return
@@ -158,11 +172,14 @@ export default function MenuBoardPage() {
                   <strong>Fresh</strong>
                   <span>&amp; Delicious</span>
                 </div>
-                <span className="menu-board-photo menu-board-photo-left" aria-hidden="true">🍔</span>
-                <span className="menu-board-photo menu-board-photo-right" aria-hidden="true">🍕</span>
-                <h2 className="menu-board-brand-name">Chacha</h2>
-                <div className="menu-board-ribbon"><span>★ {ribbonLabel} ★</span></div>
-                <p className="menu-board-brand-tag">Good Food ★ Good Mood</p>
+                <img src="/menu-board/burger-photo.png" alt="" className="menu-board-photo menu-board-photo-left" aria-hidden="true" />
+                <img src="/menu-board/pizza-photo.png" alt="" className="menu-board-photo menu-board-photo-right" aria-hidden="true" />
+                <div className="menu-board-brand-row">
+                  <img src="/menu-board/logo-emblem.png" alt="" className="menu-board-logo-emblem" aria-hidden="true" />
+                  <h2 className="menu-board-brand-name">Chacha</h2>
+                </div>
+                <div className="menu-board-ribbon"><span>• {ribbonLabel.toUpperCase()} •</span></div>
+                <p className="menu-board-brand-tag">Good Food • Good Mood</p>
                 <div className="menu-board-phone">📞 {SHOP_PHONE}</div>
               </div>
 
@@ -196,9 +213,9 @@ export default function MenuBoardPage() {
 
               {visibleDeals.length > 0 ? (
                 <div className="menu-board-deals">
-                  <div className="menu-board-deals-ribbon"><span>★ Special Deals ★</span></div>
+                  <div className="menu-board-deals-ribbon"><span>• Special Deals •</span></div>
                   <div className="menu-board-deal-grid">
-                    {visibleDeals.map((deal, i) => {
+                    {gridDeals.map((deal, i) => {
                       const color = DEAL_COLORS[i % DEAL_COLORS.length]
                       return (
                         <div key={deal.id} className="menu-board-deal-card">
@@ -206,7 +223,6 @@ export default function MenuBoardPage() {
                             <span className="menu-board-deal-badge-label">Deal No. {i + 1}</span>
                             <span className="menu-board-deal-badge-price">{formatMoney(deal.price)}</span>
                           </div>
-                          <p className="menu-board-deal-name">{deal.name}</p>
                           <ul className="menu-board-deal-includes">
                             {deal.includes.map((inc, idx) => {
                               const item = itemById.get(inc.itemId)
@@ -215,10 +231,36 @@ export default function MenuBoardPage() {
                               )
                             })}
                           </ul>
+                          <div className="menu-board-deal-photo-wrap">
+                            <img src={dealPhoto(deal, i)} alt="" className="menu-board-deal-photo" aria-hidden="true" />
+                          </div>
                         </div>
                       )
                     })}
                   </div>
+
+                  {featuredDeal ? (
+                    <div className="menu-board-deal-featured" style={{ background: DEAL_COLORS[featuredIndex % DEAL_COLORS.length] }}>
+                      <div className="menu-board-deal-featured-info">
+                        <span className="menu-board-deal-featured-label">Deal No. {featuredIndex + 1}</span>
+                        <span className="menu-board-deal-featured-price">{formatMoney(featuredDeal.price)}</span>
+                      </div>
+                      <ul className="menu-board-deal-featured-includes">
+                        {featuredDeal.includes.map((inc, idx) => {
+                          const item = itemById.get(inc.itemId)
+                          return (
+                            <li key={`${featuredDeal.id}-${idx}`}>{inc.qty}× {item ? item.name : inc.itemId}</li>
+                          )
+                        })}
+                      </ul>
+                      <img
+                        src={dealPhoto(featuredDeal, featuredIndex)}
+                        alt=""
+                        className="menu-board-deal-featured-photo"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 
