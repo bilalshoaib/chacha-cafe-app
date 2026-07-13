@@ -17,29 +17,41 @@ function validateAndNormalizeLines(lines) {
     const qty = Number(raw.qty)
     const unitPrice = Number(raw.unitPrice)
     const lineTotal = Number(raw.lineTotal)
+    const discount = Number(raw.discount ?? 0)
     if (!Number.isFinite(qty) || qty < 1) return { error: 'Each line needs a valid qty ≥ 1.' }
     const qInt = Math.floor(qty)
     if (Math.abs(qty - qInt) > 1e-6) return { error: 'Quantity must be a whole number.' }
     if (!Number.isFinite(unitPrice) || unitPrice < 0) return { error: 'Each line needs a valid unit price.' }
+    if (!Number.isFinite(discount) || discount < 0) return { error: 'Discount must be a non-negative number.' }
     if (!Number.isFinite(lineTotal)) return { error: 'Each line needs a valid line total.' }
     const q = qInt
-    const expected = Math.round(unitPrice * q * 100) / 100
-    if (Math.abs(lineTotal - expected) > 0.02) return { error: `Line total must equal qty × unit price (${expected}).` }
+    const expected = Math.round((unitPrice * q - discount) * 100) / 100
+    if (Math.abs(lineTotal - expected) > 0.02) return { error: `Line total must equal qty × unit price minus discount (${expected}).` }
     const name = String(raw.name ?? '').trim().slice(0, 200)
     if (!name) return { error: 'Each line needs a name.' }
     const id = typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : newLineId()
     if (kind === 'item') {
       if (!raw.refId) return { error: 'Item lines need refId.' }
       const line = { id, kind: 'item', refId: String(raw.refId), name, category: String(raw.category ?? 'other').slice(0, 40), qty: q, unitPrice, lineTotal }
+      if (discount > 0) line.discount = discount
       if (raw.size) line.size = String(raw.size).slice(0, 60)
       if (raw.flavour) line.flavour = String(raw.flavour).slice(0, 80)
+      if (raw.lineBusinessType) line.lineBusinessType = String(raw.lineBusinessType)
       out.push(line)
     } else {
       if (!raw.refId) return { error: 'Deal lines need refId.' }
       const dealIncludes = Array.isArray(raw.dealIncludes)
         ? raw.dealIncludes.map((inc) => ({ itemId: String(inc.itemId), qty: Math.max(1, Math.floor(Number(inc.qty)) || 1) }))
         : []
-      out.push({ id, kind: 'deal', refId: String(raw.refId), name, qty: q, unitPrice, lineTotal, dealIncludes })
+      const dealLine = { id, kind: 'deal', refId: String(raw.refId), name, qty: q, unitPrice, lineTotal, dealIncludes }
+      if (discount > 0) dealLine.discount = discount
+      if (raw.isCombined) {
+        dealLine.isCombined = true
+        dealLine.cafeSplit = Number(raw.cafeSplit ?? 0)
+        dealLine.burgerSplit = Number(raw.burgerSplit ?? 0)
+      }
+      if (raw.lineBusinessType) dealLine.lineBusinessType = String(raw.lineBusinessType)
+      out.push(dealLine)
     }
     subtotal += lineTotal
   }
