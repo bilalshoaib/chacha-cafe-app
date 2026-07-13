@@ -1297,13 +1297,24 @@ button.inline-link-button:hover {
 .reports-custom-dates {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1rem 1.5rem;
   margin-top: 0.85rem;
+}
+
+.reports-datetime-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
 .reports-date-field {
   margin: 0;
-  min-width: 10rem;
+  min-width: 9rem;
 }
 
 .reports-range-line {
@@ -1364,6 +1375,8 @@ button.inline-link-button:hover {
 .reports-table-card {
   padding: 1rem 1.15rem 1.15rem;
 }
+
+
 
 .reports-invoice-table .num {
   text-align: right;

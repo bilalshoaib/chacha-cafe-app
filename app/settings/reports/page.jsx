@@ -45,6 +45,23 @@ function parseDateInput(s) {
   return new Date(y, m - 1, d)
 }
 
+// Build an ISO string from a date string ("YYYY-MM-DD") + time string ("HH:MM").
+function buildISO(dateStr, timeStr) {
+  const d = parseDateInput(dateStr)
+  if (!d) return null
+  const [h, m] = (timeStr || '00:00').split(':').map(Number)
+  d.setHours(h || 0, m || 0, 0, 0)
+  return d.toISOString()
+}
+
+// Default custom range: 6th of current month → 5th of next month (business month cycle).
+function defaultBusinessMonth() {
+  const now = new Date()
+  const from = new Date(now.getFullYear(), now.getMonth(), 6)
+  const to = new Date(now.getFullYear(), now.getMonth() + 1, 5)
+  return [dateInputValue(from), dateInputValue(to)]
+}
+
 function roundMoney(n) { return Math.round(Number(n) * 100) / 100 }
 function paymentLabel(method) {
   if (method === 'cash') return 'Cash'
@@ -137,8 +154,10 @@ ${expenses.length === 0 ? '<p style="color:#6b7280">No expenses in this period.<
 
 export default function ReportsPage() {
   const [presetId, setPresetId] = useState('30d')
-  const [customFrom, setCustomFrom] = useState(() => dateInputValue(new Date(Date.now() - 29 * 86400000)))
-  const [customTo, setCustomTo] = useState(() => dateInputValue(new Date()))
+  const [customFrom, setCustomFrom] = useState(() => defaultBusinessMonth()[0])
+  const [customFromTime, setCustomFromTime] = useState('00:00')
+  const [customTo, setCustomTo] = useState(() => defaultBusinessMonth()[1])
+  const [customToTime, setCustomToTime] = useState('23:59')
   const [fromIso, setFromIso] = useState('')
   const [toIso, setToIso] = useState('')
   const [data, setData] = useState(null)
@@ -156,10 +175,11 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (presetId === 'custom') {
-      const a = parseDateInput(customFrom); const b = parseDateInput(customTo)
-      if (a && b) { setFromIso(toISOStart(a)); setToIso(toISOEnd(b)) }
+      const from = buildISO(customFrom, customFromTime)
+      const to = buildISO(customTo, customToTime)
+      if (from && to) { setFromIso(from); setToIso(to) }
     } else { applyPreset(presetId) }
-  }, [presetId, customFrom, customTo, applyPreset])
+  }, [presetId, customFrom, customFromTime, customTo, customToTime, applyPreset])
 
   const fetchReport = useCallback(async () => {
     if (!fromIso || !toIso) return
@@ -262,12 +282,37 @@ export default function ReportsPage() {
                 {p.label}
               </button>
             ))}
-            <button type="button" className={presetId === 'custom' ? 'primary sm' : 'ghost sm'} onClick={() => setPresetId('custom')}>Custom</button>
+            <button type="button" className={presetId === 'custom' ? 'primary sm' : 'ghost sm'} onClick={() => {
+              if (presetId !== 'custom') {
+                const [f, t] = defaultBusinessMonth()
+                setCustomFrom(f); setCustomTo(t)
+                setCustomFromTime('00:00'); setCustomToTime('23:59')
+              }
+              setPresetId('custom')
+            }}>Custom</button>
           </div>
           {presetId === 'custom' ? (
             <div className="reports-custom-dates">
-              <label className="field reports-date-field"><span>From</span><input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} /></label>
-              <label className="field reports-date-field"><span>To</span><input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} /></label>
+              <div className="reports-datetime-group">
+                <label className="field reports-date-field">
+                  <span>From date</span>
+                  <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+                </label>
+                <label className="field reports-date-field">
+                  <span>Start time</span>
+                  <input type="time" value={customFromTime} onChange={(e) => e.target.value && setCustomFromTime(e.target.value)} />
+                </label>
+              </div>
+              <div className="reports-datetime-group">
+                <label className="field reports-date-field">
+                  <span>To date</span>
+                  <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+                </label>
+                <label className="field reports-date-field">
+                  <span>End time</span>
+                  <input type="time" value={customToTime} onChange={(e) => e.target.value && setCustomToTime(e.target.value)} />
+                </label>
+              </div>
             </div>
           ) : null}
           <p className="muted small reports-range-line">{rangeLabel || (fromIso && toIso ? 'Loading range…' : null)}</p>
