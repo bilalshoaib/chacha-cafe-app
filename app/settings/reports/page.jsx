@@ -141,7 +141,7 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, businessFilter,
   <div class="stat"><span class="stat-label">Returns</span><span class="stat-value">${summary.returnedCount}</span><span class="stat-sub">${formatMoney(summary.returnedTotal)} refunded</span></div>
   <div class="stat"><span class="stat-label">Paid / Unpaid</span><span class="stat-value">${summary.paidCount} / ${summary.unpaidCount}</span><span class="stat-sub">Non-returned</span></div>
   <div class="stat"><span class="stat-label">Expenses</span><span class="stat-value">${formatMoney(summary.expensesTotal)}</span><span class="stat-sub">${summary.expenseCount} entries</span></div>
-  <div class="stat"><span class="stat-label">Net after expenses</span><span class="stat-value">${formatMoney(summary.netAfterExpenses)}</span><span class="stat-sub">Net − expenses</span></div>
+  <div class="stat"><span class="stat-label">Net after expenses</span><span class="stat-value">${formatMoney(summary.netAfterExpenses)}</span><span class="stat-sub">Sales excl. delivery − expenses</span></div>
 </div>
 <h2>Invoices (${invoices.length})</h2>
 ${invoices.length === 0 ? '<p style="color:#6b7280">No invoices match the selected filters.</p>' : `<table><thead><tr><th>Business</th><th>Invoice ID</th><th>Issued</th><th>Order type</th><th style="text-align:right">Total</th><th style="text-align:right">Delivery</th><th>Status</th><th>Payment</th></tr></thead><tbody>${invoiceRows}</tbody></table>`}
@@ -236,7 +236,9 @@ export default function ReportsPage() {
       }
     }
     const netSalesTotal = businessFilter === 'cafe' ? cafeNetSales : businessFilter === 'burger' ? burgerNetSales : roundMoney(cafeNetSales + burgerNetSales)
-    const netSalesExclDelivery = roundMoney(netSalesTotal - deliveryChargesTotal)
+    // Net sales is built from per-business item portions (cafePortion/burgerPortion),
+    // which never include the delivery charge — so it already excludes delivery.
+    const netSalesExclDelivery = netSalesTotal
     let expensesTotal = 0
     for (const ex of filteredExpenses) expensesTotal += ex.amount ?? 0
     return {
@@ -247,10 +249,10 @@ export default function ReportsPage() {
       cafeInvoiceCount, burgerInvoiceCount, paidCount, unpaidCount,
       deliveryChargesTotal: roundMoney(deliveryChargesTotal), deliveryOrderCount,
       expensesTotal: roundMoney(expensesTotal), expenseCount: filteredExpenses.length,
-      netAfterExpenses: roundMoney(netSalesTotal - expensesTotal),
+      netAfterExpenses: roundMoney(netSalesExclDelivery - expensesTotal),
     }
   }, [data, businessFilter, paymentFilter, filteredInvoices, filteredExpenses])
-
+console.log('filteredSummary',filteredSummary)
   function downloadPdf() {
     if (!data) return
     const html = buildPdfHtml({ rangeLabel, summary: filteredSummary, invoices: filteredInvoices, expenses: filteredExpenses, businessFilter, paymentFilter })
@@ -359,7 +361,7 @@ export default function ReportsPage() {
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">🛵 Delivery charges</span><strong className="reports-stat-value">{formatMoney(filteredSummary.deliveryChargesTotal)}</strong><span className="muted small">{filteredSummary.deliveryOrderCount} delivery orders</span></article>
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Sales excl. delivery</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netSalesExclDelivery)}</strong><span className="muted small">Net sales − delivery charges</span></article>
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Total expenses</span><strong className="reports-stat-value">{formatMoney(filteredSummary.expensesTotal)}</strong><span className="muted small">{filteredSummary.expenseCount} entries · date spent</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net after expenses</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netAfterExpenses)}</strong><span className="muted small">Net sales − expenses</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net after expenses</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netAfterExpenses)}</strong><span className="muted small">Sales excl. delivery − expenses</span></article>
             </section>
 
             <section className="card reports-table-card">
