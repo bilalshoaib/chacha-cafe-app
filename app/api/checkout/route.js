@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
 import { loadMenu } from '@/lib/repositories/menuRepository'
-import { getInvoices, saveInvoices, nextInvoiceNumber } from '@/lib/repositories/invoicesRepository'
+import { getInvoices, saveInvoices, nextInvoiceNumber, nextShiftNumber } from '@/lib/repositories/invoicesRepository'
 import { buildOrderLine } from '@/lib/orderLines'
+import { shiftDateForInstant } from '@/lib/shift'
 
 function invoiceSlug(businessType) {
   if (businessType === 'burger') return 'burger'
@@ -49,17 +50,22 @@ export async function POST(request) {
 
   const slug = invoiceSlug(businessType)
   const invoiceNum = await nextInvoiceNumber(slug)
+  const createdAt = new Date()
+  const shiftDate = shiftDateForInstant(createdAt)
+  const shiftNumber = await nextShiftNumber(shiftDate)
 
   const invoice = {
     id: `inv-${slug}-${invoiceNum}`,
     businessType,
     orderId: null,
-    createdAt: new Date().toISOString(),
+    createdAt: createdAt.toISOString(),
     customerNote: body.customerNote ? String(body.customerNote).slice(0, 200) : '',
     lines,
     subtotal,
     total,
     deliveryCharge,
+    shiftDate,
+    shiftNumber,
     ...(paymentMethod ? { paymentMethod } : {}),
     ...(orderType ? { orderType } : {}),
   }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import ItemAutocomplete from '@/components/ItemAutocomplete.jsx'
+import DealPicker from '@/components/DealPicker.jsx'
 import { api } from '@/api.js'
 import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { cloneInvoiceLines, lineFromDeal, lineFromMenuItem, removeLineById, updateLineQty } from '@/utils/invoiceLines.js'
@@ -124,19 +125,20 @@ export default function InvoiceEditPage() {
         ) : null}
 
         {menu.deals.length > 0 ? (
-          <label className="field deal-add-field deal-add-field-top">
-            <span>Add a deal (bundle)</span>
-            <select className="select deal-select" value="" onChange={(e) => {
-              const id = e.target.value; if (!id) return
-              const deal = menu.deals.find((d) => d.id === id)
-              if (deal) setEditedLines((prev) => [...prev, lineFromDeal(deal, '1')])
-              e.target.value = ''
-            }} aria-label="Add a deal bundle as a line">
-              <option value="">Choose a deal…</option>
-              {menu.deals.map((d) => <option key={d.id} value={d.id}>{d.name} — {formatMoney(d.price)}</option>)}
-            </select>
-          </label>
-        ) : <p className="muted small deal-add-missing">No deals — add bundles from the Deals screen if you use bundle pricing.</p>}
+          <div className="field deal-add-field deal-add-field-top">
+            <span>Add a deal to this invoice</span>
+            <DealPicker
+              deals={menu.deals}
+              itemLabelById={itemLabelById}
+              onSelect={(id) => {
+                const deal = menu.deals.find((d) => d.id === id)
+                if (deal) setEditedLines((prev) => [...prev, lineFromDeal(deal, '1')])
+              }}
+            />
+          </div>
+        ) : (
+          <p className="muted small deal-add-missing">No deals — add bundles from the Deals screen if you use bundle pricing.</p>
+        )}
 
         <p className="muted small order-table-hint invoice-edit-table-hint"><strong>Items:</strong> search below, set quantity, then <strong>Add line</strong>. Deals use the dropdown above.</p>
 

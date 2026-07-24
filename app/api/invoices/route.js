@@ -56,7 +56,12 @@ export async function GET(request) {
   }
 
   const searchRaw = String(searchParams.get('search') ?? '').trim().toLowerCase()
-  if (searchRaw) list = list.filter((inv) => String(inv.id).toLowerCase().includes(searchRaw))
+  if (searchRaw) {
+    list = list.filter((inv) =>
+      String(inv.id).toLowerCase().includes(searchRaw) ||
+      (inv.shiftNumber != null && String(inv.shiftNumber) === searchRaw),
+    )
+  }
 
   list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 

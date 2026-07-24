@@ -120,13 +120,13 @@ export default function InvoicesListPage() {
         </p>
 
         <div className="invoices-search-row">
-          <label className="invoices-search-label" htmlFor="invoice-id-search">Search by Invoice ID</label>
+          <label className="invoices-search-label" htmlFor="invoice-id-search">Search by Invoice ID or Order #</label>
           <div className="invoices-search-field">
             <input
               id="invoice-id-search"
               type="search"
               className="input invoices-search-input"
-              placeholder="e.g. inv-cafe-abc123"
+              placeholder="e.g. inv-cafe-abc123 or 12"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
               aria-label="Search invoices by ID"
@@ -196,6 +196,7 @@ export default function InvoicesListPage() {
             <table className="invoices-table">
               <thead>
                   <tr>
+                    <th scope="col">Order #</th>
                     <th scope="col">Business</th>
                     <th scope="col">Invoice</th>
                     <th scope="col">Type</th>
@@ -221,6 +222,7 @@ export default function InvoicesListPage() {
                       }
                     }}
                   >
+                    <td className="invoices-table-shift-num">{inv.shiftNumber != null ? `#${inv.shiftNumber}` : <span className="muted">—</span>}</td>
                     <td><BusinessTypeBadge type={invoiceBusinessType(inv)} /></td>
                     <td className="invoices-table-id">{inv.id}</td>
                     <td><OrderTypeBadge type={inv.orderType} /></td>
