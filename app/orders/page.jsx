@@ -219,7 +219,7 @@ export default function OrdersPage() {
   }, [menuItems])
 
   return (
-    <main className="order-flow">
+    <main className="order-flow theme-chacha">
       <section className="card order-card">
         <div className="card-head">
           <h2>Take order</h2>

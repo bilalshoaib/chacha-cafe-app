@@ -1,17 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap');
+
 :root {
-  --text: #3d3429;
-  --text-muted: #6b5f52;
-  --text-h: #1a1410;
-  --bg: #faf6f0;
+  --text: #16241c;
+  --text-muted: #5c6d63;
+  --text-h: #0d2a4d;
+  --bg: #faf7ea;
   --surface: #ffffff;
-  --border: #e8dfd3;
-  --accent: #c45c26;
-  --accent-hover: #a34a1c;
-  --danger: #b42318;
-  --radius: 12px;
-  --shadow: 0 8px 24px rgba(26, 20, 16, 0.08);
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.45;
+  --border: rgba(13, 42, 77, 0.12);
+  --accent: #1f5fbf;
+  --accent-hover: #0d2a4d;
+  --accent-soft: #e7f0fb;
+  --yellow: #ffc72c;
+  --yellow-deep: #e6a800;
+  --danger: #e0393c;
+  --radius: 14px;
+  --shadow: 0 14px 30px rgba(13, 42, 77, 0.1);
+  font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.55;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -26,6 +31,19 @@
 
 body {
   margin: 0;
+}
+
+/* Brand display type — Anton, uppercase, navy (matches chacahcafe.com) */
+h1,
+h2,
+h3,
+.sub {
+  font-family: 'Anton', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-h);
+  line-height: 1.1;
 }
 
 button,
@@ -164,8 +182,8 @@ select {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background: #0e0a05;
-  color: #f5ede0;
+  background: var(--bg);
+  color: var(--text);
 }
 
 .hp-staff-shell {
@@ -196,7 +214,7 @@ select {
   overflow: hidden;
   background-size: cover;
   background-position: center;
-  background-color: #0e0a05;
+  background-color: #0d2a4d;
 }
 
 .hp-staff-hero {
@@ -209,7 +227,7 @@ select {
   overflow: hidden;
   background-size: cover;
   background-position: center top;
-  background-color: #0e0a05;
+  background-color: #0d2a4d;
 }
 
 .hp-hero-overlay {
@@ -251,22 +269,20 @@ select {
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #f4a24a;
+  color: #ffc72c;
   margin-bottom: 0.75rem;
 }
 
 .hp-logo-chacha {
+  font-family: 'Anton', system-ui, sans-serif;
   font-size: clamp(3.5rem, 10vw, 7rem);
-  font-weight: 900;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  letter-spacing: 0.01em;
   line-height: 1;
   margin: 0;
-  background: linear-gradient(135deg, #f4a24a 0%, #e8651a 50%, #f4c56a 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-shadow: none;
-  filter: drop-shadow(0 2px 12px rgba(228, 101, 26, 0.45));
+  color: #ffc72c;
+  -webkit-text-stroke: 2px #0d2a4d;
+  text-shadow: 0 4px 18px rgba(13, 42, 77, 0.55);
 }
 
 .hp-logo-chacha--sm {
@@ -292,13 +308,13 @@ select {
 }
 
 .hp-logo-star {
-  color: #f4a24a;
+  color: #ffc72c;
   font-size: 0.75em;
 }
 
 .hp-logo-tagline {
   font-size: clamp(0.85rem, 2vw, 1.1rem);
-  color: #f5c97a;
+  color: #fde6b8;
   font-style: italic;
   letter-spacing: 0.06em;
   margin: 0 0 2rem;
@@ -315,14 +331,14 @@ select {
   display: inline-flex;
   align-items: center;
   padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #e8651a, #c44f10);
-  color: #fff;
-  font-weight: 700;
+  background: #ffc72c;
+  color: #0d2a4d;
+  font-weight: 800;
   font-size: 0.95rem;
   letter-spacing: 0.04em;
   border-radius: 999px;
   text-decoration: none;
-  box-shadow: 0 4px 20px rgba(228, 101, 26, 0.5);
+  box-shadow: 0 8px 22px rgba(255, 199, 44, 0.4);
   transition: filter 0.15s, transform 0.12s;
 }
 
@@ -347,8 +363,8 @@ select {
 }
 
 .hp-hero-btn-ghost:hover {
-  border-color: #f4a24a;
-  background: rgba(244, 162, 74, 0.1);
+  border-color: #ffc72c;
+  background: rgba(255, 199, 44, 0.12);
 }
 
 /* ── Category strip ── */
@@ -358,8 +374,8 @@ select {
   flex-wrap: wrap;
   gap: 0.65rem 1rem;
   padding: 1.25rem 1.5rem;
-  background: #1a0d02;
-  border-bottom: 1px solid rgba(244, 162, 74, 0.18);
+  background: #0d2a4d;
+  border-bottom: 3px solid #ffc72c;
 }
 
 .hp-cat-chip {
@@ -368,9 +384,9 @@ select {
   gap: 0.4rem;
   padding: 0.45rem 1rem;
   border-radius: 999px;
-  border: 1px solid rgba(244, 162, 74, 0.3);
-  background: rgba(244, 162, 74, 0.07);
-  color: #f4c87a;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -402,7 +418,7 @@ select {
 }
 
 .hp-loading-text {
-  color: #a8956a;
+  color: var(--text-muted);
   text-align: center;
   padding: 2rem 0;
 }
@@ -415,15 +431,17 @@ select {
 .hp-section-head {
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid rgba(244, 162, 74, 0.25);
+  border-bottom: 2px solid var(--border);
 }
 
 .hp-section-title {
   margin: 0 0 0.25rem;
-  font-size: 1.45rem;
-  font-weight: 800;
-  color: #f4a24a;
-  letter-spacing: -0.01em;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-h);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -445,97 +463,106 @@ select {
 
 .hp-deal-card {
   position: relative;
-  background: linear-gradient(145deg, #1e1008 0%, #2a1505 100%);
-  border: 1px solid rgba(244, 162, 74, 0.25);
-  border-radius: 14px;
-  padding: 1.1rem 1.15rem 1.15rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  transition: border-color 0.15s, transform 0.12s;
+  background: linear-gradient(135deg, #0d2a4d 0%, #1f5fbf 65%, #0d2a4d 100%);
+  border: none;
+  border-radius: 18px;
+  padding: 1.2rem 1.25rem 1.25rem;
+  box-shadow: 0 16px 34px rgba(13, 42, 77, 0.22);
+  transition: transform 0.15s, box-shadow 0.15s;
   overflow: hidden;
 }
 
 .hp-deal-card:hover {
-  border-color: rgba(244, 162, 74, 0.5);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 22px 44px rgba(13, 42, 77, 0.3);
 }
 
 .hp-deal-badge {
   position: absolute;
-  top: 0;
-  right: 0;
-  background: linear-gradient(135deg, #e8651a, #c44f10);
+  top: 12px;
+  right: 12px;
+  background: var(--danger);
   color: #fff;
   font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.1em;
-  padding: 0.25rem 0.6rem;
-  border-bottom-left-radius: 10px;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
 }
 
 .hp-deal-head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-  margin-top: 0.25rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.6rem;
+  margin-top: 0.35rem;
 }
 
 .hp-deal-name {
-  font-weight: 700;
-  font-size: 1rem;
-  color: #f5ede0;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 1.15rem;
+  color: #ffffff;
+  max-width: 80%;
 }
 
 .hp-deal-price {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #f4a24a;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 2.2rem;
+  font-weight: 400;
+  color: #ffc72c;
+  line-height: 1;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 
 .hp-deal-includes-label {
   margin: 0 0 0.3rem;
-  color: #a8956a;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
 }
 
 .hp-deal-includes {
   margin: 0;
   padding-left: 1.1rem;
   font-size: 0.88rem;
-  color: #c8b08a;
+  color: rgba(255, 255, 255, 0.82);
   line-height: 1.55;
 }
 
 .hp-deal-includes strong {
-  color: #f4a24a;
+  color: #ffc72c;
 }
 
-/* ── Menu grid ── */
+/* ── Menu grid — website-style white cards with yellow price pills ── */
 .hp-menu-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
   gap: 1rem;
 }
 
 .hp-menu-cat {
-  background: linear-gradient(145deg, #1a0d02 0%, #221205 100%);
-  border: 1px solid rgba(244, 162, 74, 0.18);
-  border-radius: 14px;
-  padding: 1rem 1.15rem 1.15rem;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.1rem 1.2rem 1.25rem;
+  box-shadow: var(--shadow);
 }
 
 .hp-menu-cat-title {
-  margin: 0 0 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 800;
+  margin: 0 0 0.85rem;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #f4a24a;
+  letter-spacing: 0.08em;
+  color: var(--accent);
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(244, 162, 74, 0.2);
+  border-bottom: 2px solid var(--accent-soft);
 }
 
 .hp-menu-list {
@@ -544,15 +571,15 @@ select {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .hp-menu-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 0.5rem 0.75rem;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
 }
 
 .hp-menu-row-main {
@@ -563,23 +590,29 @@ select {
 }
 
 .hp-menu-name {
-  font-weight: 600;
-  color: #f0e0c8;
+  font-weight: 700;
+  color: var(--text-h);
 }
 
 .hp-menu-price {
-  font-weight: 700;
-  color: #f4a24a;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-weight: 400;
+  color: var(--text-h);
+  background: var(--yellow);
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   font-size: 0.92rem;
+  line-height: 1;
+  letter-spacing: 0.3px;
 }
 
 /* ── About strip ── */
 .hp-about {
-  background: linear-gradient(135deg, #1a0d02 0%, #2a1505 100%);
-  border-top: 1px solid rgba(244, 162, 74, 0.2);
-  border-bottom: 1px solid rgba(244, 162, 74, 0.2);
+  background: linear-gradient(135deg, #0d2a4d 0%, #1f5fbf 100%);
+  border-top: 3px solid #ffc72c;
+  border-bottom: 3px solid #ffc72c;
   padding: 2.5rem 1.5rem;
   text-align: center;
   margin: 0 -1.5rem;
@@ -591,14 +624,17 @@ select {
 }
 
 .hp-about-title {
-  font-size: 1.45rem;
-  font-weight: 800;
-  color: #f4a24a;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #ffffff;
   margin: 0 0 0.75rem;
 }
 
 .hp-about-text {
-  color: #c8b08a;
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1.6;
   margin: 0 0 1.25rem;
 }
@@ -615,12 +651,12 @@ select {
   align-items: center;
   gap: 0.35rem;
   padding: 0.4rem 0.9rem;
-  background: rgba(244, 162, 74, 0.12);
-  border: 1px solid rgba(244, 162, 74, 0.3);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #f4c87a;
+  color: #ffffff;
   letter-spacing: 0.03em;
 }
 
@@ -631,34 +667,34 @@ select {
   justify-content: center;
   gap: 0.75rem;
   padding: 0.85rem 1.5rem;
-  background: #0e0a05;
-  border-top: 1px solid rgba(244, 162, 74, 0.15);
+  background: #081b30;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .hp-staff-bar-text {
   font-size: 0.85rem;
-  color: #7a6a4a;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .hp-staff-bar-link {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #f4a24a;
+  color: #ffc72c;
   text-decoration: none;
   letter-spacing: 0.02em;
 }
 
 .hp-staff-bar-link:hover {
-  color: #f4c87a;
+  color: #ffffff;
   text-decoration: underline;
 }
 
 /* ── Footer ── */
 .hp-footer {
-  background: #080502;
+  background: #0d2a4d;
   padding: 2rem 1.5rem 2.5rem;
   text-align: center;
-  border-top: 1px solid rgba(244, 162, 74, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .hp-footer-logo {
@@ -666,31 +702,30 @@ select {
 }
 
 .hp-footer-chacha {
-  font-size: 1.5rem;
-  font-weight: 900;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 400;
   letter-spacing: 0.05em;
-  background: linear-gradient(135deg, #f4a24a, #e8651a);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffc72c;
 }
 
 .hp-footer-cafe {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #f5ede0;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: #ffffff;
   letter-spacing: 0.1em;
 }
 
 .hp-footer-tagline {
-  color: #f4c87a;
+  color: rgba(255, 255, 255, 0.75);
   font-style: italic;
   font-size: 0.88rem;
   margin: 0 0 0.65rem;
 }
 
 .hp-footer-copy {
-  color: #5a4a30;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* ── Responsive ── */
@@ -731,13 +766,13 @@ select {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  background: linear-gradient(135deg, #1e0f06 0%, #2e1608 60%, #1e0f06 100%);
+  background: linear-gradient(135deg, #0d2a4d 0%, #1f5fbf 60%, #0d2a4d 100%);
   border-radius: var(--radius);
   padding: 1.5rem 1.75rem 1.6rem;
   margin-bottom: 1.5rem;
   overflow: hidden;
-  border: 1px solid rgba(244, 162, 74, 0.22);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  border: none;
+  box-shadow: 0 14px 30px rgba(13, 42, 77, 0.2);
 }
 
 .page-hero-action {
@@ -749,9 +784,9 @@ select {
   gap: 0.4rem;
   padding: 0.55rem 1rem;
   border-radius: 999px;
-  border: 1px solid rgba(244, 162, 74, 0.4);
-  background: rgba(244, 162, 74, 0.12);
-  color: #f4a24a;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.85rem;
   white-space: nowrap;
@@ -759,15 +794,15 @@ select {
 }
 
 .page-hero-action:hover {
-  background: rgba(244, 162, 74, 0.22);
-  border-color: rgba(244, 162, 74, 0.6);
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 .page-hero::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 80% 50%, rgba(196, 92, 38, 0.14) 0%, transparent 65%);
+  background: radial-gradient(ellipse at 80% 50%, rgba(255, 199, 44, 0.16) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -787,16 +822,18 @@ select {
 
 .page-hero-title {
   margin: 0 0 0.2rem;
-  font-size: 1.65rem;
-  font-weight: 800;
-  color: #f4a24a;
-  letter-spacing: -0.02em;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  color: #ffffff;
+  letter-spacing: 0.4px;
   line-height: 1.15;
 }
 
 .page-hero-sub {
   margin: 0;
-  color: rgba(245, 237, 224, 0.65);
+  color: rgba(255, 255, 255, 0.75);
   font-size: 0.875rem;
   line-height: 1.4;
 }
@@ -1517,7 +1554,8 @@ button.inline-link-button:hover {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), #f4a261);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  border: 2px solid var(--yellow);
   box-shadow: var(--shadow);
 }
 
@@ -1545,9 +1583,9 @@ button.inline-link-button:hover {
 
 .tabs button.active,
 .tabs a.active {
-  background: var(--bg);
-  color: var(--text-h);
-  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .banner.error {
@@ -1703,6 +1741,8 @@ button.primary {
   background: var(--accent);
   border-color: transparent;
   color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 button.primary:hover:not(:disabled) {
@@ -2087,7 +2127,7 @@ a.invoice-edit-link {
   border-radius: 10px;
   border: none;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--accent), #f4a261);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   color: #fff;
   box-shadow: var(--shadow);
 }
@@ -3365,12 +3405,13 @@ button.danger-ghost:hover:not(:disabled) {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.6rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
+  padding: 0.8rem 0.9rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--text-h);
-  font-size: 0.92rem;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -3428,18 +3469,18 @@ button.danger-ghost:hover:not(:disabled) {
 .deal-picker-item {
   display: block;
   width: 100%;
-  padding: 0.65rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
 }
 
 .deal-picker-item:hover {
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  border-color: var(--accent);
+  background: var(--accent-soft);
   transform: translateY(-1px);
 }
 
@@ -3451,23 +3492,25 @@ button.danger-ghost:hover:not(:disabled) {
 }
 
 .deal-picker-item-name {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1rem;
   color: var(--text-h);
   line-height: 1.3;
 }
 
 .deal-picker-item-price {
   flex: none;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1.02rem;
   color: var(--accent);
   white-space: nowrap;
 }
 
 .deal-picker-item-includes {
-  margin-top: 0.3rem;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: var(--text-muted);
+  margin-top: 0.35rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text);
 }
 
 .item-autocomplete {
@@ -4068,11 +4111,11 @@ button.danger-ghost:hover:not(:disabled) {
 .menu-board-canvas {
   width: 100%;
   max-width: 900px;
-  background: linear-gradient(160deg, #150b05 0%, #241206 55%, #150b05 100%);
+  background: linear-gradient(160deg, #08182c 0%, #0d2a4d 55%, #08182c 100%);
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(244, 162, 74, 0.22);
+  border: 1px solid rgba(255, 199, 44, 0.22);
 }
 
 .menu-board-banner {
@@ -4080,7 +4123,7 @@ button.danger-ghost:hover:not(:disabled) {
   text-align: center;
   padding: 2.5rem 1.5rem 1.4rem;
   overflow: hidden;
-  background: radial-gradient(120% 100% at 50% 0%, rgba(196, 92, 38, 0.14) 0%, rgba(0, 0, 0, 0) 60%);
+  background: radial-gradient(120% 100% at 50% 0%, rgba(31, 95, 191, 0.14) 0%, rgba(0, 0, 0, 0) 60%);
 }
 
 .menu-board-photo {
@@ -4115,8 +4158,8 @@ button.danger-ghost:hover:not(:disabled) {
   justify-content: center;
   text-align: center;
   gap: 0.05rem;
-  background: linear-gradient(135deg, #f4c430, #d99a1a);
-  color: #3a1c02;
+  background: linear-gradient(135deg, #ffc72c, #e6a800);
+  color: #0d2a4d;
   font-weight: 800;
   font-size: 0.52rem;
   line-height: 1.2;
@@ -4163,7 +4206,7 @@ button.danger-ghost:hover:not(:disabled) {
   font-weight: 900;
   letter-spacing: 0.01em;
   text-transform: uppercase;
-  color: #f4a24a;
+  color: #ffc72c;
   text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
   line-height: 1;
 }
@@ -4188,7 +4231,7 @@ button.danger-ghost:hover:not(:disabled) {
   position: relative;
   z-index: 1;
   margin: 0.1rem 0 0;
-  color: #f4c430;
+  color: #ffc72c;
   font-size: 1.05rem;
   font-style: italic;
   font-family: 'Brush Script MT', cursive;
@@ -4202,8 +4245,8 @@ button.danger-ghost:hover:not(:disabled) {
   margin-top: 0.6rem;
   padding: 0.3rem 0.9rem;
   border-radius: 999px;
-  background: rgba(244, 162, 74, 0.14);
-  border: 1px solid rgba(244, 162, 74, 0.4);
+  background: rgba(255, 199, 44, 0.14);
+  border: 1px solid rgba(255, 199, 44, 0.4);
   color: #f5ede0;
   font-weight: 700;
   font-size: 0.85rem;
@@ -4220,7 +4263,7 @@ button.danger-ghost:hover:not(:disabled) {
 .menu-board-section {
   break-inside: avoid;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(244, 162, 74, 0.16);
+  border: 1px solid rgba(255, 199, 44, 0.16);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -4283,14 +4326,14 @@ button.danger-ghost:hover:not(:disabled) {
 .menu-board-item-dots {
   flex: 1;
   min-width: 0.75rem;
-  border-bottom: 2px dotted rgba(244, 162, 74, 0.4);
+  border-bottom: 2px dotted rgba(255, 199, 44, 0.4);
   transform: translateY(-3px);
 }
 
 .menu-board-item-price {
   flex-shrink: 0;
   font-weight: 700;
-  color: #f4a24a;
+  color: #ffc72c;
   font-size: 0.85rem;
   white-space: nowrap;
 }
@@ -4329,7 +4372,7 @@ button.danger-ghost:hover:not(:disabled) {
   border-radius: 10px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(244, 162, 74, 0.16);
+  border: 1px solid rgba(255, 199, 44, 0.16);
 }
 
 .menu-board-deal-badge {
@@ -4374,7 +4417,7 @@ button.danger-ghost:hover:not(:disabled) {
   content: '•';
   position: absolute;
   left: 0;
-  color: #f4a24a;
+  color: #ffc72c;
 }
 
 .menu-board-deal-photo-wrap {
@@ -4466,7 +4509,7 @@ button.danger-ghost:hover:not(:disabled) {
   gap: 0.75rem;
   margin: 1.25rem 1.5rem 0;
   padding: 0.9rem 0;
-  border-top: 1px dashed rgba(244, 162, 74, 0.25);
+  border-top: 1px dashed rgba(255, 199, 44, 0.25);
 }
 
 .menu-board-footer-badges {
@@ -4494,7 +4537,7 @@ button.danger-ghost:hover:not(:disabled) {
   font-family: 'Brush Script MT', cursive;
   font-style: italic;
   font-size: 1.3rem;
-  color: #f4a24a;
+  color: #ffc72c;
 }
 
 .menu-board-contact-strip {
@@ -4505,7 +4548,7 @@ button.danger-ghost:hover:not(:disabled) {
 }
 
 .menu-board-contact-strip span:first-child {
-  color: #f4a24a;
+  color: #ffc72c;
   font-weight: 700;
 }
 
@@ -4555,4 +4598,85 @@ button.danger-ghost:hover:not(:disabled) {
   .menu-board-deal-featured-includes {
     justify-content: center;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Chacha brand theme — page polish (Orders).
+   Palette, fonts and primary buttons are now global (see :root + body).
+   This block only adds Orders-specific niceties on top of that base.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Card header — accent underline */
+.theme-chacha .card-head {
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+.theme-chacha .card h2 { font-size: 1.6rem; }
+
+/* Primary buttons get a soft blue lift on this page */
+.theme-chacha button.primary {
+  box-shadow: 0 6px 16px rgba(31, 95, 191, 0.28);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.theme-chacha button.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Order-type cards — rounded + blue active state */
+.theme-chacha .order-type-option { border-radius: 12px; }
+.theme-chacha .order-type-option--active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-h);
+}
+
+/* Totals + line prices → Anton, tabular navy (per "prices = Anton") */
+.theme-chacha .total-row strong,
+.theme-chacha .total-row.big {
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.theme-chacha .total-row.big { font-size: 1.6rem; }
+
+/* Price columns: Each (6th) + Line (8th) + deal price */
+.theme-chacha .order-lines-table td:nth-child(6),
+.theme-chacha .order-lines-table td:nth-child(8),
+.theme-chacha .deal-picker-item-price {
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Table header — blue on tinted cream */
+.theme-chacha .order-lines-table thead th {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+/* Deal add strip — wider, roomier, soft-blue panel like the site */
+.theme-chacha .deal-add-field-top {
+  max-width: 560px;
+  background: var(--accent-soft);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+}
+.theme-chacha .deal-add-field-top > span {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.theme-chacha .business-type-picker .primary {
+  padding: 0.7rem 1.4rem;
+  font-size: 1rem;
 }
