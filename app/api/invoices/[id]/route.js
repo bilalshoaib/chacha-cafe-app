@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
-import { getInvoices, saveInvoices } from '@/lib/repositories/invoicesRepository'
+import { getInvoiceById, saveInvoice } from '@/lib/repositories/invoicesRepository'
 import { randomUUID } from 'crypto'
 
 function newLineId() {
@@ -63,8 +63,7 @@ export async function GET(_request, { params }) {
   const session = await requireAuth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
-  const invoices = await getInvoices()
-  const inv = invoices.find((i) => i.id === id)
+  const inv = await getInvoiceById(id)
   if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
   return NextResponse.json(inv)
 }
@@ -73,10 +72,8 @@ export async function PATCH(request, { params }) {
   const session = await requireAuth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
-  const invoices = await getInvoices()
-  const idx = invoices.findIndex((i) => i.id === id)
-  if (idx === -1) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
-  const inv = invoices[idx]
+  const inv = await getInvoiceById(id)
+  if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
   const { customerNote, paid, returned, returnNote, lines, paymentMethod } = await request.json().catch(() => ({}))
 
   if (inv.returned) {
@@ -109,6 +106,6 @@ export async function PATCH(request, { params }) {
   const VALID_PAYMENT_METHODS = ['cash', 'online']
   if (paymentMethod !== undefined) inv.paymentMethod = VALID_PAYMENT_METHODS.includes(paymentMethod) ? paymentMethod : null
 
-  await saveInvoices(invoices)
+  await saveInvoice(inv)
   return NextResponse.json(inv)
 }

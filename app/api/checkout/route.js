@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
 import { loadMenu } from '@/lib/repositories/menuRepository'
-import { getInvoices, saveInvoices, nextInvoiceNumber, nextShiftNumber } from '@/lib/repositories/invoicesRepository'
+import { saveInvoice, nextInvoiceNumber, nextShiftNumber } from '@/lib/repositories/invoicesRepository'
 import { buildOrderLine } from '@/lib/orderLines'
 import { shiftDateForInstant } from '@/lib/shift'
 
@@ -70,8 +70,6 @@ export async function POST(request) {
     ...(orderType ? { orderType } : {}),
   }
 
-  const invoices = await getInvoices()
-  invoices.push(invoice)
-  await saveInvoices(invoices)
+  await saveInvoice(invoice)
   return NextResponse.json({ invoice }, { status: 201 })
 }
