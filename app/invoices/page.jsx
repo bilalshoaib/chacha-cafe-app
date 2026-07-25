@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
+import Pagination from '@/components/Pagination.jsx'
 
 const ORDER_TYPE_META = {
   dine_in:  { label: 'Dine In',  icon: '🍽️', cls: 'badge-order-type-dine' },
@@ -22,6 +23,7 @@ function OrderTypeBadge({ type }) {
 import { BUSINESS_TYPES, invoiceBusinessType } from '@/constants/businessTypes.js'
 import {
   INVOICE_PAGE_SIZE,
+  INVOICE_PAGE_SIZE_OPTIONS,
   INVOICE_RANGE_PRESETS,
   invoiceDateInputValue,
   parseInvoiceDateInput,
@@ -40,6 +42,7 @@ export default function InvoicesListPage() {
   const [fromIso, setFromIso] = useState('')
   const [toIso, setToIso] = useState('')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(INVOICE_PAGE_SIZE)
   const [invoices, setInvoices] = useState([])
   const [pagination, setPagination] = useState({ page: 1, pageSize: INVOICE_PAGE_SIZE, total: 0, totalPages: 1 })
   const [loading, setLoading] = useState(true)
@@ -63,12 +66,12 @@ export default function InvoicesListPage() {
     }
   }, [presetId, customFrom, customTo, applyPreset])
 
-  useEffect(() => { setPage(1) }, [filterType, fromIso, toIso, presetId, searchId])
+  useEffect(() => { setPage(1) }, [filterType, fromIso, toIso, presetId, searchId, pageSize])
 
   const load = useCallback(async () => {
     setError(''); setLoading(true)
     try {
-      const params = { page, pageSize: INVOICE_PAGE_SIZE }
+      const params = { page, pageSize }
       if (fromIso) params.from = fromIso
       if (toIso) params.to = toIso
       if (filterType !== 'all') params.businessType = filterType
@@ -77,18 +80,18 @@ export default function InvoicesListPage() {
       setInvoices(Array.isArray(res.invoices) ? res.invoices : [])
       setPagination({
         page: res.pagination?.page ?? page,
-        pageSize: res.pagination?.pageSize ?? INVOICE_PAGE_SIZE,
+        pageSize: res.pagination?.pageSize ?? pageSize,
         total: res.pagination?.total ?? 0,
         totalPages: Math.max(1, res.pagination?.totalPages ?? 1),
       })
     } catch (e) {
       setError(e.message || 'Could not load invoices')
       setInvoices([])
-      setPagination({ page: 1, pageSize: INVOICE_PAGE_SIZE, total: 0, totalPages: 1 })
+      setPagination({ page: 1, pageSize, total: 0, totalPages: 1 })
     } finally {
       setLoading(false)
     }
-  }, [filterType, fromIso, toIso, page, searchId])
+  }, [filterType, fromIso, toIso, page, pageSize, searchId])
 
   useEffect(() => { void load() }, [load])
 
@@ -175,13 +178,6 @@ export default function InvoicesListPage() {
 
         <div className="invoices-list-meta">
           <p className="muted small">{loading ? 'Loading…' : pageSummary}</p>
-          {pagination.totalPages > 1 ? (
-            <div className="invoices-pagination">
-              <button type="button" className="ghost sm" disabled={loading || pagination.page <= 1} onClick={() => goToPage(pagination.page - 1)}>← Previous</button>
-              <span className="muted small invoices-page-indicator">Page {pagination.page} of {pagination.totalPages}</span>
-              <button type="button" className="ghost sm" disabled={loading || pagination.page >= pagination.totalPages} onClick={() => goToPage(pagination.page + 1)}>Next →</button>
-            </div>
-          ) : null}
         </div>
 
         {!loading && invoices.length === 0 ? (
@@ -251,12 +247,15 @@ export default function InvoicesListPage() {
           </div>
         )}
 
-        {!loading && pagination.totalPages > 1 ? (
-          <div className="invoices-pagination invoices-pagination-foot">
-            <button type="button" className="ghost sm" disabled={pagination.page <= 1} onClick={() => goToPage(pagination.page - 1)}>← Previous</button>
-            <span className="muted small invoices-page-indicator">Page {pagination.page} of {pagination.totalPages}</span>
-            <button type="button" className="ghost sm" disabled={pagination.page >= pagination.totalPages} onClick={() => goToPage(pagination.page + 1)}>Next →</button>
-          </div>
+        {!loading ? (
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            onChange={goToPage}
+            pageSize={pageSize}
+            pageSizeOptions={INVOICE_PAGE_SIZE_OPTIONS}
+            onPageSizeChange={setPageSize}
+          />
         ) : null}
       </section>
     </main>

@@ -2606,21 +2606,100 @@ a.invoice-edit-link:hover {
   margin: 0.75rem 0 0.5rem;
 }
 
-.invoices-pagination {
+/* Pagination footer: rows-per-page control + numbered page nav */
+.pagination-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1.25rem 0 0.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
 }
 
-.invoices-pagination-foot {
-  margin-top: 1rem;
-  justify-content: flex-end;
+.pagination-size {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.pagination-size-options {
+  display: flex;
+  gap: 0.3rem;
+}
+.pagination-size-btn {
+  min-width: 2.4rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.pagination-size-btn:hover:not(:disabled):not(.active) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pagination-size-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  cursor: default;
+}
+.pagination-size-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-.invoices-page-indicator {
-  min-width: 7rem;
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+.pagination-btn {
+  min-width: 2.1rem;
+  height: 2.1rem;
+  padding: 0 0.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.pagination-btn:hover:not(:disabled):not(.active) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pagination-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  cursor: default;
+}
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pagination-nav {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.pagination-ellipsis {
+  min-width: 1.5rem;
   text-align: center;
+  color: var(--text-muted);
 }
 
 .invoices-table-wrap {
@@ -3988,6 +4067,11 @@ button.danger-ghost:hover:not(:disabled) {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  .pagination-bar {
+    flex-direction: column;
+    align-items: center;
   }
 
   /* Home public header */
