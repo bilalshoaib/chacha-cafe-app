@@ -28,8 +28,12 @@ function calcInvoiceSplits(inv, invBt) {
     const lineBurger = roundMoney((line.burgerSplit ?? 0) * (line.qty ?? 1))
     const splitsValid = line.isCombined && (lineCafe + lineBurger) > 0
     if (splitsValid) {
-      cafeAmt += lineCafe
-      burgerAmt += lineBurger
+      // Discounts on a combined deal aren't tied to either side, so split them 50/50.
+      const discount = roundMoney(line.discount ?? 0)
+      const cafeDiscount = roundMoney(discount / 2)
+      const burgerDiscount = roundMoney(discount - cafeDiscount)
+      cafeAmt += lineCafe - cafeDiscount
+      burgerAmt += lineBurger - burgerDiscount
     } else if (line.lineBusinessType) {
       // Per-line attribution for combined orders (and back-filled on old single-business orders)
       if (line.lineBusinessType === 'burger') {
