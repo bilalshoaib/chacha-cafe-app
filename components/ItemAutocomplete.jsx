@@ -41,6 +41,11 @@ export default function ItemAutocomplete({
     setHighlight(0)
   }, [searchValue])
 
+  useEffect(() => {
+    if (!open) return
+    listRef.current?.children[highlight]?.scrollIntoView({ block: 'nearest' })
+  }, [highlight, open])
+
   useLayoutEffect(() => {
     if (!open) {
       setListPos(null)

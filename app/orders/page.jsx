@@ -46,6 +46,7 @@ export default function OrdersPage() {
   const customPriceRef = useRef(null)
   const qtyInputRef = useRef(null)
   const entryDiscountRef = useRef(null)
+  const entryRowRef = useRef(null)
   const [entrySearch, setEntrySearch] = useState('')
   const [entryItem, setEntryItem] = useState(null)
   const [entryQty, setEntryQty] = useState('1')
@@ -95,7 +96,10 @@ export default function OrdersPage() {
     setEntryCustomPrice('')
     setEntryDiscount('')
     setEntryNewCategory(categoryTabs[0]?.key ?? 'other')
-    queueMicrotask(() => searchInputRef.current?.focus())
+    queueMicrotask(() => {
+      entryRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      searchInputRef.current?.focus({ preventScroll: true })
+    })
   }
 
   async function commitEntryRow() {
@@ -387,7 +391,7 @@ export default function OrdersPage() {
                       </tr>
                     )
                   })}
-                  <tr className="order-entry-row">
+                  <tr className="order-entry-row" ref={entryRowRef}>
                     <td>
                       <ItemAutocomplete
                         items={menuItems}
