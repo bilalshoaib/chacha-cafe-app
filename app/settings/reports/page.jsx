@@ -5,6 +5,7 @@ import { api } from '@/api.js'
 import RequireSuperAdmin from '@/components/RequireSuperAdmin.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import Pagination from '@/components/Pagination.jsx'
+import ItemBreakdownPicker from '@/components/ItemBreakdownPicker.jsx'
 import { expenseCategoryLabel } from '@/utils/expenses.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 
@@ -194,6 +195,8 @@ export default function ReportsPage() {
   const [invoiceData, setInvoiceData] = useState(null)
   const [invoicePage, setInvoicePage] = useState(1)
   const [sellers, setSellers] = useState(null)
+  const [sellerItems, setSellerItems] = useState([])
+  const [breakdownItemId, setBreakdownItemId] = useState('')
   const [expenseData, setExpenseData] = useState(null)
 
   const applyPreset = useCallback((id) => {
@@ -235,7 +238,7 @@ export default function ReportsPage() {
           if (!cancelled) setInvoiceData(res)
         } else if (tab === 'sellers') {
           const res = await api.getReportTopSellers({ ...queryParams, sort: sellerSort })
-          if (!cancelled) setSellers(res.topSellers)
+          if (!cancelled) { setSellers(res.topSellers); setSellerItems(res.items ?? []) }
         } else {
           const res = await api.getReportExpenses(queryParams)
           if (!cancelled) setExpenseData(res)
@@ -249,6 +252,11 @@ export default function ReportsPage() {
     void run()
     return () => { cancelled = true }
   }, [tab, queryParams, fromIso, toIso, invoicePage, sellerSort, reloadKey])
+
+  const selectedItem = useMemo(
+    () => sellerItems.find((i) => i.refId === breakdownItemId) ?? null,
+    [sellerItems, breakdownItemId],
+  )
 
   const rangeLabel = useMemo(() => {
     if (!fromIso || !toIso) return ''
@@ -458,6 +466,56 @@ export default function ReportsPage() {
                 <button type="button" className={sellerSort === 'revenue' ? 'primary sm' : 'ghost sm'} onClick={() => setSellerSort('revenue')}>By revenue</button>
               </div>
             </div>
+
+            {sellerItems.length > 0 ? (
+              <div className="reports-item-breakdown">
+                <div className="reports-item-select">
+                  <span className="muted small">Break down an item</span>
+                  <ItemBreakdownPicker
+                    items={sellerItems}
+                    value={breakdownItemId}
+                    onChange={setBreakdownItemId}
+                  />
+                </div>
+                {selectedItem ? (
+                  <div className="reports-breakdown-panel">
+                    <div className="reports-breakdown-stats">
+                      <div className="reports-breakdown-stat">
+                        <span className="muted small">Sold alone</span>
+                        <strong>{selectedItem.standaloneQty}</strong>
+                        <span className="muted small">{formatMoney(selectedItem.standaloneRevenue)}</span>
+                      </div>
+                      <div className="reports-breakdown-stat">
+                        <span className="muted small">Inside deals</span>
+                        <strong>{selectedItem.inDealQty}</strong>
+                        <span className="muted small">{selectedItem.deals.length} deal{selectedItem.deals.length === 1 ? '' : 's'}</span>
+                      </div>
+                      <div className="reports-breakdown-stat reports-breakdown-total">
+                        <span className="muted small">Total units</span>
+                        <strong>{selectedItem.totalQty}</strong>
+                        <span className="muted small">Alone + in deals</span>
+                      </div>
+                    </div>
+                    {selectedItem.deals.length > 0 ? (
+                      <div className="table-scroll">
+                        <table className="staff-accounts-table reports-invoice-table">
+                          <thead><tr><th scope="col">Sold inside deal</th><th scope="col" className="num">Units of this item</th></tr></thead>
+                          <tbody>
+                            {selectedItem.deals.map((d) => (
+                              <tr key={d.label}>
+                                <td>{d.label}</td>
+                                <td className="num"><strong>{d.qty}</strong></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : <p className="muted small">This item was never sold as part of a deal in this range.</p>}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             {loading && !sellers ? <p className="muted">Loading…</p> : !sellers || sellers.length === 0 ? (
               <p className="muted">No sales in this period.</p>
             ) : (
