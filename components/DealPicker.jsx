@@ -44,9 +44,7 @@ export default function DealPicker({ deals, itemLabelById, onSelect, disabled })
       {open ? (
         <ul className="deal-picker-list" role="listbox">
           {deals.map((d) => {
-            const includesLabel = (d.includes || [])
-              .map((inc) => `${inc.qty}× ${itemLabelById[inc.itemId] || inc.itemId}`)
-              .join(' · ')
+            const includes = d.includes || []
             return (
               <li key={d.id} role="option" aria-selected={false}>
                 <button type="button" className="deal-picker-item" onClick={() => pick(d)}>
@@ -54,7 +52,16 @@ export default function DealPicker({ deals, itemLabelById, onSelect, disabled })
                     <span className="deal-picker-item-name">{d.name}</span>
                     <span className="deal-picker-item-price">{formatMoney(d.price)}</span>
                   </div>
-                  {includesLabel ? <div className="deal-picker-item-includes">{includesLabel}</div> : null}
+                  {includes.length > 0 ? (
+                    <ul className="deal-picker-item-includes">
+                      {includes.map((inc, i) => (
+                        <li key={i}>
+                          <span className="deal-picker-item-qty">{inc.qty}×</span>
+                          {itemLabelById[inc.itemId] || inc.itemId}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </button>
               </li>
             )

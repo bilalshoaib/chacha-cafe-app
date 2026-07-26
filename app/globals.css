@@ -3562,6 +3562,10 @@ button.danger-ghost:hover:not(:disabled) {
   background: var(--accent-soft);
   transform: translateY(-1px);
 }
+.deal-picker-item:hover .deal-picker-item-price,
+.deal-picker-item:hover .deal-picker-item-qty {
+  background: var(--surface);
+}
 
 .deal-picker-item-row {
   display: flex;
@@ -3580,16 +3584,42 @@ button.danger-ghost:hover:not(:disabled) {
 .deal-picker-item-price {
   flex: none;
   font-weight: 800;
-  font-size: 1.02rem;
+  font-size: 0.92rem;
   color: var(--accent);
   white-space: nowrap;
+  background: var(--accent-soft);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
 }
 
 .deal-picker-item-includes {
-  margin-top: 0.35rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.deal-picker-item-includes li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.88rem;
-  line-height: 1.5;
-  color: var(--text);
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.deal-picker-item-qty {
+  flex: none;
+  min-width: 2.1rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 0.1rem 0.4rem;
 }
 
 .item-autocomplete {
