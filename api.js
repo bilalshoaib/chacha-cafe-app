@@ -30,6 +30,19 @@ async function request(path, options = {}) {
   return data
 }
 
+/** Builds the shared report query string (range + filters), omitting empty values. */
+function reportQuery({ from, to, businessType, paymentMethod, page, pageSize, sort } = {}) {
+  const q = new URLSearchParams()
+  if (from) q.set('from', from)
+  if (to) q.set('to', to)
+  if (businessType && businessType !== 'all') q.set('businessType', businessType)
+  if (paymentMethod && paymentMethod !== 'all') q.set('paymentMethod', paymentMethod)
+  if (page != null) q.set('page', String(page))
+  if (pageSize != null) q.set('pageSize', String(pageSize))
+  if (sort) q.set('sort', sort)
+  return q.toString()
+}
+
 export const api = {
   me: () => request('/api/auth/me'),
   login: (email, password) =>
@@ -46,10 +59,11 @@ export const api = {
   createUser: (body) => request('/api/auth/users', { method: 'POST', body: JSON.stringify(body) }),
   updateUser: (userId, body) =>
     request(`/api/auth/users/${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  getInvoiceReport: (fromIso, toIso) => {
-    const q = new URLSearchParams({ from: fromIso, to: toIso })
-    return request(`/api/reports/invoices?${q}`)
-  },
+  // Reports are split per tab so each view fetches only the data it renders.
+  getReportSummary: (params) => request(`/api/reports/summary?${reportQuery(params)}`),
+  getReportInvoices: (params) => request(`/api/reports/invoices?${reportQuery(params)}`),
+  getReportTopSellers: (params) => request(`/api/reports/top-sellers?${reportQuery(params)}`),
+  getReportExpenses: (params) => request(`/api/reports/expenses?${reportQuery(params)}`),
   getMenu: () => request('/api/menu'),
   createMenuItem: (body) => request('/api/menu/items', { method: 'POST', body: JSON.stringify(body) }),
   updateMenuItem: (id, body) =>

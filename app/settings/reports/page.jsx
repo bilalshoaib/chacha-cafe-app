@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { api } from '@/api.js'
 import RequireSuperAdmin from '@/components/RequireSuperAdmin.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
+import Pagination from '@/components/Pagination.jsx'
 import { expenseCategoryLabel } from '@/utils/expenses.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 
@@ -30,6 +31,15 @@ const PRESETS = [
   { id: 'last_month', label: 'Last month', range: () => { const n = new Date(); const first = startOfMonth(new Date(n.getFullYear(), n.getMonth() - 1, 1)); const last = endOfMonth(first); return [toISOStart(first), toISOEnd(last)] } },
   { id: 'this_year', label: 'This year', range: () => { const n = new Date(); const start = new Date(n.getFullYear(), 0, 1); return [toISOStart(start), toISOEnd(n)] } },
 ]
+
+const TABS = [
+  { id: 'summary', label: 'Summary' },
+  { id: 'invoices', label: 'Invoices' },
+  { id: 'sellers', label: 'Top sellers' },
+  { id: 'expenses', label: 'Expenses' },
+]
+
+const INVOICE_PAGE_SIZE = 25
 
 function dateInputValue(d) {
   const x = new Date(d)
@@ -62,7 +72,6 @@ function defaultBusinessMonth() {
   return [dateInputValue(from), dateInputValue(to)]
 }
 
-function roundMoney(n) { return Math.round(Number(n) * 100) / 100 }
 function paymentLabel(method) {
   if (method === 'cash') return 'Cash'
   if (method === 'online') return 'Online / Card'
@@ -172,12 +181,20 @@ export default function ReportsPage() {
   const [customToTime, setCustomToTime] = useState('23:59')
   const [fromIso, setFromIso] = useState('')
   const [toIso, setToIso] = useState('')
-  const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
   const [businessFilter, setBusinessFilter] = useState('all')
   const [paymentFilter, setPaymentFilter] = useState('all')
   const [sellerSort, setSellerSort] = useState('qty')
+  const [tab, setTab] = useState('summary')
+  const [reloadKey, setReloadKey] = useState(0)
+  // One slice of state per tab — each is filled by its own endpoint.
+  const [summary, setSummary] = useState(null)
+  const [invoiceData, setInvoiceData] = useState(null)
+  const [invoicePage, setInvoicePage] = useState(1)
+  const [sellers, setSellers] = useState(null)
+  const [expenseData, setExpenseData] = useState(null)
 
   const applyPreset = useCallback((id) => {
     const p = PRESETS.find((x) => x.id === id)
@@ -194,109 +211,80 @@ export default function ReportsPage() {
     } else { applyPreset(presetId) }
   }, [presetId, customFrom, customFromTime, customTo, customToTime, applyPreset])
 
-  const fetchReport = useCallback(async () => {
-    if (!fromIso || !toIso) return
-    setError(''); setLoading(true)
-    try { const res = await api.getInvoiceReport(fromIso, toIso); setData(res) }
-    catch (e) { setError(e.message || 'Could not load report'); setData(null) }
-    finally { setLoading(false) }
-  }, [fromIso, toIso])
+  // Range + filters shared by every tab's request.
+  const queryParams = useMemo(
+    () => ({ from: fromIso, to: toIso, businessType: businessFilter, paymentMethod: paymentFilter }),
+    [fromIso, toIso, businessFilter, paymentFilter],
+  )
 
-  useEffect(() => { if (fromIso && toIso) void fetchReport() }, [fromIso, toIso, fetchReport])
+  // Changing the range or filters invalidates the invoice page cursor.
+  useEffect(() => { setInvoicePage(1) }, [fromIso, toIso, businessFilter, paymentFilter])
+
+  // Only the visible tab is fetched, so opening the page costs one small request.
+  useEffect(() => {
+    if (!fromIso || !toIso) return
+    let cancelled = false
+    async function run() {
+      setError(''); setLoading(true)
+      try {
+        if (tab === 'summary') {
+          const res = await api.getReportSummary(queryParams)
+          if (!cancelled) setSummary(res.summary)
+        } else if (tab === 'invoices') {
+          const res = await api.getReportInvoices({ ...queryParams, page: invoicePage, pageSize: INVOICE_PAGE_SIZE })
+          if (!cancelled) setInvoiceData(res)
+        } else if (tab === 'sellers') {
+          const res = await api.getReportTopSellers({ ...queryParams, sort: sellerSort })
+          if (!cancelled) setSellers(res.topSellers)
+        } else {
+          const res = await api.getReportExpenses(queryParams)
+          if (!cancelled) setExpenseData(res)
+        }
+      } catch (e) {
+        if (!cancelled) setError(e.message || 'Could not load report')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    void run()
+    return () => { cancelled = true }
+  }, [tab, queryParams, fromIso, toIso, invoicePage, sellerSort, reloadKey])
 
   const rangeLabel = useMemo(() => {
-    if (!data) return ''
-    try { const a = new Date(data.from); const b = new Date(data.to); return `${formatShortDateTime(a)} → ${formatShortDateTime(b)}` }
+    if (!fromIso || !toIso) return ''
+    try { return `${formatShortDateTime(new Date(fromIso))} → ${formatShortDateTime(new Date(toIso))}` }
     catch { return '' }
-  }, [data])
+  }, [fromIso, toIso])
 
-  const filteredInvoices = useMemo(() => {
-    if (!data?.invoices) return []
-    let list = data.invoices
-    if (businessFilter !== 'all') {
-      // Combined invoices contain items from both businesses — include them in either filter
-      list = list.filter((inv) => inv.businessType === businessFilter || inv.businessType === 'combined')
+  // The PDF spans every tab, so it pulls all four datasets on demand.
+  async function downloadPdf() {
+    if (!fromIso || !toIso) return
+    setPdfLoading(true)
+    setError('')
+    try {
+      const [summaryRes, invoiceRes, sellerRes, expenseRes] = await Promise.all([
+        api.getReportSummary(queryParams),
+        api.getReportInvoices({ ...queryParams, page: 1, pageSize: 200 }),
+        api.getReportTopSellers({ ...queryParams, sort: sellerSort, limit: 200 }),
+        api.getReportExpenses(queryParams),
+      ])
+      const html = buildPdfHtml({
+        rangeLabel,
+        summary: summaryRes.summary,
+        invoices: invoiceRes.invoices,
+        expenses: expenseRes.expenses,
+        topSellers: sellerRes.topSellers,
+        sellerSort, businessFilter, paymentFilter,
+      })
+      const win = window.open('', '_blank', 'width=900,height=700')
+      if (!win) return
+      win.document.write(html); win.document.close(); win.focus()
+      setTimeout(() => { win.print() }, 300)
+    } catch (e) {
+      setError(e.message || 'Could not build the PDF')
+    } finally {
+      setPdfLoading(false)
     }
-    if (paymentFilter !== 'all') list = list.filter((inv) => inv.paymentMethod === paymentFilter)
-    return list
-  }, [data, businessFilter, paymentFilter])
-
-  const filteredExpenses = useMemo(() => {
-    if (!data?.expenses) return []
-    if (businessFilter === 'all') return data.expenses
-    return data.expenses.filter((ex) => (ex.businessType ?? 'cafe') === businessFilter)
-  }, [data, businessFilter])
-
-  const filteredSummary = useMemo(() => {
-    const allInvoices = data?.invoices ?? []
-    const paymentList = paymentFilter !== 'all' ? allInvoices.filter((inv) => inv.paymentMethod === paymentFilter) : allInvoices
-    let grossTotal = 0, returnedCount = 0, returnedTotal = 0, paidCount = 0, unpaidCount = 0
-    let cafeNetSales = 0, burgerNetSales = 0, cafeInvoiceCount = 0, burgerInvoiceCount = 0
-    let deliveryChargesTotal = 0, deliveryOrderCount = 0
-    for (const inv of paymentList) {
-      const total = inv.total ?? 0; grossTotal += total
-      if (inv.returned) { returnedCount++; returnedTotal += total }
-      else {
-        const cafePortion = inv.cafePortion ?? (inv.businessType === 'cafe' ? total : 0)
-        const burgerPortion = inv.burgerPortion ?? (inv.businessType === 'burger' ? total : 0)
-        cafeNetSales += cafePortion; burgerNetSales += burgerPortion
-        if (inv.businessType === 'burger') burgerInvoiceCount++
-        else if (inv.businessType === 'cafe') cafeInvoiceCount++
-        else { cafeInvoiceCount++; burgerInvoiceCount++ } // combined: counted in both
-        if (inv.paid) paidCount++; else unpaidCount++
-        const dc = inv.deliveryCharge ?? 0
-        if (dc > 0) { deliveryChargesTotal += dc; deliveryOrderCount++ }
-      }
-    }
-    const netSalesTotal = businessFilter === 'cafe' ? cafeNetSales : businessFilter === 'burger' ? burgerNetSales : roundMoney(cafeNetSales + burgerNetSales)
-    // Net sales is built from per-business item portions (cafePortion/burgerPortion),
-    // which never include the delivery charge — so it already excludes delivery.
-    const netSalesExclDelivery = netSalesTotal
-    let expensesTotal = 0
-    for (const ex of filteredExpenses) expensesTotal += ex.amount ?? 0
-    return {
-      invoiceCount: filteredInvoices.length, grossTotal: roundMoney(grossTotal),
-      returnedCount, returnedTotal: roundMoney(returnedTotal), netSalesTotal: roundMoney(netSalesTotal),
-      netSalesExclDelivery,
-      cafeNetSales: roundMoney(cafeNetSales), burgerNetSales: roundMoney(burgerNetSales),
-      cafeInvoiceCount, burgerInvoiceCount, paidCount, unpaidCount,
-      deliveryChargesTotal: roundMoney(deliveryChargesTotal), deliveryOrderCount,
-      expensesTotal: roundMoney(expensesTotal), expenseCount: filteredExpenses.length,
-      netAfterExpenses: roundMoney(netSalesExclDelivery - expensesTotal),
-    }
-  }, [data, businessFilter, paymentFilter, filteredInvoices, filteredExpenses])
-
-  // Aggregate line items across non-returned invoices to rank best sellers.
-  const topSellers = useMemo(() => {
-    const byKey = new Map()
-    for (const inv of filteredInvoices) {
-      if (inv.returned) continue
-      for (const line of inv.lines ?? []) {
-        const extras = [line.size, line.flavour].filter(Boolean).join(' · ')
-        const label = extras ? `${line.name} · ${extras}` : line.name
-        const key = `${line.kind}:${line.refId ?? label}`
-        const prev = byKey.get(key)
-        if (prev) {
-          prev.qty += line.qty
-          prev.revenue += line.lineTotal
-          prev.orderCount += 1
-        } else {
-          byKey.set(key, { key, label, kind: line.kind, qty: line.qty, revenue: line.lineTotal, orderCount: 1 })
-        }
-      }
-    }
-    return [...byKey.values()]
-      .map((r) => ({ ...r, revenue: roundMoney(r.revenue) }))
-      .sort((a, b) => (sellerSort === 'revenue' ? b.revenue - a.revenue : b.qty - a.qty))
-  }, [filteredInvoices, sellerSort])
-
-  function downloadPdf() {
-    if (!data) return
-    const html = buildPdfHtml({ rangeLabel, summary: filteredSummary, invoices: filteredInvoices, expenses: filteredExpenses, topSellers, sellerSort, businessFilter, paymentFilter })
-    const win = window.open('', '_blank', 'width=900,height=700')
-    if (!win) return
-    win.document.write(html); win.document.close(); win.focus()
-    setTimeout(() => { win.print() }, 300)
   }
 
   return (
@@ -308,7 +296,9 @@ export default function ReportsPage() {
             <p className="muted small">Invoice totals by issue date. <strong>Net sales</strong> excludes returned invoices. Super admin only.</p>
           </div>
           <div className="reports-head-actions">
-            {data ? <button type="button" className="primary sm" onClick={downloadPdf}>Download PDF</button> : null}
+            <button type="button" className="primary sm" disabled={pdfLoading || !fromIso || !toIso} onClick={() => void downloadPdf()}>
+              {pdfLoading ? 'Building PDF…' : 'Download PDF'}
+            </button>
             <Link href="/settings" className="ghost sm">← Settings</Link>
           </div>
         </div>
@@ -376,71 +366,58 @@ export default function ReportsPage() {
           </div>
         </section>
 
+        <div className="reports-tabs" role="tablist" aria-label="Report sections">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              className={`reports-tab${tab === t.id ? ' active' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         {error ? (
           <p className="banner error" role="alert">
             {error}{' '}
-            <button type="button" className="inline-link-button" onClick={() => void fetchReport()}>Retry</button>
+            <button type="button" className="inline-link-button" onClick={() => setReloadKey((k) => k + 1)}>Retry</button>
           </p>
         ) : null}
 
-        {loading && !data ? <p className="muted">Loading…</p> : null}
-
-        {data ? (
-          <>
+        {tab === 'summary' ? (
+          loading && !summary ? <p className="muted">Loading…</p> : summary ? (
             <section className="reports-summary-grid">
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net sales</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netSalesTotal)}</strong><span className="muted small">Excluding returns</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Chacha Cafe</span><strong className="reports-stat-value">{formatMoney(filteredSummary.cafeNetSales)}</strong><span className="muted small">{filteredSummary.cafeInvoiceCount} invoices</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Chacha Burger</span><strong className="reports-stat-value">{formatMoney(filteredSummary.burgerNetSales)}</strong><span className="muted small">{filteredSummary.burgerInvoiceCount} invoices</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Invoices</span><strong className="reports-stat-value">{filteredSummary.invoiceCount}</strong><span className="muted small">In range</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Gross total</span><strong className="reports-stat-value">{formatMoney(filteredSummary.grossTotal)}</strong><span className="muted small">All invoices</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Returns</span><strong className="reports-stat-value">{filteredSummary.returnedCount}</strong><span className="muted small">{formatMoney(filteredSummary.returnedTotal)} refunded / voided</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Paid vs unpaid</span><strong className="reports-stat-value">{filteredSummary.paidCount} / {filteredSummary.unpaidCount}</strong><span className="muted small">Non-returned only</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">🛵 Delivery charges</span><strong className="reports-stat-value">{formatMoney(filteredSummary.deliveryChargesTotal)}</strong><span className="muted small">{filteredSummary.deliveryOrderCount} delivery orders</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Sales excl. delivery</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netSalesExclDelivery)}</strong><span className="muted small">Net sales − delivery charges</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Total expenses</span><strong className="reports-stat-value">{formatMoney(filteredSummary.expensesTotal)}</strong><span className="muted small">{filteredSummary.expenseCount} entries · date spent</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net after expenses</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netAfterExpenses)}</strong><span className="muted small">Sales excl. delivery − expenses</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net sales</span><strong className="reports-stat-value">{formatMoney(summary.netSalesTotal)}</strong><span className="muted small">Excluding returns</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Chacha Cafe</span><strong className="reports-stat-value">{formatMoney(summary.cafeNetSales)}</strong><span className="muted small">{summary.cafeInvoiceCount} invoices</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Chacha Burger</span><strong className="reports-stat-value">{formatMoney(summary.burgerNetSales)}</strong><span className="muted small">{summary.burgerInvoiceCount} invoices</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Invoices</span><strong className="reports-stat-value">{summary.invoiceCount}</strong><span className="muted small">In range</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Gross total</span><strong className="reports-stat-value">{formatMoney(summary.grossTotal)}</strong><span className="muted small">All invoices</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Returns</span><strong className="reports-stat-value">{summary.returnedCount}</strong><span className="muted small">{formatMoney(summary.returnedTotal)} refunded / voided</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Paid vs unpaid</span><strong className="reports-stat-value">{summary.paidCount} / {summary.unpaidCount}</strong><span className="muted small">Non-returned only</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">🛵 Delivery charges</span><strong className="reports-stat-value">{formatMoney(summary.deliveryChargesTotal)}</strong><span className="muted small">{summary.deliveryOrderCount} delivery orders</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Sales excl. delivery</span><strong className="reports-stat-value">{formatMoney(summary.netSalesExclDelivery)}</strong><span className="muted small">Net sales − delivery charges</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Total expenses</span><strong className="reports-stat-value">{formatMoney(summary.expensesTotal)}</strong><span className="muted small">{summary.expenseCount} entries · date spent</span></article>
+              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net after expenses</span><strong className="reports-stat-value">{formatMoney(summary.netAfterExpenses)}</strong><span className="muted small">Sales excl. delivery − expenses</span></article>
             </section>
+          ) : null
+        ) : null}
 
-            <section className="card reports-table-card">
-              <div className="reports-sellers-head">
-                <div>
-                  <h3 className="sub">Top selling items &amp; deals</h3>
-                  <p className="muted small">Line items across non-returned invoices in range.</p>
-                </div>
-                <div className="reports-filter-btns">
-                  <button type="button" className={sellerSort === 'qty' ? 'primary sm' : 'ghost sm'} onClick={() => setSellerSort('qty')}>By quantity</button>
-                  <button type="button" className={sellerSort === 'revenue' ? 'primary sm' : 'ghost sm'} onClick={() => setSellerSort('revenue')}>By revenue</button>
-                </div>
-              </div>
-              {topSellers.length === 0 ? <p className="muted">No sales in this period.</p> : (
-                <div className="table-scroll">
-                  <table className="staff-accounts-table reports-invoice-table">
-                    <thead><tr><th scope="col" className="num">#</th><th scope="col">Item / Deal</th><th scope="col">Type</th><th scope="col" className="num">Qty sold</th><th scope="col" className="num">Revenue</th><th scope="col" className="num">Orders</th></tr></thead>
-                    <tbody>
-                      {topSellers.map((row, i) => (
-                        <tr key={row.key}>
-                          <td className="num muted">{i + 1}</td>
-                          <td>{row.label}</td>
-                          <td>{row.kind === 'deal' ? <span className="badge-role badge-role-super">Deal</span> : <span className="badge-role badge-role-staff">Item</span>}</td>
-                          <td className="num"><strong>{row.qty}</strong></td>
-                          <td className="num">{formatMoney(row.revenue)}</td>
-                          <td className="num muted small">{row.orderCount}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-
-            <section className="card reports-table-card">
-              <h3 className="sub">Invoices in range{filteredInvoices.length !== data.invoices.length ? ` (${filteredInvoices.length} of ${data.invoices.length})` : ` (${filteredInvoices.length})`}</h3>
-              {filteredInvoices.length === 0 ? <p className="muted">No invoices match the selected filters.</p> : (
+        {tab === 'invoices' ? (
+          <section className="card reports-table-card">
+            <h3 className="sub">Invoices in range{invoiceData ? ` (${invoiceData.pagination.total})` : ''}</h3>
+            {loading && !invoiceData ? <p className="muted">Loading…</p> : !invoiceData || invoiceData.invoices.length === 0 ? (
+              <p className="muted">No invoices match the selected filters.</p>
+            ) : (
+              <>
                 <div className="table-scroll">
                   <table className="staff-accounts-table reports-invoice-table">
                     <thead><tr><th scope="col">Business</th><th scope="col">Invoice</th><th scope="col">Issued</th><th scope="col">Order type</th><th scope="col" className="num">Total</th><th scope="col" className="num">Delivery</th><th scope="col">Status</th><th scope="col">Payment</th></tr></thead>
                     <tbody>
-                      {filteredInvoices.map((inv) => {
+                      {invoiceData.invoices.map((inv) => {
                         const orderTypeLabels = { dine_in: '🍽️ Dine In', takeaway: '🛍️ Takeaway', delivery: '🛵 Delivery' }
                         return (
                           <tr key={inv.id}>
@@ -458,32 +435,78 @@ export default function ReportsPage() {
                     </tbody>
                   </table>
                 </div>
-              )}
-            </section>
+                <Pagination
+                  page={invoiceData.pagination.page}
+                  totalPages={invoiceData.pagination.totalPages}
+                  onChange={setInvoicePage}
+                  disabled={loading}
+                />
+              </>
+            )}
+          </section>
+        ) : null}
 
-            <section className="card reports-table-card">
-              <h3 className="sub">Expenses in range{filteredExpenses.length !== (data.expenses?.length ?? 0) ? ` (${filteredExpenses.length} of ${data.expenses?.length ?? 0})` : ` (${filteredExpenses.length})`}</h3>
-              {filteredExpenses.length === 0 ? <p className="muted">No expenses with date spent in this period.</p> : (
-                <div className="table-scroll">
-                  <table className="staff-accounts-table reports-invoice-table reports-expense-table">
-                    <thead><tr><th scope="col">Spent</th><th scope="col">Title</th><th scope="col">Business</th><th scope="col">Category</th><th scope="col" className="num">Amount</th><th scope="col">Note</th></tr></thead>
-                    <tbody>
-                      {filteredExpenses.map((ex) => (
-                        <tr key={ex.id}>
-                          <td className="muted">{formatShortDateTime(ex.spentAt)}</td>
-                          <td><Link href={`/expenses/${ex.id}`} className="team-row-link">{ex.title || '—'}</Link></td>
-                          <td><BusinessTypeBadge type={ex.businessType ?? 'cafe'} /></td>
-                          <td>{expenseCategoryLabel(ex.category)}</td>
-                          <td className="num">{formatMoney(ex.amount)}</td>
-                          <td className="muted small reports-expense-note">{ex.note?.trim() ? ex.note : '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-          </>
+        {tab === 'sellers' ? (
+          <section className="card reports-table-card">
+            <div className="reports-sellers-head">
+              <div>
+                <h3 className="sub">Top selling items &amp; deals</h3>
+                <p className="muted small">Line items across non-returned invoices in range.</p>
+              </div>
+              <div className="reports-filter-btns">
+                <button type="button" className={sellerSort === 'qty' ? 'primary sm' : 'ghost sm'} onClick={() => setSellerSort('qty')}>By quantity</button>
+                <button type="button" className={sellerSort === 'revenue' ? 'primary sm' : 'ghost sm'} onClick={() => setSellerSort('revenue')}>By revenue</button>
+              </div>
+            </div>
+            {loading && !sellers ? <p className="muted">Loading…</p> : !sellers || sellers.length === 0 ? (
+              <p className="muted">No sales in this period.</p>
+            ) : (
+              <div className="table-scroll">
+                <table className="staff-accounts-table reports-invoice-table">
+                  <thead><tr><th scope="col" className="num">#</th><th scope="col">Item / Deal</th><th scope="col">Type</th><th scope="col" className="num">Qty sold</th><th scope="col" className="num">Revenue</th><th scope="col" className="num">Orders</th></tr></thead>
+                  <tbody>
+                    {sellers.map((row, i) => (
+                      <tr key={row.key}>
+                        <td className="num muted">{i + 1}</td>
+                        <td>{row.label}</td>
+                        <td>{row.kind === 'deal' ? <span className="badge-role badge-role-super">Deal</span> : <span className="badge-role badge-role-staff">Item</span>}</td>
+                        <td className="num"><strong>{row.qty}</strong></td>
+                        <td className="num">{formatMoney(row.revenue)}</td>
+                        <td className="num muted small">{row.orderCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        ) : null}
+
+        {tab === 'expenses' ? (
+          <section className="card reports-table-card">
+            <h3 className="sub">Expenses in range{expenseData ? ` (${expenseData.expenses.length})` : ''}</h3>
+            {loading && !expenseData ? <p className="muted">Loading…</p> : !expenseData || expenseData.expenses.length === 0 ? (
+              <p className="muted">No expenses with date spent in this period.</p>
+            ) : (
+              <div className="table-scroll">
+                <table className="staff-accounts-table reports-invoice-table reports-expense-table">
+                  <thead><tr><th scope="col">Spent</th><th scope="col">Title</th><th scope="col">Business</th><th scope="col">Category</th><th scope="col" className="num">Amount</th><th scope="col">Note</th></tr></thead>
+                  <tbody>
+                    {expenseData.expenses.map((ex) => (
+                      <tr key={ex.id}>
+                        <td className="muted">{formatShortDateTime(ex.spentAt)}</td>
+                        <td><Link href={`/expenses/${ex.id}`} className="team-row-link">{ex.title || '—'}</Link></td>
+                        <td><BusinessTypeBadge type={ex.businessType ?? 'cafe'} /></td>
+                        <td>{expenseCategoryLabel(ex.category)}</td>
+                        <td className="num">{formatMoney(ex.amount)}</td>
+                        <td className="muted small reports-expense-note">{ex.note?.trim() ? ex.note : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         ) : null}
       </main>
     </RequireSuperAdmin>
