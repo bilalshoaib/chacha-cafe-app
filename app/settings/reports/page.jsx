@@ -75,7 +75,7 @@ function businessLabel(type) {
   return type
 }
 
-function buildPdfHtml({ rangeLabel, summary, invoices, expenses, businessFilter, paymentFilter }) {
+function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sellerSort, businessFilter, paymentFilter }) {
   const filterNote = [
     businessFilter !== 'all' ? `Business: ${businessLabel(businessFilter)}` : '',
     paymentFilter !== 'all' ? `Payment: ${paymentLabel(paymentFilter)}` : '',
@@ -92,6 +92,16 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, businessFilter,
       <td style="text-align:right">${(inv.deliveryCharge ?? 0) > 0 ? formatMoney(inv.deliveryCharge) : '—'}</td>
       <td>${inv.returned ? 'Returned' : inv.paid ? 'Paid' : 'Unpaid'}</td>
       <td>${paymentLabel(inv.paymentMethod)}</td>
+    </tr>`).join('')
+
+  const sellerRows = topSellers.map((r, i) => `
+    <tr>
+      <td style="text-align:right">${i + 1}</td>
+      <td>${r.label}</td>
+      <td>${r.kind === 'deal' ? 'Deal' : 'Item'}</td>
+      <td style="text-align:right">${r.qty}</td>
+      <td style="text-align:right">${formatMoney(r.revenue)}</td>
+      <td style="text-align:right">${r.orderCount}</td>
     </tr>`).join('')
 
   const expenseRows = expenses.map((ex) => `
@@ -143,6 +153,8 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, businessFilter,
   <div class="stat"><span class="stat-label">Expenses</span><span class="stat-value">${formatMoney(summary.expensesTotal)}</span><span class="stat-sub">${summary.expenseCount} entries</span></div>
   <div class="stat"><span class="stat-label">Net after expenses</span><span class="stat-value">${formatMoney(summary.netAfterExpenses)}</span><span class="stat-sub">Sales excl. delivery − expenses</span></div>
 </div>
+<h2>Top selling items &amp; deals (by ${sellerSort === 'revenue' ? 'revenue' : 'quantity'})</h2>
+${topSellers.length === 0 ? '<p style="color:#6b7280">No sales in this period.</p>' : `<table><thead><tr><th style="text-align:right">#</th><th>Item / Deal</th><th>Type</th><th style="text-align:right">Qty sold</th><th style="text-align:right">Revenue</th><th style="text-align:right">Orders</th></tr></thead><tbody>${sellerRows}</tbody></table>`}
 <h2>Invoices (${invoices.length})</h2>
 ${invoices.length === 0 ? '<p style="color:#6b7280">No invoices match the selected filters.</p>' : `<table><thead><tr><th>Business</th><th>Invoice ID</th><th>Issued</th><th>Order type</th><th style="text-align:right">Total</th><th style="text-align:right">Delivery</th><th>Status</th><th>Payment</th></tr></thead><tbody>${invoiceRows}</tbody></table>`}
 <h2>Expenses (${expenses.length})</h2>
@@ -165,6 +177,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false)
   const [businessFilter, setBusinessFilter] = useState('all')
   const [paymentFilter, setPaymentFilter] = useState('all')
+  const [sellerSort, setSellerSort] = useState('qty')
 
   const applyPreset = useCallback((id) => {
     const p = PRESETS.find((x) => x.id === id)
@@ -252,10 +265,34 @@ export default function ReportsPage() {
       netAfterExpenses: roundMoney(netSalesExclDelivery - expensesTotal),
     }
   }, [data, businessFilter, paymentFilter, filteredInvoices, filteredExpenses])
-console.log('filteredSummary',filteredSummary)
+
+  // Aggregate line items across non-returned invoices to rank best sellers.
+  const topSellers = useMemo(() => {
+    const byKey = new Map()
+    for (const inv of filteredInvoices) {
+      if (inv.returned) continue
+      for (const line of inv.lines ?? []) {
+        const extras = [line.size, line.flavour].filter(Boolean).join(' · ')
+        const label = extras ? `${line.name} · ${extras}` : line.name
+        const key = `${line.kind}:${line.refId ?? label}`
+        const prev = byKey.get(key)
+        if (prev) {
+          prev.qty += line.qty
+          prev.revenue += line.lineTotal
+          prev.orderCount += 1
+        } else {
+          byKey.set(key, { key, label, kind: line.kind, qty: line.qty, revenue: line.lineTotal, orderCount: 1 })
+        }
+      }
+    }
+    return [...byKey.values()]
+      .map((r) => ({ ...r, revenue: roundMoney(r.revenue) }))
+      .sort((a, b) => (sellerSort === 'revenue' ? b.revenue - a.revenue : b.qty - a.qty))
+  }, [filteredInvoices, sellerSort])
+
   function downloadPdf() {
     if (!data) return
-    const html = buildPdfHtml({ rangeLabel, summary: filteredSummary, invoices: filteredInvoices, expenses: filteredExpenses, businessFilter, paymentFilter })
+    const html = buildPdfHtml({ rangeLabel, summary: filteredSummary, invoices: filteredInvoices, expenses: filteredExpenses, topSellers, sellerSort, businessFilter, paymentFilter })
     const win = window.open('', '_blank', 'width=900,height=700')
     if (!win) return
     win.document.write(html); win.document.close(); win.focus()
@@ -362,6 +399,38 @@ console.log('filteredSummary',filteredSummary)
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Sales excl. delivery</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netSalesExclDelivery)}</strong><span className="muted small">Net sales − delivery charges</span></article>
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Total expenses</span><strong className="reports-stat-value">{formatMoney(filteredSummary.expensesTotal)}</strong><span className="muted small">{filteredSummary.expenseCount} entries · date spent</span></article>
               <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net after expenses</span><strong className="reports-stat-value">{formatMoney(filteredSummary.netAfterExpenses)}</strong><span className="muted small">Sales excl. delivery − expenses</span></article>
+            </section>
+
+            <section className="card reports-table-card">
+              <div className="reports-sellers-head">
+                <div>
+                  <h3 className="sub">Top selling items &amp; deals</h3>
+                  <p className="muted small">Line items across non-returned invoices in range.</p>
+                </div>
+                <div className="reports-filter-btns">
+                  <button type="button" className={sellerSort === 'qty' ? 'primary sm' : 'ghost sm'} onClick={() => setSellerSort('qty')}>By quantity</button>
+                  <button type="button" className={sellerSort === 'revenue' ? 'primary sm' : 'ghost sm'} onClick={() => setSellerSort('revenue')}>By revenue</button>
+                </div>
+              </div>
+              {topSellers.length === 0 ? <p className="muted">No sales in this period.</p> : (
+                <div className="table-scroll">
+                  <table className="staff-accounts-table reports-invoice-table">
+                    <thead><tr><th scope="col" className="num">#</th><th scope="col">Item / Deal</th><th scope="col">Type</th><th scope="col" className="num">Qty sold</th><th scope="col" className="num">Revenue</th><th scope="col" className="num">Orders</th></tr></thead>
+                    <tbody>
+                      {topSellers.map((row, i) => (
+                        <tr key={row.key}>
+                          <td className="num muted">{i + 1}</td>
+                          <td>{row.label}</td>
+                          <td>{row.kind === 'deal' ? <span className="badge-role badge-role-super">Deal</span> : <span className="badge-role badge-role-staff">Item</span>}</td>
+                          <td className="num"><strong>{row.qty}</strong></td>
+                          <td className="num">{formatMoney(row.revenue)}</td>
+                          <td className="num muted small">{row.orderCount}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </section>
 
             <section className="card reports-table-card">

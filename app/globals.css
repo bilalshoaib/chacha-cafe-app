@@ -1413,6 +1413,15 @@ button.inline-link-button:hover {
   padding: 1rem 1.15rem 1.15rem;
 }
 
+.reports-sellers-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
 
 
 .reports-invoice-table .num {

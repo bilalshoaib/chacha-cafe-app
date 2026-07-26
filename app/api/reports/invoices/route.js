@@ -99,7 +99,17 @@ export async function GET(request) {
       if (inv.paid) paidCount += 1; else unpaidCount += 1
       if (deliveryCharge > 0) { deliveryChargesTotal += deliveryCharge; deliveryOrderCount += 1 }
     }
-    return { id: inv.id, orderId: inv.orderId, businessType, orderType: inv.orderType ?? null, createdAt: inv.createdAt, total, deliveryCharge, cafePortion, burgerPortion, paid: Boolean(inv.paid), returned: ret, paymentMethod: inv.paymentMethod ?? null }
+    const lines = (Array.isArray(inv.lines) ? inv.lines : []).map((l) => ({
+      refId: l.refId ?? null,
+      kind: l.kind ?? 'item',
+      name: l.name ?? '',
+      qty: Number(l.qty) || 0,
+      lineTotal: roundMoney(l.lineTotal ?? 0),
+      size: l.size ?? null,
+      flavour: l.flavour ?? null,
+      lineBusinessType: l.lineBusinessType ?? null,
+    }))
+    return { id: inv.id, orderId: inv.orderId, businessType, orderType: inv.orderType ?? null, createdAt: inv.createdAt, total, deliveryCharge, cafePortion, burgerPortion, paid: Boolean(inv.paid), returned: ret, paymentMethod: inv.paymentMethod ?? null, lines }
   })
 
   grossTotal = roundMoney(grossTotal); returnedTotal = roundMoney(returnedTotal)
