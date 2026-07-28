@@ -42,6 +42,20 @@ const TABS = [
 
 const INVOICE_PAGE_SIZE = 25
 
+const SUMMARY_STATS = [
+  { key: 'netSales', label: 'Net sales', value: (s) => formatMoney(s.netSalesTotal), sub: () => 'Excluding returns' },
+  { key: 'cafe', label: 'Chacha Cafe', value: (s) => formatMoney(s.cafeNetSales), sub: (s) => `${s.cafeInvoiceCount} invoices` },
+  { key: 'burger', label: 'Chacha Burger', value: (s) => formatMoney(s.burgerNetSales), sub: (s) => `${s.burgerInvoiceCount} invoices` },
+  { key: 'invoiceCount', label: 'Invoices', value: (s) => s.invoiceCount, sub: () => 'In range' },
+  { key: 'grossTotal', label: 'Gross total', value: (s) => formatMoney(s.grossTotal), sub: () => 'All invoices' },
+  { key: 'returns', label: 'Returns', value: (s) => s.returnedCount, sub: (s) => `${formatMoney(s.returnedTotal)} refunded / voided` },
+  { key: 'paidUnpaid', label: 'Paid vs unpaid', value: (s) => `${s.paidCount} / ${s.unpaidCount}`, sub: () => 'Non-returned only' },
+  { key: 'delivery', label: '🛵 Delivery charges', value: (s) => formatMoney(s.deliveryChargesTotal), sub: (s) => `${s.deliveryOrderCount} delivery orders` },
+  { key: 'exclDelivery', label: 'Sales excl. delivery', value: (s) => formatMoney(s.netSalesExclDelivery), sub: () => 'Net sales − delivery charges' },
+  { key: 'expenses', label: 'Total expenses', value: (s) => formatMoney(s.expensesTotal), sub: (s) => `${s.expenseCount} entries · date spent` },
+  { key: 'netAfterExpenses', label: 'Net after expenses', value: (s) => formatMoney(s.netAfterExpenses), sub: () => 'Sales excl. delivery − expenses' },
+]
+
 function dateInputValue(d) {
   const x = new Date(d)
   const y = x.getFullYear()
@@ -397,19 +411,24 @@ export default function ReportsPage() {
         ) : null}
 
         {tab === 'summary' ? (
-          loading && !summary ? <p className="muted">Loading…</p> : summary ? (
+          loading || summary ? (
             <section className="reports-summary-grid">
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net sales</span><strong className="reports-stat-value">{formatMoney(summary.netSalesTotal)}</strong><span className="muted small">Excluding returns</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Chacha Cafe</span><strong className="reports-stat-value">{formatMoney(summary.cafeNetSales)}</strong><span className="muted small">{summary.cafeInvoiceCount} invoices</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Chacha Burger</span><strong className="reports-stat-value">{formatMoney(summary.burgerNetSales)}</strong><span className="muted small">{summary.burgerInvoiceCount} invoices</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Invoices</span><strong className="reports-stat-value">{summary.invoiceCount}</strong><span className="muted small">In range</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Gross total</span><strong className="reports-stat-value">{formatMoney(summary.grossTotal)}</strong><span className="muted small">All invoices</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Returns</span><strong className="reports-stat-value">{summary.returnedCount}</strong><span className="muted small">{formatMoney(summary.returnedTotal)} refunded / voided</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Paid vs unpaid</span><strong className="reports-stat-value">{summary.paidCount} / {summary.unpaidCount}</strong><span className="muted small">Non-returned only</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">🛵 Delivery charges</span><strong className="reports-stat-value">{formatMoney(summary.deliveryChargesTotal)}</strong><span className="muted small">{summary.deliveryOrderCount} delivery orders</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Sales excl. delivery</span><strong className="reports-stat-value">{formatMoney(summary.netSalesExclDelivery)}</strong><span className="muted small">Net sales − delivery charges</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Total expenses</span><strong className="reports-stat-value">{formatMoney(summary.expensesTotal)}</strong><span className="muted small">{summary.expenseCount} entries · date spent</span></article>
-              <article className="card reports-stat-card"><span className="muted small reports-stat-label">Net after expenses</span><strong className="reports-stat-value">{formatMoney(summary.netAfterExpenses)}</strong><span className="muted small">Sales excl. delivery − expenses</span></article>
+              {SUMMARY_STATS.map((stat) => (
+                <article key={stat.key} className="card reports-stat-card">
+                  <span className="muted small reports-stat-label">{stat.label}</span>
+                  {loading ? (
+                    <>
+                      <span className="skeleton skeleton-value" />
+                      <span className="skeleton skeleton-sub" />
+                    </>
+                  ) : (
+                    <>
+                      <strong className="reports-stat-value">{stat.value(summary)}</strong>
+                      <span className="muted small">{stat.sub(summary)}</span>
+                    </>
+                  )}
+                </article>
+              ))}
             </section>
           ) : null
         ) : null}
