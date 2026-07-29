@@ -1433,6 +1433,51 @@ button.inline-link-button:hover {
   .skeleton { animation: none; }
 }
 
+/* Visible to screen readers only — pairs a spoken "Loading…" with the
+   silent shimmer blocks. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skeleton placeholder rows for the menu-item and deal lists. */
+.skeleton-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.2rem;
+  border-bottom: 1px solid var(--border);
+}
+.skeleton-menu-row:last-child { border-bottom: none; }
+.skeleton-menu-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+.skeleton-deal-block {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.skeleton-deal-block:last-child { border-bottom: none; }
+.skeleton-deal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .reports-table-card {
   padding: 1rem 1.15rem 1.15rem;
 }
@@ -1770,6 +1815,16 @@ button.inline-link-button:hover {
   background: color-mix(in srgb, #22c55e 14%, var(--surface));
   border: 1px solid color-mix(in srgb, #16a34a 30%, var(--border));
   color: #14532d;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+}
+
+/* Neutral guidance — used when an action is unavailable and the user needs
+   to know what to do first. */
+.banner.info {
+  background: color-mix(in srgb, #0ea5e9 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, #0284c7 28%, var(--border));
+  color: #0c4a6e;
   border-radius: 10px;
   padding: 0.55rem 0.65rem;
 }
@@ -2193,6 +2248,72 @@ button.sm {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg);
+}
+
+/* Running summary of the picked items — the list below scrolls, so this keeps
+   the current selection and its value in view while pricing the bundle. */
+.deal-summary {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.deal-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.deal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.deal-chip-remove {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  color: var(--text-muted);
+  border-radius: 999px;
+}
+.deal-chip-remove:hover:not(:disabled) {
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+  color: #b91c1c;
+}
+.deal-summary-value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.deal-savings-good {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #15803d;
+}
+.deal-savings-bad {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+.deal-item-search {
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+.deal-row-price {
+  color: var(--text-h);
+  font-weight: 600;
+  margin-left: 0.15rem;
 }
 
 .deal-row {
@@ -3510,6 +3631,24 @@ button.danger-solid:disabled {
   margin: 0 0 0.75rem;
 }
 
+/* Scannable replacement for the old run-on instructions paragraph. */
+.order-hint-list {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.7rem 0.55rem 1.6rem;
+  list-style: disc;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  border-radius: 0 8px 8px 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.order-hint-list li + li {
+  margin-top: 0.2rem;
+}
+.order-hint-list strong {
+  color: var(--text-h);
+}
+
 .table-scroll {
   overflow-x: auto;
   margin: 0 0 1rem;
@@ -3567,6 +3706,16 @@ button.danger-solid:disabled {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-h);
+}
+
+/* A discount box greys out while the other kind of discount is in use, so it
+   reads as unavailable rather than merely empty. */
+.input-table:disabled {
+  background: var(--bg);
+  color: var(--text-muted);
+  border-style: dashed;
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .deal-split-fields {

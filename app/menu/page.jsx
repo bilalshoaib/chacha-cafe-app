@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { api } from '@/api.js'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import MenuItemFormFields from '@/components/MenuItemFormFields.jsx'
+import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { ADD_MENU_ITEM_HASH } from '@/constants/categories.js'
 import { itemBusinessType } from '@/constants/businessTypes.js'
 import { clearAddMenuItemHash } from '@/utils/hashNavigation.js'
@@ -13,7 +14,7 @@ import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
 export default function MenuItemsPage() {
-  const { menu, refreshAll, setError } = useOrders()
+  const { menu, loading, refreshAll, setError } = useOrders()
   const toast = useToast()
   const deleteDialogRef = useRef(null)
   const editDialogRef = useRef(null)
@@ -265,7 +266,7 @@ export default function MenuItemsPage() {
         <section className="card menu-items-list-card">
           <div className="menu-items-section-head">
             <h2>
-              All items ({filteredItems.length}{filteredItems.length !== menu.items.length ? ` of ${menu.items.length}` : ''})
+              All items{loading ? '' : ` (${filteredItems.length}${filteredItems.length !== menu.items.length ? ` of ${menu.items.length}` : ''})`}
             </h2>
             <div className="menu-items-toolbar">
               <button type="button" className="link-add-menu-item" onClick={openAddDialog}>
@@ -313,7 +314,21 @@ export default function MenuItemsPage() {
               aria-label="Search menu items"
             />
           </div>
-          {sortedItems.length === 0 ? (
+          {loading ? (
+            <ul className="menu-item-admin-list" aria-busy="true">
+              <SkeletonStatus label="Loading menu items…" />
+              {Array.from({ length: 6 }, (_, i) => (
+                <li key={i} className="skeleton-menu-row">
+                  <Skeleton width="1rem" height="1rem" />
+                  <div className="skeleton-menu-row-main">
+                    <Skeleton width={`${45 + ((i * 13) % 35)}%`} height="0.95rem" />
+                    <Skeleton width={`${25 + ((i * 7) % 20)}%`} height="0.7rem" />
+                  </div>
+                  <Skeleton width="4rem" height="0.95rem" />
+                </li>
+              ))}
+            </ul>
+          ) : sortedItems.length === 0 ? (
             <p className="muted">
               No items yet.{' '}
               <button type="button" className="inline-link-button" onClick={openAddDialog}>

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { buildCategoryTabs } from '@/utils/formatting.js'
+import { applyPricing, discountPartsOf, priceLine, repriceLine } from '@/lib/pricing.js'
 
 const OrdersContext = createContext(null)
 
@@ -26,46 +27,36 @@ function newLineId() {
   return `l-${randomId().slice(0, 8)}`
 }
 
-function clampDiscount(raw, maxValue) {
-  const d = Number(raw)
-  if (!Number.isFinite(d) || d <= 0) return 0
-  return Math.round(Math.min(d, maxValue) * 100) / 100
+function buildItemLine(item, qty, discounts = {}) {
+  const priced = priceLine({ unitPrice: item.price, qty, ...discounts })
+  return applyPricing(
+    {
+      id: newLineId(),
+      kind: 'item',
+      refId: item.id,
+      name: item.name,
+      category: item.category,
+      unitPrice: item.price,
+      ...(item.size ? { size: item.size } : {}),
+      ...(item.flavour ? { flavour: item.flavour } : {}),
+    },
+    priced,
+  )
 }
 
-function buildItemLine(item, qty, discount = 0) {
-  const q = Math.max(1, Math.floor(Number(qty)) || 1)
-  const gross = Math.round(item.price * q * 100) / 100
-  const discountAmt = clampDiscount(discount, gross)
-  return {
-    id: newLineId(),
-    kind: 'item',
-    refId: item.id,
-    name: item.name,
-    category: item.category,
-    qty: q,
-    unitPrice: item.price,
-    ...(discountAmt > 0 ? { discount: discountAmt } : {}),
-    lineTotal: Math.round(Math.max(0, gross - discountAmt) * 100) / 100,
-    ...(item.size ? { size: item.size } : {}),
-    ...(item.flavour ? { flavour: item.flavour } : {}),
-  }
-}
-
-function buildDealLine(deal, qty, discount = 0) {
-  const q = Math.max(1, Math.floor(Number(qty)) || 1)
-  const gross = Math.round(deal.price * q * 100) / 100
-  const discountAmt = clampDiscount(discount, gross)
-  return {
-    id: newLineId(),
-    kind: 'deal',
-    refId: deal.id,
-    name: deal.name,
-    qty: q,
-    unitPrice: deal.price,
-    ...(discountAmt > 0 ? { discount: discountAmt } : {}),
-    lineTotal: Math.round(Math.max(0, gross - discountAmt) * 100) / 100,
-    dealIncludes: deal.includes ? deal.includes.map((x) => ({ ...x })) : [],
-  }
+function buildDealLine(deal, qty, discounts = {}) {
+  const priced = priceLine({ unitPrice: deal.price, qty, ...discounts })
+  return applyPricing(
+    {
+      id: newLineId(),
+      kind: 'deal',
+      refId: deal.id,
+      name: deal.name,
+      unitPrice: deal.price,
+      dealIncludes: deal.includes ? deal.includes.map((x) => ({ ...x })) : [],
+    },
+    priced,
+  )
 }
 
 export function OrdersProvider({ children }) {
@@ -139,7 +130,7 @@ export function OrdersProvider({ children }) {
     setDeliveryCharge('')
   }
 
-  async function addItemToOrder(itemId, qty = 1, discount = 0) {
+  async function addItemToOrder(itemId, qty = 1, discounts = {}) {
     if (!activeOrderId) {
       setError('Start a new order first.')
       return false
@@ -155,11 +146,11 @@ export function OrdersProvider({ children }) {
       return false
     }
     setError('')
-    updateActiveOrderLines((lines) => [...lines, buildItemLine(item, quantity, discount)])
+    updateActiveOrderLines((lines) => [...lines, buildItemLine(item, quantity, discounts)])
     return true
   }
 
-  async function createMenuItemAndAddLine({ name, category, price, qty, discount = 0 }) {
+  async function createMenuItemAndAddLine({ name, category, price, qty, discounts = {} }) {
     if (!activeOrderId) {
       setError('Start a new order first.')
       return false
@@ -192,7 +183,7 @@ export function OrdersProvider({ children }) {
         })
         setMenu((prev) => ({ ...prev, items: [...prev.items, item] }))
       }
-      updateActiveOrderLines((lines) => [...lines, buildItemLine(item, quantity, discount)])
+      updateActiveOrderLines((lines) => [...lines, buildItemLine(item, quantity, discounts)])
       return true
     } catch (e) {
       setError(e.message)
@@ -230,33 +221,22 @@ export function OrdersProvider({ children }) {
     }
     const q = Math.floor(quantity)
     setError('')
-    updateActiveOrderLines((lines) => lines.map((l) => {
-      if (l.id !== lineId) return l
-      const gross = Math.round(l.unitPrice * q * 100) / 100
-      const discountAmt = l.discount ?? 0
-      return { ...l, qty: q, lineTotal: Math.round(Math.max(0, gross - discountAmt) * 100) / 100 }
-    }))
+    // A per-unit discount scales with qty, so the row has to be re-priced
+    // rather than just having its total adjusted.
+    updateActiveOrderLines((lines) => lines.map((l) => (l.id === lineId ? repriceLine(l, { qty: q }) : l)))
   }
 
-  function updateLineDiscount(lineId, discount) {
+  /** `field` is 'unitDiscount' (per item) or 'lineDiscount' (whole row). */
+  function updateLineDiscount(lineId, field, value) {
     if (!activeOrderId) return
-    const d = Number(discount)
+    const d = Number(value)
     if (!Number.isFinite(d) || d < 0) {
       const err = new Error('discount must be a number ≥ 0')
       setError(err.message)
       throw err
     }
     setError('')
-    updateActiveOrderLines((lines) => lines.map((l) => {
-      if (l.id !== lineId) return l
-      const gross = Math.round(l.unitPrice * l.qty * 100) / 100
-      const next = { ...l }
-      if (d === 0) delete next.discount
-      else next.discount = Math.round(d * 100) / 100
-      const discountAmt = next.discount ?? 0
-      next.lineTotal = Math.round(Math.max(0, gross - discountAmt) * 100) / 100
-      return next
-    }))
+    updateActiveOrderLines((lines) => lines.map((l) => (l.id === lineId ? repriceLine(l, { [field]: d }) : l)))
   }
 
   async function doCheckout() {
@@ -269,7 +249,7 @@ export function OrdersProvider({ children }) {
         kind: l.kind,
         refId: l.refId,
         qty: l.qty,
-        discount: l.discount ?? 0,
+        ...discountPartsOf(l),
       }))
       const { invoice } = await api.checkout({
         lines,

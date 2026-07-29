@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { api } from '@/api.js'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import DealFormFields from '@/components/DealFormFields.jsx'
+import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { BUSINESS_TYPES, DEAL_BUSINESS_TYPE_OPTIONS, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
@@ -36,7 +37,7 @@ function includesFromQtyMap(qtyById) {
 }
 
 export default function DealsPage() {
-  const { menu, refreshAll, setError } = useOrders()
+  const { menu, loading, refreshAll, setError } = useOrders()
   const toast = useToast()
   const addDialogRef = useRef(null)
   const editDialogRef = useRef(null)
@@ -250,14 +251,22 @@ export default function DealsPage() {
         <section className="card saved-deals-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
             <h2 style={{ margin: 0 }}>
-              Saved deals ({activeDeals.length})
-              {archivedDeals.length > 0 && (
+              Saved deals{loading ? '' : ` (${activeDeals.length})`}
+              {!loading && archivedDeals.length > 0 && (
                 <span className="muted" style={{ fontSize: '0.85em', fontWeight: 'normal', marginLeft: '0.5rem' }}>
                   · {archivedDeals.length} archived
                 </span>
               )}
             </h2>
-            <button type="button" className="primary sm" onClick={openAddDialog}>+ Add deal</button>
+            <button
+              type="button"
+              className="primary sm"
+              onClick={openAddDialog}
+              disabled={loading || menu.items.length === 0}
+              title={menu.items.length === 0 && !loading ? 'Add menu items first — a deal is built from them.' : undefined}
+            >
+              + Add deal
+            </button>
           </div>
           <p className="muted small saved-deals-lede">
             These appear on <strong>Take order</strong> in <strong>Add a deal to this order</strong>. Filter by
@@ -274,7 +283,28 @@ export default function DealsPage() {
               Archived {archivedDeals.length > 0 && `(${archivedDeals.length})`}
             </button>
           </div>
-          {filteredDeals.length === 0 ? (
+          {!loading && menu.items.length === 0 ? (
+            <p className="banner info deals-needs-items">
+              A deal is a bundle of menu items, so add some items first.{' '}
+              <Link href="/menu" className="inline-link">Go to Menu items →</Link>
+            </p>
+          ) : null}
+          {loading ? (
+            <ul className="saved-deals-list" aria-busy="true">
+              <SkeletonStatus label="Loading deals…" />
+              {Array.from({ length: 3 }, (_, i) => (
+                <li key={i} className="skeleton-deal-block">
+                  <div className="skeleton-deal-head">
+                    <Skeleton width={`${35 + ((i * 11) % 25)}%`} height="1.05rem" />
+                    <Skeleton width="5rem" height="1.05rem" />
+                  </div>
+                  <Skeleton width="4.5rem" height="0.7rem" />
+                  <Skeleton width={`${55 + ((i * 9) % 25)}%`} height="0.8rem" />
+                  <Skeleton width={`${40 + ((i * 17) % 30)}%`} height="0.8rem" />
+                </li>
+              ))}
+            </ul>
+          ) : filteredDeals.length === 0 ? (
             <p className="muted">
               {listFilter === 'archived' ? 'No archived deals.' : menu.deals.length === 0 ? 'No deals yet — click \u201c+ Add deal\u201d to create one.' : 'No deals for this filter.'}
             </p>

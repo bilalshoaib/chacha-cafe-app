@@ -7,6 +7,7 @@ import DealPicker from '@/components/DealPicker.jsx'
 import { api } from '@/api.js'
 import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { cloneInvoiceLines, lineFromDeal, lineFromMenuItem, removeLineById, updateLineDiscount, updateLineQty } from '@/utils/invoiceLines.js'
+import { discountPartsOf, priceLine } from '@/lib/pricing.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
@@ -23,7 +24,8 @@ export default function InvoiceEditPage() {
   const [entrySearch, setEntrySearch] = useState('')
   const [entryItem, setEntryItem] = useState(null)
   const [entryQty, setEntryQty] = useState('1')
-  const [entryDiscount, setEntryDiscount] = useState('')
+  const [entryUnitDiscount, setEntryUnitDiscount] = useState('')
+  const [entryLineDiscount, setEntryLineDiscount] = useState('')
   // Raw text per line, so a half-typed discount ("" or "1.") stays on screen
   // while editedLines keeps the parsed value.
   const [discountDraftByLine, setDiscountDraftByLine] = useState({})
@@ -41,7 +43,7 @@ export default function InvoiceEditPage() {
 
   useEffect(() => { void loadInvoice() }, [loadInvoice])
   useEffect(() => { if (!invoice) return; setNoteDraft(invoice.customerNote ?? ''); setEditedLines(cloneInvoiceLines(invoice.lines)); setDiscountDraftByLine({}) }, [invoice])
-  useEffect(() => { setEntrySearch(''); setEntryItem(null); setEntryQty('1'); setEntryDiscount('') }, [invoiceId])
+  useEffect(() => { setEntrySearch(''); setEntryItem(null); setEntryQty('1'); setEntryUnitDiscount(''); setEntryLineDiscount('') }, [invoiceId])
 
   const itemLabelById = useMemo(() => {
     const m = {}
@@ -61,16 +63,23 @@ export default function InvoiceEditPage() {
     if (!entryItem) return null
     const q = Number(entryQty)
     if (!Number.isFinite(q) || q < 1) return null
-    const gross = Math.round(entryItem.price * q * 100) / 100
-    const d = Number(entryDiscount)
-    const discVal = Number.isFinite(d) && d > 0 ? Math.min(d, gross) : 0
-    return Math.round(Math.max(0, gross - discVal) * 100) / 100
+    return priceLine({
+      unitPrice: entryItem.price,
+      qty: q,
+      unitDiscount: Number(entryUnitDiscount) || 0,
+      lineDiscount: Number(entryLineDiscount) || 0,
+    }).lineTotal
   })()
+
+  const entryUnitAmt = Number(entryUnitDiscount) || 0
+  const entryLineAmt = Number(entryLineDiscount) || 0
+  const entryUnitLocked = entryLineAmt > 0 && entryUnitAmt === 0
+  const entryLineLocked = entryUnitAmt > 0 && entryLineAmt === 0
 
   const canAddLine = Boolean(entryItem) && Number(entryQty) >= 1 && Number.isFinite(Number(entryQty)) && invoice && !invoice.returned
 
   function resetEntryRow() {
-    setEntrySearch(''); setEntryItem(null); setEntryQty('1'); setEntryDiscount('')
+    setEntrySearch(''); setEntryItem(null); setEntryQty('1'); setEntryUnitDiscount(''); setEntryLineDiscount('')
     queueMicrotask(() => searchInputRef.current?.focus())
   }
 
@@ -78,20 +87,42 @@ export default function InvoiceEditPage() {
     if (!invoice || invoice.returned || !entryItem || !canAddLine) return
     const q = Number(entryQty)
     if (!Number.isFinite(q) || q < 1) return
-    setEditedLines((prev) => [...prev, lineFromMenuItem(entryItem, entryQty, entryDiscount)])
+    setEditedLines((prev) => [...prev, lineFromMenuItem(entryItem, entryQty, { unitDiscount: Number(entryUnitDiscount) || 0, lineDiscount: Number(entryLineDiscount) || 0 })])
     resetEntryRow()
   }
 
-  function lineDiscountDisplay(line) {
-    const d = discountDraftByLine[line.id]
-    return d !== undefined ? d : String(line.discount ?? '')
+  function draftKey(lineId, field) {
+    return `${lineId}:${field}`
+  }
+
+  function lineDiscountDisplay(line, field) {
+    const d = discountDraftByLine[draftKey(line.id, field)]
+    if (d !== undefined) return d
+    const saved = discountPartsOf(line)[field]
+    return saved ? String(saved) : ''
+  }
+
+  function draftedAmount(line, field) {
+    const raw = discountDraftByLine[draftKey(line.id, field)]
+    if (raw === undefined) return discountPartsOf(line)[field]
+    const n = Number(raw === '' ? 0 : raw)
+    return Number.isFinite(n) && n >= 0 ? n : discountPartsOf(line)[field]
+  }
+
+  /**
+   * The two discounts are mutually exclusive: entering one locks the other.
+   * If a line somehow carries both, neither is locked so it can be corrected.
+   */
+  function discountLockedBy(line, field) {
+    const other = field === 'unitDiscount' ? 'lineDiscount' : 'unitDiscount'
+    return draftedAmount(line, other) > 0 && draftedAmount(line, field) === 0
   }
 
   // Applied straight to editedLines on every keystroke, so nothing is left
   // uncommitted when Save is pressed.
-  function setLineDiscount(line, raw) {
-    setDiscountDraftByLine((prev) => ({ ...prev, [line.id]: raw }))
-    setEditedLines((prev) => updateLineDiscount(prev, line.id, raw === '' ? 0 : raw))
+  function setLineDiscount(line, field, raw) {
+    setDiscountDraftByLine((prev) => ({ ...prev, [draftKey(line.id, field)]: raw }))
+    setEditedLines((prev) => updateLineDiscount(prev, line.id, field, raw === '' ? 0 : raw))
   }
 
   async function saveInvoiceEdits() {
@@ -163,7 +194,7 @@ export default function InvoiceEditPage() {
 
         <div className="table-scroll">
           <table className="inv-table inv-table-edit">
-            <thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Discount</th><th>Line</th><th aria-label="Actions" /></tr></thead>
+            <thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Disc/item</th><th>Disc (row)</th><th>Line</th><th aria-label="Actions" /></tr></thead>
             <tbody>
               {editedLines.map((line) => {
                 const extras = formatItemExtras(line)
@@ -184,12 +215,24 @@ export default function InvoiceEditPage() {
                         aria-label="Quantity" />
                     </td>
                     <td>{formatMoney(line.unitPrice)}</td>
-                    <td>
-                      <input className="input-table discount-input" type="number" min={0} step={1} inputMode="decimal" placeholder="0"
-                        value={lineDiscountDisplay(line)}
-                        onChange={(e) => setLineDiscount(line, e.target.value)}
-                        aria-label={`Discount for ${line.name}`} />
-                    </td>
+                    {['unitDiscount', 'lineDiscount'].map((field) => {
+                      const locked = discountLockedBy(line, field)
+                      return (
+                        <td key={field}>
+                          <input className="input-table discount-input" type="number" min={0} step={1} inputMode="decimal"
+                            placeholder={locked ? '—' : '0'}
+                            value={lineDiscountDisplay(line, field)}
+                            disabled={locked}
+                            title={locked
+                              ? (field === 'unitDiscount'
+                                  ? 'Clear the row discount to use a per-item discount instead.'
+                                  : 'Clear the per-item discount to use a row discount instead.')
+                              : undefined}
+                            onChange={(e) => setLineDiscount(line, field, e.target.value)}
+                            aria-label={field === 'unitDiscount' ? `Discount per item for ${line.name}` : `Discount on the whole ${line.name} row`} />
+                        </td>
+                      )
+                    })}
                     <td>
                       {formatMoney(line.lineTotal)}
                       {(line.discount ?? 0) > 0 ? <span className="line-discount-badge">−{formatMoney(line.discount)}</span> : null}
@@ -219,10 +262,19 @@ export default function InvoiceEditPage() {
                 <td className="cell-readonly">{entryItem ? formatMoney(entryItem.price) : '—'}</td>
                 <td>
                   <input className="input-table discount-input" type="number" min={0} step={1} inputMode="decimal" placeholder="0"
-                    value={entryDiscount} disabled={!entryItem}
-                    onChange={(e) => setEntryDiscount(e.target.value)}
+                    value={entryUnitDiscount} disabled={!entryItem || entryUnitLocked}
+                    title={entryUnitLocked ? 'Clear the row discount to use a per-item discount instead.' : undefined}
+                    onChange={(e) => setEntryUnitDiscount(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEntryLine() } }}
-                    aria-label="Discount for new line" />
+                    aria-label="Discount per item for new line" />
+                </td>
+                <td>
+                  <input className="input-table discount-input" type="number" min={0} step={1} inputMode="decimal" placeholder="0"
+                    value={entryLineDiscount} disabled={!entryItem || entryLineLocked}
+                    title={entryLineLocked ? 'Clear the per-item discount to use a row discount instead.' : undefined}
+                    onChange={(e) => setEntryLineDiscount(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEntryLine() } }}
+                    aria-label="Discount on the whole new line" />
                 </td>
                 <td className="cell-readonly">{entryLinePreview != null ? formatMoney(entryLinePreview) : '—'}</td>
                 <td><button type="button" className="primary sm" disabled={!canAddLine} onClick={commitEntryLine}>Add line</button></td>

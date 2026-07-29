@@ -3,17 +3,20 @@ import { requireAuth } from '@/lib/session'
 import { getInvoiceById, saveInvoice } from '@/lib/repositories/invoicesRepository'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import { buildOrderLine } from '@/lib/orderLines'
+import { applyPricing, priceLine } from '@/lib/pricing'
 
 /** Re-prices a line whose product is no longer on the menu, using the price the
  *  invoice already recorded — never one supplied by the request. */
-function repriceFromStored(stored, qty, rawDiscount) {
-  const gross = Math.round(stored.unitPrice * qty * 100) / 100
-  const d = Number(rawDiscount)
-  const discount = Number.isFinite(d) && d > 0 ? Math.round(Math.min(d, gross) * 100) / 100 : 0
-  const line = { ...stored, qty, lineTotal: Math.round(Math.max(0, gross - discount) * 100) / 100 }
-  if (discount > 0) line.discount = discount
-  else delete line.discount
-  return line
+function repriceFromStored(stored, raw) {
+  return applyPricing(
+    stored,
+    priceLine({
+      unitPrice: stored.unitPrice,
+      qty: raw.qty,
+      unitDiscount: raw.unitDiscount ?? 0,
+      lineDiscount: raw.lineDiscount ?? raw.discount ?? 0,
+    }),
+  )
 }
 
 /**
@@ -47,7 +50,7 @@ function repriceLines(rawLines, menu, storedLines) {
       // editable by falling back to its own recorded price.
       const stored = storedByRef.get(`${kind}:${raw.refId}`)
       if (!stored) return { error, status }
-      next = repriceFromStored(stored, qty, raw.discount)
+      next = repriceFromStored(stored, raw)
     }
     // Preserve the caller's line id so line identity survives an edit.
     if (typeof raw.id === 'string' && raw.id.trim()) next.id = raw.id.trim().slice(0, 50)
