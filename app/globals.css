@@ -3914,21 +3914,49 @@ button.danger-ghost:hover:not(:disabled) {
   color: var(--text-muted);
 }
 
-.deal-picker-list {
+/* The popup shell: search stays put while the results below it scroll. */
+.deal-picker-panel {
   position: absolute;
   z-index: 40;
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  margin: 0;
   padding: 0.4rem;
-  list-style: none;
-  max-height: 22rem;
-  overflow-y: auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.deal-picker-search {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 0.9rem;
+}
+.deal-picker-search:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.deal-picker-empty {
+  margin: 0;
+  padding: 0.6rem 0.5rem;
+  text-align: center;
+}
+
+.deal-picker-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 20rem;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
