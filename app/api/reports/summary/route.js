@@ -34,7 +34,10 @@ export async function GET(request) {
   for (const inv of inRange) {
     if (!matchesPayment(inv.paymentMethod ?? null, payment)) continue
     const businessType = invoiceBusinessType(inv)
-    if (matchesBusiness(businessType, business)) invoiceCount += 1
+    // Every tile below is filtered the same way, so the headline numbers can
+    // never disagree about which invoices they cover.
+    if (!matchesBusiness(businessType, business)) continue
+    invoiceCount += 1
 
     const total = roundMoney(inv.total ?? 0)
     const deliveryCharge = roundMoney(inv.deliveryCharge ?? 0)

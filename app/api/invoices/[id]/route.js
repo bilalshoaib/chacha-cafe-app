@@ -1,62 +1,61 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
 import { getInvoiceById, saveInvoice } from '@/lib/repositories/invoicesRepository'
-import { randomUUID } from 'crypto'
+import { loadMenu } from '@/lib/repositories/menuRepository'
+import { buildOrderLine } from '@/lib/orderLines'
 
-function newLineId() {
-  return `l-${randomUUID().slice(0, 8)}`
+/** Re-prices a line whose product is no longer on the menu, using the price the
+ *  invoice already recorded — never one supplied by the request. */
+function repriceFromStored(stored, qty, rawDiscount) {
+  const gross = Math.round(stored.unitPrice * qty * 100) / 100
+  const d = Number(rawDiscount)
+  const discount = Number.isFinite(d) && d > 0 ? Math.round(Math.min(d, gross) * 100) / 100 : 0
+  const line = { ...stored, qty, lineTotal: Math.round(Math.max(0, gross - discount) * 100) / 100 }
+  if (discount > 0) line.discount = discount
+  else delete line.discount
+  return line
 }
 
-function validateAndNormalizeLines(lines) {
-  if (!Array.isArray(lines) || lines.length === 0) return { error: 'At least one line is required.' }
+/**
+ * Rebuilds the submitted lines by pricing every one of them against the live
+ * menu, exactly as checkout does. The request supplies only which product and
+ * how many — name, unit price and line total are always the server's, so an
+ * edit cannot introduce a total the server didn't compute.
+ */
+function repriceLines(rawLines, menu, storedLines) {
+  if (!Array.isArray(rawLines) || rawLines.length === 0) {
+    return { error: 'At least one line is required.' }
+  }
+
+  const storedByRef = new Map()
+  for (const l of storedLines) storedByRef.set(`${l.kind}:${l.refId}`, l)
+
   const out = []
   let subtotal = 0
-  for (const raw of lines) {
+  for (const raw of rawLines) {
     const kind = raw?.kind
     if (kind !== 'item' && kind !== 'deal') return { error: 'Each line must have kind "item" or "deal".' }
+    if (!raw?.refId) return { error: `${kind === 'deal' ? 'Deal' : 'Item'} lines need refId.` }
     const qty = Number(raw.qty)
-    const unitPrice = Number(raw.unitPrice)
-    const lineTotal = Number(raw.lineTotal)
-    const discount = Number(raw.discount ?? 0)
     if (!Number.isFinite(qty) || qty < 1) return { error: 'Each line needs a valid qty ≥ 1.' }
-    const qInt = Math.floor(qty)
-    if (Math.abs(qty - qInt) > 1e-6) return { error: 'Quantity must be a whole number.' }
-    if (!Number.isFinite(unitPrice) || unitPrice < 0) return { error: 'Each line needs a valid unit price.' }
-    if (!Number.isFinite(discount) || discount < 0) return { error: 'Discount must be a non-negative number.' }
-    if (!Number.isFinite(lineTotal)) return { error: 'Each line needs a valid line total.' }
-    const q = qInt
-    const expected = Math.round((unitPrice * q - discount) * 100) / 100
-    if (Math.abs(lineTotal - expected) > 0.02) return { error: `Line total must equal qty × unit price minus discount (${expected}).` }
-    const name = String(raw.name ?? '').trim().slice(0, 200)
-    if (!name) return { error: 'Each line needs a name.' }
-    const id = typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : newLineId()
-    if (kind === 'item') {
-      if (!raw.refId) return { error: 'Item lines need refId.' }
-      const line = { id, kind: 'item', refId: String(raw.refId), name, category: String(raw.category ?? 'other').slice(0, 40), qty: q, unitPrice, lineTotal }
-      if (discount > 0) line.discount = discount
-      if (raw.size) line.size = String(raw.size).slice(0, 60)
-      if (raw.flavour) line.flavour = String(raw.flavour).slice(0, 80)
-      if (raw.lineBusinessType) line.lineBusinessType = String(raw.lineBusinessType)
-      out.push(line)
-    } else {
-      if (!raw.refId) return { error: 'Deal lines need refId.' }
-      const dealIncludes = Array.isArray(raw.dealIncludes)
-        ? raw.dealIncludes.map((inc) => ({ itemId: String(inc.itemId), qty: Math.max(1, Math.floor(Number(inc.qty)) || 1) }))
-        : []
-      const dealLine = { id, kind: 'deal', refId: String(raw.refId), name, qty: q, unitPrice, lineTotal, dealIncludes }
-      if (discount > 0) dealLine.discount = discount
-      if (raw.isCombined) {
-        dealLine.isCombined = true
-        dealLine.cafeSplit = Number(raw.cafeSplit ?? 0)
-        dealLine.burgerSplit = Number(raw.burgerSplit ?? 0)
-      }
-      if (raw.lineBusinessType) dealLine.lineBusinessType = String(raw.lineBusinessType)
-      out.push(dealLine)
+    if (Math.floor(qty) !== qty) return { error: 'Quantity must be a whole number.' }
+
+    const { line, error, status } = buildOrderLine(raw, menu, { allowArchived: true })
+    let next = line
+    if (error) {
+      // Item or deal has since been removed from the menu; keep the invoice
+      // editable by falling back to its own recorded price.
+      const stored = storedByRef.get(`${kind}:${raw.refId}`)
+      if (!stored) return { error, status }
+      next = repriceFromStored(stored, qty, raw.discount)
     }
-    subtotal += lineTotal
+    // Preserve the caller's line id so line identity survives an edit.
+    if (typeof raw.id === 'string' && raw.id.trim()) next.id = raw.id.trim().slice(0, 50)
+    out.push(next)
+    subtotal += next.lineTotal
   }
-  subtotal = Math.round(subtotal * 100) / 100
-  return { lines: out, subtotal, total: subtotal }
+
+  return { lines: out, subtotal: Math.round(subtotal * 100) / 100 }
 }
 
 export async function GET(_request, { params }) {
@@ -82,11 +81,13 @@ export async function PATCH(request, { params }) {
   }
 
   if (lines !== undefined) {
-    const normalized = validateAndNormalizeLines(lines)
-    if (normalized.error) return NextResponse.json({ error: normalized.error }, { status: 400 })
-    inv.lines = normalized.lines
-    inv.subtotal = normalized.subtotal
-    inv.total = normalized.total
+    const menu = await loadMenu()
+    const repriced = repriceLines(lines, menu, inv.lines)
+    if (repriced.error) return NextResponse.json({ error: repriced.error }, { status: repriced.status || 400 })
+    inv.lines = repriced.lines
+    inv.subtotal = repriced.subtotal
+    // Delivery is charged on top of the lines, same as at checkout.
+    inv.total = Math.round((repriced.subtotal + (inv.deliveryCharge ?? 0)) * 100) / 100
   }
   if (customerNote !== undefined) inv.customerNote = String(customerNote).slice(0, 200)
   if (paid !== undefined) {
