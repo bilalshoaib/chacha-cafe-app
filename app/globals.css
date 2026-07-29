@@ -1,20 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap');
 
+/* ── Teal & Gold palette ─────────────────────────────────────────────────────
+   Deep teal + warm gold on a soft mint-cream. Every brand colour below is a
+   token — nothing should hardcode these hexes again. */
 :root {
-  --text: #16241c;
-  --text-muted: #5c6d63;
-  --text-h: #0d2a4d;
-  --bg: #faf7ea;
+  --text: #17322e;
+  --text-muted: #62807b;
+  --text-h: #0f3d38;
+  --bg: #f4faf8;
   --surface: #ffffff;
-  --border: rgba(13, 42, 77, 0.12);
-  --accent: #1f5fbf;
-  --accent-hover: #0d2a4d;
-  --accent-soft: #e7f0fb;
-  --yellow: #ffc72c;
-  --yellow-deep: #e6a800;
-  --danger: #e0393c;
+  --border: rgba(15, 61, 56, 0.14);
+  --accent: #0d9488;
+  --accent-hover: #0f3d38;
+  --accent-soft: #e2f4f1;
+  --yellow: #f0a830;
+  --yellow-deep: #cf8c1c;
+  /* A clearly separate hue from --accent, so a destructive action never
+     reads as the main call to action. */
+  --danger: #b3261e;
+  --espresso-deep: #072a26;
   --radius: 14px;
-  --shadow: 0 14px 30px rgba(13, 42, 77, 0.1);
+  --shadow: 0 14px 30px rgba(15, 61, 56, 0.12);
   font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.55;
   color: var(--text);
@@ -29,11 +35,25 @@
   box-sizing: border-box;
 }
 
+/*
+ * Page backdrop: a soft gradient wash with a faint tiled food pattern over it
+ * (burger, cup, fries, star). Inline SVG rather than an image file, so it
+ * costs no request and stays crisp at any zoom. Fixed attachment keeps the
+ * pattern still while long tables scroll over it.
+ */
 body {
   margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%230f3d38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' opacity='0.05'%3E%3Cpath d='M14 30h20a10 10 0 0 0-20 0Z'/%3E%3Cpath d='M13 34h22'/%3E%3Cpath d='M15 38h18a5 5 0 0 1-18 0Z'/%3E%3Cpath d='M74 22h14l-2 18a5 5 0 0 1-10 0Z'/%3E%3Cpath d='M88 26h4a4 4 0 0 1 0 8h-3'/%3E%3Cpath d='M26 78h16l-2 16H28Z'/%3E%3Cpath d='M29 78l2-8m5 8l1-8m5 8l3-8'/%3E%3Cpath d='M86 74l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8Z'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(1200px 620px at 12% -8%, color-mix(in srgb, var(--yellow) 22%, transparent) 0%, transparent 62%),
+    radial-gradient(1000px 560px at 96% 4%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 58%);
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-attachment: fixed, fixed, fixed;
 }
 
-/* Brand display type — Anton, uppercase, navy (matches chacahcafe.com) */
+/* Brand display type — Anton, uppercase, charcoal */
 h1,
 h2,
 h3,
@@ -214,7 +234,7 @@ select {
   overflow: hidden;
   background-size: cover;
   background-position: center;
-  background-color: #0d2a4d;
+  background-color: #0f3d38;
 }
 
 .hp-staff-hero {
@@ -227,7 +247,7 @@ select {
   overflow: hidden;
   background-size: cover;
   background-position: center top;
-  background-color: #0d2a4d;
+  background-color: #0f3d38;
 }
 
 .hp-hero-overlay {
@@ -269,7 +289,7 @@ select {
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #ffc72c;
+  color: #f0a830;
   margin-bottom: 0.75rem;
 }
 
@@ -280,9 +300,9 @@ select {
   letter-spacing: 0.01em;
   line-height: 1;
   margin: 0;
-  color: #ffc72c;
-  -webkit-text-stroke: 2px #0d2a4d;
-  text-shadow: 0 4px 18px rgba(13, 42, 77, 0.55);
+  color: #f0a830;
+  -webkit-text-stroke: 2px #0f3d38;
+  text-shadow: 0 4px 18px rgba(15, 61, 56, 0.55);
 }
 
 .hp-logo-chacha--sm {
@@ -308,7 +328,7 @@ select {
 }
 
 .hp-logo-star {
-  color: #ffc72c;
+  color: #f0a830;
   font-size: 0.75em;
 }
 
@@ -331,8 +351,8 @@ select {
   display: inline-flex;
   align-items: center;
   padding: 0.75rem 2rem;
-  background: #ffc72c;
-  color: #0d2a4d;
+  background: #f0a830;
+  color: #0f3d38;
   font-weight: 800;
   font-size: 0.95rem;
   letter-spacing: 0.04em;
@@ -363,7 +383,7 @@ select {
 }
 
 .hp-hero-btn-ghost:hover {
-  border-color: #ffc72c;
+  border-color: #f0a830;
   background: rgba(255, 199, 44, 0.12);
 }
 
@@ -374,8 +394,8 @@ select {
   flex-wrap: wrap;
   gap: 0.65rem 1rem;
   padding: 1.25rem 1.5rem;
-  background: #0d2a4d;
-  border-bottom: 3px solid #ffc72c;
+  background: #0f3d38;
+  border-bottom: 3px solid #f0a830;
 }
 
 .hp-cat-chip {
@@ -463,18 +483,18 @@ select {
 
 .hp-deal-card {
   position: relative;
-  background: linear-gradient(135deg, #0d2a4d 0%, #1f5fbf 65%, #0d2a4d 100%);
+  background: linear-gradient(135deg, #0f3d38 0%, #0d9488 65%, #0f3d38 100%);
   border: none;
   border-radius: 18px;
   padding: 1.2rem 1.25rem 1.25rem;
-  box-shadow: 0 16px 34px rgba(13, 42, 77, 0.22);
+  box-shadow: 0 16px 34px rgba(15, 61, 56, 0.22);
   transition: transform 0.15s, box-shadow 0.15s;
   overflow: hidden;
 }
 
 .hp-deal-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 22px 44px rgba(13, 42, 77, 0.3);
+  box-shadow: 0 22px 44px rgba(15, 61, 56, 0.3);
 }
 
 .hp-deal-badge {
@@ -512,7 +532,7 @@ select {
   font-family: 'Anton', system-ui, sans-serif;
   font-size: 2.2rem;
   font-weight: 400;
-  color: #ffc72c;
+  color: #f0a830;
   line-height: 1;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -535,7 +555,7 @@ select {
 }
 
 .hp-deal-includes strong {
-  color: #ffc72c;
+  color: #f0a830;
 }
 
 /* ── Menu grid — website-style white cards with yellow price pills ── */
@@ -610,9 +630,9 @@ select {
 
 /* ── About strip ── */
 .hp-about {
-  background: linear-gradient(135deg, #0d2a4d 0%, #1f5fbf 100%);
-  border-top: 3px solid #ffc72c;
-  border-bottom: 3px solid #ffc72c;
+  background: linear-gradient(135deg, #0f3d38 0%, #0d9488 100%);
+  border-top: 3px solid #f0a830;
+  border-bottom: 3px solid #f0a830;
   padding: 2.5rem 1.5rem;
   text-align: center;
   margin: 0 -1.5rem;
@@ -667,7 +687,7 @@ select {
   justify-content: center;
   gap: 0.75rem;
   padding: 0.85rem 1.5rem;
-  background: #081b30;
+  background: var(--espresso-deep);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -679,7 +699,7 @@ select {
 .hp-staff-bar-link {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #ffc72c;
+  color: #f0a830;
   text-decoration: none;
   letter-spacing: 0.02em;
 }
@@ -691,7 +711,7 @@ select {
 
 /* ── Footer ── */
 .hp-footer {
-  background: #0d2a4d;
+  background: #0f3d38;
   padding: 2rem 1.5rem 2.5rem;
   text-align: center;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -706,7 +726,7 @@ select {
   font-size: 1.6rem;
   font-weight: 400;
   letter-spacing: 0.05em;
-  color: #ffc72c;
+  color: #f0a830;
 }
 
 .hp-footer-cafe {
@@ -766,13 +786,13 @@ select {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  background: linear-gradient(135deg, #0d2a4d 0%, #1f5fbf 60%, #0d2a4d 100%);
+  background: linear-gradient(135deg, #0f3d38 0%, #0d9488 60%, #0f3d38 100%);
   border-radius: var(--radius);
   padding: 1.5rem 1.75rem 1.6rem;
   margin-bottom: 1.5rem;
   overflow: hidden;
   border: none;
-  box-shadow: 0 14px 30px rgba(13, 42, 77, 0.2);
+  box-shadow: 0 14px 30px rgba(15, 61, 56, 0.2);
 }
 
 .page-hero-action {
@@ -1189,9 +1209,9 @@ select {
 }
 
 .badge-role-admin-mid {
-  background: color-mix(in srgb, #2563eb 18%, transparent);
-  color: #1e3a5f;
-  border: 1px solid color-mix(in srgb, #2563eb 28%, transparent);
+  background: color-mix(in srgb, #0d9488 18%, transparent);
+  color: #0b5c53;
+  border: 1px solid color-mix(in srgb, #0d9488 28%, transparent);
 }
 
 .badge-role-staff {
@@ -1822,9 +1842,9 @@ button.inline-link-button:hover {
 /* Neutral guidance — used when an action is unavailable and the user needs
    to know what to do first. */
 .banner.info {
-  background: color-mix(in srgb, #0ea5e9 12%, var(--surface));
-  border: 1px solid color-mix(in srgb, #0284c7 28%, var(--border));
-  color: #0c4a6e;
+  background: color-mix(in srgb, var(--yellow) 16%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  color: #0b5c53;
   border-radius: 10px;
   padding: 0.55rem 0.65rem;
 }
@@ -3591,28 +3611,31 @@ button.danger-solid:disabled {
   border-radius: 6px;
 }
 
+/* Badge hues sit clear of both the teal accent and the gold highlight, so a
+   badge is never mistaken for a button, a price, or an alert. */
 .badge-business-cafe {
-  background: color-mix(in srgb, #7c3aed 16%, transparent);
-  color: #5b21b6;
-  border: 1px solid color-mix(in srgb, #7c3aed 28%, transparent);
+  background: color-mix(in srgb, #6d4c7d 14%, transparent);
+  color: #563963;
+  border: 1px solid color-mix(in srgb, #6d4c7d 28%, transparent);
 }
 
 .badge-business-burger {
-  background: color-mix(in srgb, #ea580c 16%, transparent);
-  color: #c2410c;
-  border: 1px solid color-mix(in srgb, #ea580c 28%, transparent);
+  background: color-mix(in srgb, #9a3412 14%, transparent);
+  color: #7c2d12;
+  border: 1px solid color-mix(in srgb, #9a3412 28%, transparent);
 }
 
 .badge-business-both {
-  background: color-mix(in srgb, #059669 14%, transparent);
-  color: #047857;
-  border: 1px solid color-mix(in srgb, #059669 26%, transparent);
+  background: color-mix(in srgb, #475569 14%, transparent);
+  color: #334155;
+  border: 1px solid color-mix(in srgb, #475569 26%, transparent);
 }
 
+/* Combined = both businesses, so it blends the cafe plum and burger rust. */
 .badge-business-combined {
-  background: color-mix(in srgb, #7c3aed 10%, color-mix(in srgb, #ea580c 10%, transparent));
-  color: #6d28d9;
-  border: 1px solid color-mix(in srgb, #7c3aed 30%, transparent);
+  background: color-mix(in srgb, #6d4c7d 12%, color-mix(in srgb, #9a3412 12%, transparent));
+  color: #6b3a4a;
+  border: 1px solid color-mix(in srgb, #6d4c7d 26%, transparent);
 }
 
 .menu-item-business-badge {
@@ -4196,9 +4219,9 @@ button.danger-ghost:hover:not(:disabled) {
 }
 
 .badge-order-type-dine {
-  background: color-mix(in srgb, #2563eb 14%, transparent);
-  color: #1e3a5f;
-  border: 1px solid color-mix(in srgb, #2563eb 28%, transparent);
+  background: color-mix(in srgb, #0d9488 14%, transparent);
+  color: #0b5c53;
+  border: 1px solid color-mix(in srgb, #0d9488 28%, transparent);
 }
 
 .badge-order-type-take {
@@ -4647,7 +4670,7 @@ button.danger-ghost:hover:not(:disabled) {
 .menu-board-canvas {
   width: 100%;
   max-width: 900px;
-  background: linear-gradient(160deg, #08182c 0%, #0d2a4d 55%, #08182c 100%);
+  background: linear-gradient(160deg, #072a26 0%, #0f3d38 55%, #072a26 100%);
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
@@ -4694,8 +4717,8 @@ button.danger-ghost:hover:not(:disabled) {
   justify-content: center;
   text-align: center;
   gap: 0.05rem;
-  background: linear-gradient(135deg, #ffc72c, #e6a800);
-  color: #0d2a4d;
+  background: linear-gradient(135deg, #f0a830, #cf8c1c);
+  color: #0f3d38;
   font-weight: 800;
   font-size: 0.52rem;
   line-height: 1.2;
@@ -4742,7 +4765,7 @@ button.danger-ghost:hover:not(:disabled) {
   font-weight: 900;
   letter-spacing: 0.01em;
   text-transform: uppercase;
-  color: #ffc72c;
+  color: #f0a830;
   text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
   line-height: 1;
 }
@@ -4767,7 +4790,7 @@ button.danger-ghost:hover:not(:disabled) {
   position: relative;
   z-index: 1;
   margin: 0.1rem 0 0;
-  color: #ffc72c;
+  color: #f0a830;
   font-size: 1.05rem;
   font-style: italic;
   font-family: 'Brush Script MT', cursive;
@@ -4869,7 +4892,7 @@ button.danger-ghost:hover:not(:disabled) {
 .menu-board-item-price {
   flex-shrink: 0;
   font-weight: 700;
-  color: #ffc72c;
+  color: #f0a830;
   font-size: 0.85rem;
   white-space: nowrap;
 }
@@ -4953,7 +4976,7 @@ button.danger-ghost:hover:not(:disabled) {
   content: '•';
   position: absolute;
   left: 0;
-  color: #ffc72c;
+  color: #f0a830;
 }
 
 .menu-board-deal-photo-wrap {
@@ -5073,7 +5096,7 @@ button.danger-ghost:hover:not(:disabled) {
   font-family: 'Brush Script MT', cursive;
   font-style: italic;
   font-size: 1.3rem;
-  color: #ffc72c;
+  color: #f0a830;
 }
 
 .menu-board-contact-strip {
@@ -5084,7 +5107,7 @@ button.danger-ghost:hover:not(:disabled) {
 }
 
 .menu-board-contact-strip span:first-child {
-  color: #ffc72c;
+  color: #f0a830;
   font-weight: 700;
 }
 

@@ -25,11 +25,13 @@ function isExpensesPath(pathname) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl
 
-  // Skip static assets and Next.js internals
+  // Skip static assets and Next.js internals. `/icon` covers the App Router's
+  // generated /icon.svg — without it the favicon 307s to /login for anyone
+  // not signed in, so the login page shows no icon.
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
-    pathname.startsWith('/icons')
+    pathname.startsWith('/icon')
   ) {
     return NextResponse.next()
   }

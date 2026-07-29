@@ -9,6 +9,11 @@ export const metadata = {
   description: 'POS & management system for Chacha Burger Cafe',
 }
 
+// Tints the browser/OS chrome on mobile to match the warm theme.
+export const viewport = {
+  themeColor: '#0d9488',
+}
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
