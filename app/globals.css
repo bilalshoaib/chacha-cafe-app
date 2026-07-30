@@ -818,6 +818,29 @@ select {
   border-color: rgba(255, 255, 255, 0.6);
 }
 
+/*
+ * The hero sits on a dark gradient, so a ghost action inside it can't use the
+ * accent colour — it all but disappears. Give it the same translucent-white
+ * pill as .page-hero-action instead.
+ */
+.page-hero button.ghost,
+.page-hero a.ghost {
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.page-hero button.ghost:hover,
+.page-hero a.ghost:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
 .page-hero::after {
   content: '';
   position: absolute;
@@ -2047,7 +2070,19 @@ button.inline-link-button:hover {
   font-size: 0.82rem;
 }
 
-button {
+/*
+ * Button skin. Links opt in by carrying the same class names — plenty of
+ * navigation actions ("Add expense", "← Take order", "Cancel", "Edit") are
+ * <Link>s that must look identical to real buttons. These rules used to be
+ * scoped to `button` alone, which left every one of those links rendering as
+ * a default underlined browser link.
+ */
+button,
+a.primary,
+a.ghost,
+a.wide,
+a.danger-solid,
+a.danger-ghost {
   border-radius: 10px;
   border: 1px solid var(--border);
   padding: 0.45rem 0.75rem;
@@ -2056,7 +2091,21 @@ button {
   color: var(--text-h);
 }
 
-button.primary {
+/* Strip the anchor defaults so a link-as-button matches a button exactly. */
+a.primary,
+a.ghost,
+a.wide,
+a.danger-solid,
+a.danger-ghost {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  font: inherit;
+  line-height: normal;
+}
+
+button.primary,
+a.primary {
   background: var(--accent);
   border-color: transparent;
   color: #fff;
@@ -2064,8 +2113,11 @@ button.primary {
   letter-spacing: 0.2px;
 }
 
-button.primary:hover:not(:disabled) {
+button.primary:hover:not(:disabled),
+a.primary:hover {
   background: var(--accent-hover);
+  /* Restated so the visited-link colour can't win over the white label. */
+  color: #fff;
 }
 
 button.primary:disabled {
@@ -2073,27 +2125,37 @@ button.primary:disabled {
   cursor: not-allowed;
 }
 
-button.wide {
+button.wide,
+a.wide {
   width: 100%;
   margin-top: 0.75rem;
   padding: 0.65rem;
   font-weight: 600;
 }
 
-button.ghost {
+button.ghost,
+a.ghost {
   background: transparent;
   border-color: transparent;
   color: var(--accent);
 }
 
-button.ghost.danger {
+button.ghost:hover,
+a.ghost:hover {
+  color: var(--accent-hover);
+}
+
+button.ghost.danger,
+a.ghost.danger {
   color: var(--danger);
 }
 
-button.sm {
+button.sm,
+a.sm {
   font-size: 0.8rem;
   padding: 0.25rem 0.5rem;
 }
+
 
 .select {
   min-width: 180px;
@@ -2939,8 +3001,8 @@ a.invoice-edit-link:hover {
   font-weight: 600;
 }
 .pay-method-btn:hover {
-  border-color: var(--primary, #4f46e5);
-  background: var(--primary-soft, #eef2ff);
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 .pay-method-icon {
   font-size: 2rem;
@@ -3369,6 +3431,25 @@ button.link-add-menu-item {
 
 .menu-filter-bar .invoices-filter-tabs {
   margin: 0;
+}
+
+/* Deals: business tabs on the left, search on the right, wrapping on narrow
+   screens. Mirrors the menu-items filter bar. */
+.deals-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin: 0 0 0.75rem;
+}
+.deals-filter-bar .invoices-filter-tabs {
+  margin: 0;
+}
+.deals-search-input {
+  margin-left: auto;
+}
+.deals-search-count {
+  margin: 0 0 0.75rem;
 }
 
 .menu-search-input {
@@ -3851,11 +3932,13 @@ button.danger-solid:disabled {
   border-radius: 0.25rem;
 }
 
-button.danger-ghost {
-  color: var(--red, #ef4444);
+button.danger-ghost,
+a.danger-ghost {
+  color: var(--danger);
 }
-button.danger-ghost:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--red, #ef4444) 10%, transparent);
+button.danger-ghost:hover:not(:disabled),
+a.danger-ghost:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .deal-edit-dialog {

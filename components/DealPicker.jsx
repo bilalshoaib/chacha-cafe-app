@@ -1,23 +1,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatMoney } from '@/utils/formatting.js'
-
-/**
- * Matches a deal against one search term. A term can be part of the deal's
- * name, its price ("1000" or "1,000"), or the name of any item inside it —
- * so staff can find a bundle by whatever they happen to remember about it.
- */
-function dealMatches(deal, needle, itemLabelById) {
-  if (deal.name?.toLowerCase().includes(needle)) return true
-
-  const digits = needle.replace(/[^0-9.]/g, '')
-  if (digits && String(deal.price).includes(digits)) return true
-  if (formatMoney(deal.price).toLowerCase().includes(needle)) return true
-
-  return (deal.includes || []).some((inc) =>
-    String(itemLabelById[inc.itemId] || inc.itemId || '').toLowerCase().includes(needle),
-  )
-}
+import { dealMatchesQuery } from '@/utils/dealSearch.js'
 
 export default function DealPicker({ deals, itemLabelById, onSelect, disabled }) {
   const [open, setOpen] = useState(false)
@@ -46,13 +30,10 @@ export default function DealPicker({ deals, itemLabelById, onSelect, disabled })
     queueMicrotask(() => searchRef.current?.focus())
   }, [open])
 
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    if (!needle) return deals
-    // Every whitespace-separated term must match, so "zinger 1000" narrows.
-    const terms = needle.split(/\s+/)
-    return deals.filter((d) => terms.every((t) => dealMatches(d, t, itemLabelById)))
-  }, [deals, query, itemLabelById])
+  const filtered = useMemo(
+    () => deals.filter((d) => dealMatchesQuery(d, query, (id) => itemLabelById[id])),
+    [deals, query, itemLabelById],
+  )
 
   function pick(deal) {
     onSelect(deal.id)

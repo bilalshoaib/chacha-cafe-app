@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/api.js'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
@@ -7,6 +7,7 @@ import DealFormFields from '@/components/DealFormFields.jsx'
 import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { BUSINESS_TYPES, DEAL_BUSINESS_TYPE_OPTIONS, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { dealMatchesQuery } from '@/utils/dealSearch.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
@@ -42,6 +43,7 @@ export default function DealsPage() {
   const addDialogRef = useRef(null)
   const editDialogRef = useRef(null)
   const [listFilter, setListFilter] = useState('all')
+  const [search, setSearch] = useState('')
   const [archivingIds, setArchivingIds] = useState(new Set())
 
   const [addOpen, setAddOpen] = useState(false)
@@ -78,13 +80,29 @@ export default function DealsPage() {
   const activeDeals = useMemo(() => menu.deals.filter((d) => d.status !== 'archived'), [menu.deals])
   const archivedDeals = useMemo(() => menu.deals.filter((d) => d.status === 'archived'), [menu.deals])
 
-  const filteredDeals = useMemo(() => {
+  // Same lookup the picker uses, so searching here matches the same things.
+  const labelForItem = useCallback(
+    (itemId) => {
+      const item = itemById.get(itemId)
+      if (!item) return itemId
+      return [item.name, formatItemExtras(item), categoryLabel(item.category)].filter(Boolean).join(' · ')
+    },
+    [itemById],
+  )
+
+  const dealsForTab = useMemo(() => {
     if (listFilter === 'archived') return archivedDeals
     const base = activeDeals
     if (listFilter === 'all') return base
     if (listFilter === 'combined') return base.filter((d) => dealBusinessType(d, menu.items) === 'combined')
     return base.filter((d) => dealBusinessType(d, menu.items) === listFilter)
   }, [activeDeals, archivedDeals, menu.items, listFilter])
+
+  const filteredDeals = useMemo(
+    () => dealsForTab.filter((d) => dealMatchesQuery(d, search, labelForItem)),
+    [dealsForTab, search, labelForItem],
+  )
+  const searching = search.trim().length > 0
 
   const createCategorySections = useMemo(() => buildDealCategorySections(menu.items, dealBusiness), [menu.items, dealBusiness])
   const editCategorySections = useMemo(() => buildDealCategorySections(menu.items, editBusiness), [menu.items, editBusiness])
@@ -273,16 +291,33 @@ export default function DealsPage() {
             business or use <strong>Edit</strong> to change name, price, items, or business. Archived deals are hidden
             from orders.
           </p>
-          <div className="invoices-filter-tabs">
-            <button type="button" className={listFilter === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('all')}>All</button>
-            {BUSINESS_TYPES.map((bt) => (
-              <button key={bt.id} type="button" className={listFilter === bt.id ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter(bt.id)}>{bt.shortLabel}</button>
-            ))}
-            <button type="button" className={listFilter === 'combined' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('combined')}>Combined</button>
-            <button type="button" className={listFilter === 'archived' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('archived')}>
-              Archived {archivedDeals.length > 0 && `(${archivedDeals.length})`}
-            </button>
+          <div className="deals-filter-bar">
+            <div className="invoices-filter-tabs">
+              <button type="button" className={listFilter === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('all')}>All</button>
+              {BUSINESS_TYPES.map((bt) => (
+                <button key={bt.id} type="button" className={listFilter === bt.id ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter(bt.id)}>{bt.shortLabel}</button>
+              ))}
+              <button type="button" className={listFilter === 'combined' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('combined')}>Combined</button>
+              <button type="button" className={listFilter === 'archived' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('archived')}>
+                Archived {archivedDeals.length > 0 && `(${archivedDeals.length})`}
+              </button>
+            </div>
+            <input
+              type="search"
+              className="menu-search-input deals-search-input"
+              placeholder="Search by name, price, or item inside…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              disabled={loading}
+              aria-label="Search deals"
+            />
           </div>
+          {searching && !loading ? (
+            <p className="muted small deals-search-count" role="status">
+              {filteredDeals.length} of {dealsForTab.length} {dealsForTab.length === 1 ? 'deal' : 'deals'} match
+              {' “'}{search.trim()}{'”'}
+            </p>
+          ) : null}
           {!loading && menu.items.length === 0 ? (
             <p className="banner info deals-needs-items">
               A deal is a bundle of menu items, so add some items first.{' '}
@@ -304,6 +339,13 @@ export default function DealsPage() {
                 </li>
               ))}
             </ul>
+          ) : filteredDeals.length === 0 && searching ? (
+            <p className="muted">
+              No deals match “{search.trim()}”.{' '}
+              <button type="button" className="inline-link-button" onClick={() => setSearch('')}>
+                Clear search
+              </button>
+            </p>
           ) : filteredDeals.length === 0 ? (
             <p className="muted">
               {listFilter === 'archived' ? 'No archived deals.' : menu.deals.length === 0 ? 'No deals yet — click \u201c+ Add deal\u201d to create one.' : 'No deals for this filter.'}
