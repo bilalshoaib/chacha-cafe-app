@@ -3,6 +3,7 @@ import { requireSuperAdmin } from '@/lib/session'
 import { getInvoicesInRange } from '@/lib/repositories/invoicesRepository'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import {
+  allocateDealLineRevenue,
   invoiceBusinessType,
   matchesBusiness,
   matchesPayment,
@@ -33,9 +34,11 @@ export async function GET(request) {
 
   // Deal lines only store item ids, so resolve display names from the menu.
   const menuLabelById = new Map()
+  const menuPriceById = new Map()
   for (const item of menu.items ?? []) {
     const extras = [item.size, item.flavour].filter(Boolean).join(' · ')
     menuLabelById.set(item.id, extras ? `${item.name} · ${extras}` : item.name)
+    menuPriceById.set(item.id, Number(item.price) || 0)
   }
 
   const byKey = new Map()
@@ -45,7 +48,15 @@ export async function GET(request) {
     const key = refId ?? label
     let entry = itemStats.get(key)
     if (!entry) {
-      entry = { refId: key, label, standaloneQty: 0, standaloneRevenue: 0, inDealQty: 0, deals: new Map() }
+      entry = {
+        refId: key,
+        label,
+        standaloneQty: 0,
+        standaloneRevenue: 0,
+        inDealQty: 0,
+        inDealRevenue: 0,
+        deals: new Map(),
+      }
       itemStats.set(key, entry)
     }
     if (!entry.label) entry.label = label
@@ -74,13 +85,14 @@ export async function GET(request) {
       }
 
       if (kind === 'deal') {
-        // One deal line of qty N contributes N × (units per deal) of each included item.
-        for (const inc of Array.isArray(line.dealIncludes) ? line.dealIncludes : []) {
-          const units = (Number(inc.qty) || 0) * qty
-          if (!units) continue
-          const entry = itemEntry(inc.itemId, menuLabelById.get(inc.itemId) || inc.itemId)
-          entry.inDealQty += units
-          entry.deals.set(label, (entry.deals.get(label) ?? 0) + units)
+        // One deal line of qty N contributes N × (units per deal) of each
+        // included item, and a proportional share of what the line earned.
+        for (const part of allocateDealLineRevenue(line, menuPriceById)) {
+          const entry = itemEntry(part.itemId, menuLabelById.get(part.itemId) || part.itemId)
+          entry.inDealQty += part.units
+          entry.inDealRevenue += part.revenue
+          const prev = entry.deals.get(label) ?? { qty: 0, revenue: 0 }
+          entry.deals.set(label, { qty: prev.qty + part.units, revenue: prev.revenue + part.revenue })
         }
       } else {
         const entry = itemEntry(line.refId, label)
@@ -101,9 +113,11 @@ export async function GET(request) {
       standaloneQty: e.standaloneQty,
       standaloneRevenue: roundMoney(e.standaloneRevenue),
       inDealQty: e.inDealQty,
+      inDealRevenue: roundMoney(e.inDealRevenue),
       totalQty: e.standaloneQty + e.inDealQty,
+      totalRevenue: roundMoney(e.standaloneRevenue + e.inDealRevenue),
       deals: [...e.deals.entries()]
-        .map(([dealLabel, qty]) => ({ label: dealLabel, qty }))
+        .map(([dealLabel, v]) => ({ label: dealLabel, qty: v.qty, revenue: roundMoney(v.revenue) }))
         .sort((a, b) => b.qty - a.qty),
     }))
     .sort((a, b) => b.totalQty - a.totalQty)

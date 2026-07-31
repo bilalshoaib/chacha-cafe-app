@@ -502,31 +502,51 @@ export default function ReportsPage() {
                       <div className="reports-breakdown-stat">
                         <span className="muted small">Sold alone</span>
                         <strong>{selectedItem.standaloneQty}</strong>
-                        <span className="muted small">{formatMoney(selectedItem.standaloneRevenue)}</span>
+                        <span className="reports-breakdown-money">{formatMoney(selectedItem.standaloneRevenue)}</span>
                       </div>
                       <div className="reports-breakdown-stat">
                         <span className="muted small">Inside deals</span>
                         <strong>{selectedItem.inDealQty}</strong>
+                        <span className="reports-breakdown-money">{formatMoney(selectedItem.inDealRevenue)}</span>
                         <span className="muted small">{selectedItem.deals.length} deal{selectedItem.deals.length === 1 ? '' : 's'}</span>
                       </div>
                       <div className="reports-breakdown-stat reports-breakdown-total">
                         <span className="muted small">Total units</span>
                         <strong>{selectedItem.totalQty}</strong>
+                        <span className="reports-breakdown-money">{formatMoney(selectedItem.totalRevenue)}</span>
                         <span className="muted small">Alone + in deals</span>
                       </div>
                     </div>
+                    <p className="muted small reports-breakdown-note">
+                      A deal sells for less than its items would separately, so each item earns a share of what
+                      the deal actually took, split by menu price. The shares add back up to the deal’s revenue.
+                    </p>
                     {selectedItem.deals.length > 0 ? (
                       <div className="table-scroll">
                         <table className="staff-accounts-table reports-invoice-table">
-                          <thead><tr><th scope="col">Sold inside deal</th><th scope="col" className="num">Units of this item</th></tr></thead>
+                          <thead>
+                            <tr>
+                              <th scope="col">Sold inside deal</th>
+                              <th scope="col" className="num">Units of this item</th>
+                              <th scope="col" className="num">Revenue from this item</th>
+                            </tr>
+                          </thead>
                           <tbody>
                             {selectedItem.deals.map((d) => (
                               <tr key={d.label}>
                                 <td>{d.label}</td>
                                 <td className="num"><strong>{d.qty}</strong></td>
+                                <td className="num">{formatMoney(d.revenue)}</td>
                               </tr>
                             ))}
                           </tbody>
+                          <tfoot>
+                            <tr>
+                              <td><strong>Total from deals</strong></td>
+                              <td className="num"><strong>{selectedItem.inDealQty}</strong></td>
+                              <td className="num"><strong>{formatMoney(selectedItem.inDealRevenue)}</strong></td>
+                            </tr>
+                          </tfoot>
                         </table>
                       </div>
                     ) : <p className="muted small">This item was never sold as part of a deal in this range.</p>}
