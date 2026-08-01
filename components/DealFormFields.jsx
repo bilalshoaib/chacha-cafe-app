@@ -19,6 +19,8 @@ export default function DealFormFields({
   setBurgerSplit,
   qtyById,
   setQty,
+  unitPriceById,
+  setUnitPrice,
   categorySections,
   disabled = false,
   showMenuHint = true,
@@ -49,6 +51,22 @@ export default function DealFormFields({
   const hasPrice = Number.isFinite(bundlePrice) && bundlePrice > 0
   const savings = hasPrice ? Math.round((itemsValue - bundlePrice) * 100) / 100 : 0
   const savingsPct = hasPrice && itemsValue > 0 ? Math.round((savings / itemsValue) * 100) : 0
+
+  // What the per-item in-deal prices add up to. Only meaningful once every
+  // selected item has been given one — a partial total would look like a
+  // mismatch when it is really just incomplete.
+  const pricedCount = selected.filter(
+    (i) => String(unitPriceById?.[i.id] ?? '').trim() !== '',
+  ).length
+  const allPriced = selected.length > 0 && pricedCount === selected.length
+  const statedTotal = useMemo(
+    () =>
+      Math.round(
+        selected.reduce((s, i) => s + (Number(unitPriceById?.[i.id]) || 0) * i.qty, 0) * 100,
+      ) / 100,
+    [selected, unitPriceById],
+  )
+  const statedGap = allPriced && hasPrice ? Math.round((bundlePrice - statedTotal) * 100) / 100 : 0
 
   const visibleSections = useMemo(() => {
     const q = itemSearch.trim().toLowerCase()
@@ -167,22 +185,60 @@ export default function DealFormFields({
       ) : null}
       {selected.length > 0 ? (
         <div className="deal-summary">
-          <div className="deal-summary-chips">
-            {selected.map((item) => (
-              <span key={item.id} className="deal-chip">
-                <strong>{item.qty}×</strong> {item.name}
-                <button
-                  type="button"
-                  className="deal-chip-remove"
-                  onClick={() => setQty(item.id, '')}
-                  disabled={disabled}
-                  aria-label={`Remove ${item.name} from this deal`}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
+          <table className="deal-selected-table">
+            <thead>
+              <tr>
+                <th scope="col">In this deal</th>
+                <th scope="col" className="num">Qty</th>
+                <th scope="col" className="num">Price each</th>
+                <th scope="col" className="num">Line</th>
+                <th aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {selected.map((item) => {
+                const raw = unitPriceById?.[item.id] ?? ''
+                const each = Number(raw)
+                const lineTotal =
+                  String(raw).trim() !== '' && Number.isFinite(each) ? Math.round(each * item.qty * 100) / 100 : null
+                return (
+                  <tr key={item.id}>
+                    <td>
+                      {item.name}
+                      <span className="muted small"> · menu {formatMoney(item.price)}</span>
+                    </td>
+                    <td className="num">{item.qty}</td>
+                    <td className="num">
+                      <input
+                        className="input-table discount-input"
+                        type="number"
+                        min={0}
+                        step={1}
+                        inputMode="decimal"
+                        placeholder={String(item.price)}
+                        value={raw}
+                        disabled={disabled}
+                        onChange={(e) => setUnitPrice?.(item.id, e.target.value)}
+                        aria-label={`Price of one ${item.name} inside this deal`}
+                      />
+                    </td>
+                    <td className="num">{lineTotal == null ? '—' : formatMoney(lineTotal)}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="deal-chip-remove"
+                        onClick={() => setQty(item.id, '')}
+                        disabled={disabled}
+                        aria-label={`Remove ${item.name} from this deal`}
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
           <div className="deal-summary-value">
             <span className="muted small">
               {selected.length} item{selected.length === 1 ? '' : 's'} · worth{' '}
@@ -202,6 +258,27 @@ export default function DealFormFields({
                 <span className="muted small">Bundle price matches the item total — no saving for the customer.</span>
               )
             ) : null}
+            {allPriced && hasPrice ? (
+              statedGap === 0 ? (
+                <span className="deal-savings-good">
+                  Item prices add up to {formatMoney(statedTotal)} — matches the bundle price ✓
+                </span>
+              ) : (
+                <span className="deal-savings-bad">
+                  ⚠ Item prices add up to {formatMoney(statedTotal)}, bundle is {formatMoney(bundlePrice)} —{' '}
+                  {formatMoney(Math.abs(statedGap))} {statedGap > 0 ? 'unaccounted for' : 'over'}. You can still save;
+                  reports will scale the prices to fit.
+                </span>
+              )
+            ) : selected.length > 0 && pricedCount > 0 ? (
+              <span className="muted small">
+                {pricedCount} of {selected.length} items priced — price them all to check against the bundle price.
+              </span>
+            ) : (
+              <span className="muted small">
+                Optional: set what each item is worth inside this deal, so reports can credit them accurately.
+              </span>
+            )}
           </div>
         </div>
       ) : null}

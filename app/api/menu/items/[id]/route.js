@@ -5,6 +5,7 @@ import {
   saveMenu,
   normalizeCategory,
   optionalTrimmedString,
+  parseCostPrice,
 } from '@/lib/repositories/menuRepository'
 import { parseMenuItemBusinessType } from '@/lib/businessTypes'
 
@@ -37,6 +38,11 @@ export async function PATCH(request, { params }) {
     const p = Number(price)
     if (!Number.isFinite(p) || p <= 0) return NextResponse.json({ error: 'price must be a positive number' }, { status: 400 })
     item.price = Math.round(p * 100) / 100
+  }
+  if (body.costPrice !== undefined) {
+    const cost = parseCostPrice(body.costPrice)
+    if (cost.error) return NextResponse.json({ error: cost.error }, { status: 400 })
+    item.costPrice = cost.value
   }
   if (size !== undefined) {
     const s = optionalTrimmedString(size, 60)

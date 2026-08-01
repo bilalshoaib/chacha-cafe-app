@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
-import { loadMenu, saveMenu, newDealId } from '@/lib/repositories/menuRepository'
+import { loadMenu, saveMenu, newDealId, parseDealIncludes } from '@/lib/repositories/menuRepository'
 import { dealBusinessType, normalizeBusinessType } from '@/lib/businessTypes'
 
 export async function POST(request) {
@@ -13,12 +13,9 @@ export async function POST(request) {
     return NextResponse.json({ error: 'name, price (number), and non-empty includes[] required' }, { status: 400 })
   }
   const menu = await loadMenu()
-  const itemIds = new Set(menu.items.map((i) => i.id))
-  for (const row of includes) {
-    if (!row.itemId || typeof row.qty !== 'number' || row.qty < 1 || !itemIds.has(row.itemId)) {
-      return NextResponse.json({ error: 'Each include needs valid itemId and qty >= 1' }, { status: 400 })
-    }
-  }
+  const parsedIncludes = parseDealIncludes(includes, new Set(menu.items.map((i) => i.id)))
+  if (parsedIncludes.error) return NextResponse.json({ error: parsedIncludes.error }, { status: 400 })
+  const cleanIncludes = parsedIncludes.includes
 
   const rawBt = body.businessType
   const isCombined = String(rawBt ?? '').toLowerCase() === 'combined'
@@ -40,20 +37,20 @@ export async function POST(request) {
       price: Math.round(price * 100) / 100,
       cafeSplit: Math.round(cafeSplit * 100) / 100,
       burgerSplit: Math.round(burgerSplit * 100) / 100,
-      includes,
+      includes: cleanIncludes,
     }
     menu.deals.push(deal)
     await saveMenu(menu)
     return NextResponse.json(deal, { status: 201 })
   }
 
-  const businessType = normalizeBusinessType(rawBt) || dealBusinessType({ includes }, menu.items)
+  const businessType = normalizeBusinessType(rawBt) || dealBusinessType({ includes: cleanIncludes }, menu.items)
   const deal = {
     id: newDealId(),
-    name: String(name).trim(),
+    name: String(name).trim().slice(0, 120),
     businessType,
     price: Math.round(price * 100) / 100,
-    includes,
+    includes: cleanIncludes,
   }
   menu.deals.push(deal)
   await saveMenu(menu)

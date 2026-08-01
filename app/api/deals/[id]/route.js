@@ -1,26 +1,20 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
-import { loadMenu, saveMenu } from '@/lib/repositories/menuRepository'
+import { loadMenu, saveMenu, parseDealIncludes } from '@/lib/repositories/menuRepository'
 import { dealBusinessType, itemMatchesBusiness, normalizeBusinessType, businessTypeLabel } from '@/lib/businessTypes'
 
 function validateDealIncludes(menu, includes, businessType) {
-  if (!Array.isArray(includes) || includes.length === 0) {
-    return { error: 'non-empty includes[] required' }
-  }
-  const itemIds = new Set(menu.items.map((i) => i.id))
-  const out = []
-  for (const row of includes) {
-    const qty = Number(row.qty)
-    if (!row.itemId || !Number.isFinite(qty) || qty < 1 || !itemIds.has(row.itemId)) {
-      return { error: 'Each include needs valid itemId and qty >= 1' }
-    }
-    const item = menu.items.find((i) => i.id === row.itemId)
+  const parsed = parseDealIncludes(includes, new Set(menu.items.map((i) => i.id)))
+  if (parsed.error) return parsed
+
+  // A non-combined deal may only bundle items belonging to that business.
+  for (const inc of parsed.includes) {
+    const item = menu.items.find((i) => i.id === inc.itemId)
     if (item && businessType !== 'combined' && !itemMatchesBusiness(item, businessType)) {
       return { error: `Included item "${item.name}" is not available for ${businessTypeLabel(businessType)}.` }
     }
-    out.push({ itemId: String(row.itemId), qty: Math.floor(qty) })
   }
-  return { includes: out }
+  return parsed
 }
 
 export async function PATCH(request, { params }) {

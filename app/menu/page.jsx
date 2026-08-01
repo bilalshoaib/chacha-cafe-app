@@ -27,6 +27,7 @@ export default function MenuItemsPage() {
   const [editingItem, setEditingItem] = useState(null)
   const [editName, setEditName] = useState('')
   const [editPrice, setEditPrice] = useState('')
+  const [editCostPrice, setEditCostPrice] = useState('')
   const [editCategory, setEditCategory] = useState('')
   const [editSize, setEditSize] = useState('')
   const [editFlavour, setEditFlavour] = useState('')
@@ -37,6 +38,7 @@ export default function MenuItemsPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [addName, setAddName] = useState('')
   const [addPrice, setAddPrice] = useState('')
+  const [addCostPrice, setAddCostPrice] = useState('')
   const [addCategory, setAddCategory] = useState('pizza')
   const [addSize, setAddSize] = useState('')
   const [addFlavour, setAddFlavour] = useState('')
@@ -122,6 +124,7 @@ export default function MenuItemsPage() {
     setEditingItem(item)
     setEditName(item.name ?? '')
     setEditPrice(String(item.price ?? ''))
+    setEditCostPrice(item.costPrice == null ? '' : String(item.costPrice))
     setEditCategory(item.category ?? 'other')
     setEditSize(item.size ?? '')
     setEditFlavour(item.flavour ?? '')
@@ -136,6 +139,7 @@ export default function MenuItemsPage() {
     setAddError('')
     setAddName('')
     setAddPrice('')
+    setAddCostPrice('')
     setAddCategory(categoryTabs[0]?.key ?? 'pizza')
     setAddSize('')
     setAddFlavour('')
@@ -163,6 +167,7 @@ export default function MenuItemsPage() {
         name: addName.trim(),
         category: addCategory.trim(),
         price: p,
+        costPrice: addCostPrice,
         businessType: addBusinessType,
         ...(addSize.trim() ? { size: addSize.trim() } : {}),
         ...(addFlavour.trim() ? { flavour: addFlavour.trim() } : {}),
@@ -196,6 +201,7 @@ export default function MenuItemsPage() {
         name: editName.trim(),
         category: editCategory.trim(),
         price: p,
+        costPrice: editCostPrice,
         size: editSize.trim(),
         flavour: editFlavour.trim(),
         businessType: editBusinessType,
@@ -361,7 +367,18 @@ export default function MenuItemsPage() {
                       </span>
                     </div>
                     <div className="menu-item-admin-actions">
-                      <span className="menu-item-admin-price">{formatMoney(item.price)}</span>
+                      <span className="menu-item-admin-price">
+                        {formatMoney(item.price)}
+                        {item.costPrice != null ? (
+                          <span className={`menu-item-margin ${item.price - item.costPrice < 0 ? 'menu-margin-bad' : 'menu-margin-good'}`}>
+                            cost {formatMoney(item.costPrice)} · {item.price > 0
+                              ? `${Math.round(((item.price - item.costPrice) / item.price) * 100)}%`
+                              : '—'}
+                          </span>
+                        ) : (
+                          <span className="menu-item-margin muted small">no cost set</span>
+                        )}
+                      </span>
                       <button type="button" className="ghost sm" onClick={() => openEditDialog(item)}>
                         Edit
                       </button>
@@ -396,6 +413,7 @@ export default function MenuItemsPage() {
             <MenuItemFormFields
               name={addName} setName={setAddName}
               price={addPrice} setPrice={setAddPrice}
+              costPrice={addCostPrice} setCostPrice={setAddCostPrice}
               category={addCategory} setCategory={setAddCategory}
               businessType={addBusinessType} setBusinessType={setAddBusinessType}
               size={addSize} setSize={setAddSize}
@@ -433,6 +451,7 @@ export default function MenuItemsPage() {
               <MenuItemFormFields
                 name={editName} setName={setEditName}
                 price={editPrice} setPrice={setEditPrice}
+                costPrice={editCostPrice} setCostPrice={setEditCostPrice}
                 category={editCategory} setCategory={setEditCategory}
                 businessType={editBusinessType} setBusinessType={setEditBusinessType}
                 size={editSize} setSize={setEditSize}

@@ -1,11 +1,14 @@
 'use client'
 import { MENU_ITEM_BUSINESS_OPTIONS } from '@/constants/businessTypes.js'
+import { formatMoney } from '@/utils/formatting.js'
 
 export default function MenuItemFormFields({
   name,
   setName,
   price,
   setPrice,
+  costPrice,
+  setCostPrice,
   category,
   setCategory,
   businessType,
@@ -18,6 +21,16 @@ export default function MenuItemFormFields({
   disabled = false,
   categoryListId = 'menu-item-category-dl',
 }) {
+  // Live margin readout, so the person typing sees straight away whether the
+  // selling price actually covers the cost.
+  const sell = Number(price)
+  const cost = Number(costPrice)
+  const hasBoth =
+    String(price ?? '').trim() !== '' && String(costPrice ?? '').trim() !== '' &&
+    Number.isFinite(sell) && Number.isFinite(cost) && sell > 0 && cost >= 0
+  const profit = hasBoth ? Math.round((sell - cost) * 100) / 100 : null
+  const marginPct = hasBoth && sell > 0 ? Math.round((profit / sell) * 100) : null
+
   return (
     <>
       <label className="field">
@@ -32,7 +45,7 @@ export default function MenuItemFormFields({
         />
       </label>
       <label className="field">
-        <span>Price (PKR)</span>
+        <span>Selling price (PKR)</span>
         <input
           value={price}
           onChange={(e) => setPrice(e.target.value)}
@@ -41,6 +54,25 @@ export default function MenuItemFormFields({
           placeholder="250"
           disabled={disabled}
         />
+      </label>
+      <label className="field">
+        <span>Cost price (PKR) <span className="muted small">— optional</span></span>
+        <input
+          value={costPrice ?? ''}
+          onChange={(e) => setCostPrice(e.target.value)}
+          inputMode="decimal"
+          placeholder="What it costs you"
+          disabled={disabled}
+        />
+        {hasBoth ? (
+          <span className={`field-hint ${profit < 0 ? 'menu-margin-bad' : 'menu-margin-good'}`}>
+            {profit < 0
+              ? `⚠ Selling below cost — losing ${formatMoney(Math.abs(profit))} per unit`
+              : `Profit ${formatMoney(profit)} per unit (${marginPct}% margin)`}
+          </span>
+        ) : (
+          <span className="field-hint muted small">Leave blank if you don’t track cost for this item.</span>
+        )}
       </label>
       <label className="field">
         <span>Business</span>

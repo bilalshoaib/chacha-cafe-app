@@ -31,10 +31,10 @@ function buildDealCategorySections(menuItems, business) {
     .filter(Boolean)
 }
 
-function includesFromQtyMap(qtyById) {
+function includesFromQtyMap(qtyById, unitPriceById = {}) {
   return Object.entries(qtyById)
     .filter(([, q]) => q >= 1)
-    .map(([itemId, qty]) => ({ itemId, qty }))
+    .map(([itemId, qty]) => ({ itemId, qty, unitPrice: unitPriceById[itemId] ?? '' }))
 }
 
 export default function DealsPage() {
@@ -53,6 +53,7 @@ export default function DealsPage() {
   const [burgerSplit, setBurgerSplit] = useState('')
   const [dealBusiness, setDealBusiness] = useState('cafe')
   const [qtyById, setQtyById] = useState({})
+  const [unitPriceById, setUnitPriceById] = useState({})
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
 
@@ -63,6 +64,7 @@ export default function DealsPage() {
   const [editBurgerSplit, setEditBurgerSplit] = useState('')
   const [editBusiness, setEditBusiness] = useState('cafe')
   const [editQtyById, setEditQtyById] = useState({})
+  const [editUnitPriceById, setEditUnitPriceById] = useState({})
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState('')
 
@@ -129,6 +131,7 @@ export default function DealsPage() {
     setBurgerSplit('')
     setDealBusiness('cafe')
     setQtyById({})
+    setUnitPriceById({})
     setAddOpen(true)
   }
 
@@ -149,17 +152,22 @@ export default function DealsPage() {
       setEditBurgerSplit('')
     }
     const q = {}
+    const p = {}
     for (const inc of deal.includes ?? []) {
-      if (inc.qty >= 1) q[inc.itemId] = inc.qty
+      if (inc.qty >= 1) {
+        q[inc.itemId] = inc.qty
+        if (inc.unitPrice != null) p[inc.itemId] = String(inc.unitPrice)
+      }
     }
     setEditQtyById(q)
+    setEditUnitPriceById(p)
   }
 
   function closeEditDialog() { editDialogRef.current?.close() }
 
   async function submitDeal(e) {
     e.preventDefault()
-    const includes = includesFromQtyMap(qtyById)
+    const includes = includesFromQtyMap(qtyById, unitPriceById)
     if (!name.trim()) { setCreateError('Enter a deal name.'); return }
     if (!includes.length) { setCreateError('Select at least one menu item with quantity ≥ 1.'); return }
     if (dealBusiness === 'combined') {
@@ -219,7 +227,7 @@ export default function DealsPage() {
   async function submitEdit(e) {
     e.preventDefault()
     if (!editingDeal || editSaving) return
-    const includes = includesFromQtyMap(editQtyById)
+    const includes = includesFromQtyMap(editQtyById, editUnitPriceById)
     if (!editName.trim()) { setEditError('Enter a deal name.'); return }
     if (!includes.length) { setEditError('Select at least one menu item with quantity ≥ 1.'); return }
     setEditSaving(true); setEditError(''); setError('')
@@ -424,12 +432,13 @@ export default function DealsPage() {
           <form className="deal-form" onSubmit={(e) => void submitDeal(e)}>
             <DealFormFields
               business={dealBusiness} setBusiness={setDealBusiness}
-              onBusinessChange={() => setQtyById({})}
+              onBusinessChange={() => { setQtyById({}); setUnitPriceById({}) }}
               name={name} setName={setName}
               price={price} setPrice={setPrice}
               cafeSplit={cafeSplit} setCafeSplit={setCafeSplit}
               burgerSplit={burgerSplit} setBurgerSplit={setBurgerSplit}
               qtyById={qtyById} setQty={(id, q) => setQty(setQtyById, id, q)}
+              unitPriceById={unitPriceById} setUnitPrice={(id, v) => setUnitPriceById((prev) => ({ ...prev, [id]: v }))}
               categorySections={createCategorySections}
               disabled={creating}
               showMenuHint={false}
@@ -461,12 +470,13 @@ export default function DealsPage() {
             <form className="deal-form" onSubmit={(e) => void submitEdit(e)}>
               <DealFormFields
                 business={editBusiness} setBusiness={setEditBusiness}
-                onBusinessChange={() => setEditQtyById({})}
+                onBusinessChange={() => { setEditQtyById({}); setEditUnitPriceById({}) }}
                 name={editName} setName={setEditName}
                 price={editPrice} setPrice={setEditPrice}
                 cafeSplit={editCafeSplit} setCafeSplit={setEditCafeSplit}
                 burgerSplit={editBurgerSplit} setBurgerSplit={setEditBurgerSplit}
                 qtyById={editQtyById} setQty={(id, q) => setQty(setEditQtyById, id, q)}
+                unitPriceById={editUnitPriceById} setUnitPrice={(id, v) => setEditUnitPriceById((prev) => ({ ...prev, [id]: v }))}
                 categorySections={editCategorySections}
                 disabled={editSaving}
                 showMenuHint={false}

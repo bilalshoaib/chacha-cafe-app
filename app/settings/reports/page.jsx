@@ -272,6 +272,17 @@ export default function ReportsPage() {
     [sellerItems, breakdownItemId],
   )
 
+  // Profit = revenue − (unit cost × units). Null when no cost is recorded for
+  // the item, so the page can say "cost not set" rather than imply 100% profit.
+  const breakdownProfit = useMemo(() => {
+    const cost = selectedItem?.unitCost
+    if (!selectedItem || cost == null) return null
+    const r = (n) => Math.round(n * 100) / 100
+    const alone = r(selectedItem.standaloneRevenue - cost * selectedItem.standaloneQty)
+    const inDeals = r(selectedItem.inDealRevenue - cost * selectedItem.inDealQty)
+    return { unitCost: cost, alone, inDeals, total: r(alone + inDeals) }
+  }, [selectedItem])
+
   const rangeLabel = useMemo(() => {
     if (!fromIso || !toIso) return ''
     try { return `${formatShortDateTime(new Date(fromIso))} → ${formatShortDateTime(new Date(toIso))}` }
@@ -503,23 +514,42 @@ export default function ReportsPage() {
                         <span className="muted small">Sold alone</span>
                         <strong>{selectedItem.standaloneQty}</strong>
                         <span className="reports-breakdown-money">{formatMoney(selectedItem.standaloneRevenue)}</span>
+                        {breakdownProfit ? (
+                          <span className={breakdownProfit.alone < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>
+                            {formatMoney(breakdownProfit.alone)} profit
+                          </span>
+                        ) : null}
                       </div>
                       <div className="reports-breakdown-stat">
                         <span className="muted small">Inside deals</span>
                         <strong>{selectedItem.inDealQty}</strong>
                         <span className="reports-breakdown-money">{formatMoney(selectedItem.inDealRevenue)}</span>
+                        {breakdownProfit ? (
+                          <span className={breakdownProfit.inDeals < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>
+                            {formatMoney(breakdownProfit.inDeals)} profit
+                          </span>
+                        ) : null}
                         <span className="muted small">{selectedItem.deals.length} deal{selectedItem.deals.length === 1 ? '' : 's'}</span>
                       </div>
                       <div className="reports-breakdown-stat reports-breakdown-total">
                         <span className="muted small">Total units</span>
                         <strong>{selectedItem.totalQty}</strong>
                         <span className="reports-breakdown-money">{formatMoney(selectedItem.totalRevenue)}</span>
+                        {breakdownProfit ? (
+                          <span className={breakdownProfit.total < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>
+                            {formatMoney(breakdownProfit.total)} profit
+                          </span>
+                        ) : null}
                         <span className="muted small">Alone + in deals</span>
                       </div>
                     </div>
                     <p className="muted small reports-breakdown-note">
-                      A deal sells for less than its items would separately, so each item earns a share of what
-                      the deal actually took, split by menu price. The shares add back up to the deal’s revenue.
+                      A deal sells for less than its items would separately, so each item earns a share of what the
+                      deal actually took — using the price you set for it inside that deal, or its menu price if you
+                      haven’t set one. The shares add back up to the deal’s revenue.
+                      {breakdownProfit
+                        ? ` Profit uses a cost of ${formatMoney(breakdownProfit.unitCost)} per unit.`
+                        : ' Set a cost price on this item under Menu items to see profit here.'}
                     </p>
                     {selectedItem.deals.length > 0 ? (
                       <div className="table-scroll">
@@ -529,6 +559,7 @@ export default function ReportsPage() {
                               <th scope="col">Sold inside deal</th>
                               <th scope="col" className="num">Units of this item</th>
                               <th scope="col" className="num">Revenue from this item</th>
+                              <th scope="col" className="num">Profit</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -537,6 +568,14 @@ export default function ReportsPage() {
                                 <td>{d.label}</td>
                                 <td className="num"><strong>{d.qty}</strong></td>
                                 <td className="num">{formatMoney(d.revenue)}</td>
+                                <td className="num">
+                                  {breakdownProfit ? (
+                                    (() => {
+                                      const p = Math.round((d.revenue - breakdownProfit.unitCost * d.qty) * 100) / 100
+                                      return <span className={p < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{formatMoney(p)}</span>
+                                    })()
+                                  ) : <span className="muted">—</span>}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -545,6 +584,11 @@ export default function ReportsPage() {
                               <td><strong>Total from deals</strong></td>
                               <td className="num"><strong>{selectedItem.inDealQty}</strong></td>
                               <td className="num"><strong>{formatMoney(selectedItem.inDealRevenue)}</strong></td>
+                              <td className="num">
+                                {breakdownProfit
+                                  ? <strong className={breakdownProfit.inDeals < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{formatMoney(breakdownProfit.inDeals)}</strong>
+                                  : <span className="muted">—</span>}
+                              </td>
                             </tr>
                           </tfoot>
                         </table>
@@ -560,7 +604,7 @@ export default function ReportsPage() {
             ) : (
               <div className="table-scroll">
                 <table className="staff-accounts-table reports-invoice-table">
-                  <thead><tr><th scope="col" className="num">#</th><th scope="col">Item / Deal</th><th scope="col">Type</th><th scope="col" className="num">Qty sold</th><th scope="col" className="num">Revenue</th><th scope="col" className="num">Orders</th></tr></thead>
+                  <thead><tr><th scope="col" className="num">#</th><th scope="col">Item / Deal</th><th scope="col">Type</th><th scope="col" className="num">Qty sold</th><th scope="col" className="num">Revenue</th><th scope="col" className="num">Profit</th><th scope="col" className="num">Orders</th></tr></thead>
                   <tbody>
                     {sellers.map((row, i) => (
                       <tr key={row.key}>
@@ -569,6 +613,11 @@ export default function ReportsPage() {
                         <td>{row.kind === 'deal' ? <span className="badge-role badge-role-super">Deal</span> : <span className="badge-role badge-role-staff">Item</span>}</td>
                         <td className="num"><strong>{row.qty}</strong></td>
                         <td className="num">{formatMoney(row.revenue)}</td>
+                        <td className="num">
+                          {row.profit == null
+                            ? <span className="muted" title="No cost price set for this item">—</span>
+                            : <span className={row.profit < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{formatMoney(row.profit)}</span>}
+                        </td>
                         <td className="num muted small">{row.orderCount}</td>
                       </tr>
                     ))}

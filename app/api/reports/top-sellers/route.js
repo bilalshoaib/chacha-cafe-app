@@ -35,10 +35,13 @@ export async function GET(request) {
   // Deal lines only store item ids, so resolve display names from the menu.
   const menuLabelById = new Map()
   const menuPriceById = new Map()
+  const menuCostById = new Map()
   for (const item of menu.items ?? []) {
     const extras = [item.size, item.flavour].filter(Boolean).join(' · ')
     menuLabelById.set(item.id, extras ? `${item.name} · ${extras}` : item.name)
     menuPriceById.set(item.id, Number(item.price) || 0)
+    // null when no cost has been recorded — profit is then unknown, not zero.
+    menuCostById.set(item.id, item.costPrice == null ? null : Number(item.costPrice))
   }
 
   const byKey = new Map()
@@ -75,13 +78,38 @@ export async function GET(request) {
       const key = `${kind}:${line.refId ?? label}`
       const qty = Number(line.qty) || 0
       const lineTotal = roundMoney(line.lineTotal ?? 0)
+      // What this line cost us. Unknown if any item involved has no cost set —
+      // "unknown" must not collapse into "free", which would inflate profit.
+      let lineCost = null
+      if (kind === 'deal') {
+        let sum = 0
+        let known = true
+        for (const inc of Array.isArray(line.dealIncludes) ? line.dealIncludes : []) {
+          const unitCost = menuCostById.get(inc.itemId)
+          if (unitCost == null) { known = false; break }
+          sum += unitCost * (Number(inc.qty) || 0) * qty
+        }
+        lineCost = known ? roundMoney(sum) : null
+      } else {
+        const unitCost = menuCostById.get(line.refId)
+        lineCost = unitCost == null ? null : roundMoney(unitCost * qty)
+      }
+
       const prev = byKey.get(key)
       if (prev) {
         prev.qty += qty
         prev.revenue += lineTotal
         prev.orderCount += 1
+        if (lineCost == null) prev.costKnown = false
+        else prev.cost += lineCost
       } else {
-        byKey.set(key, { key, label, kind, qty, revenue: lineTotal, orderCount: 1 })
+        byKey.set(key, {
+          key, label, kind, qty,
+          revenue: lineTotal,
+          orderCount: 1,
+          cost: lineCost ?? 0,
+          costKnown: lineCost != null,
+        })
       }
 
       if (kind === 'deal') {
@@ -103,7 +131,16 @@ export async function GET(request) {
   }
 
   const rows = [...byKey.values()]
-    .map((r) => ({ ...r, revenue: roundMoney(r.revenue) }))
+    .map((r) => {
+      const revenue = roundMoney(r.revenue)
+      const cost = r.costKnown ? roundMoney(r.cost) : null
+      return {
+        ...r,
+        revenue,
+        cost,
+        profit: cost == null ? null : roundMoney(revenue - cost),
+      }
+    })
     .sort((a, b) => (sort === 'revenue' ? b.revenue - a.revenue : b.qty - a.qty))
 
   const items = [...itemStats.values()]
@@ -116,6 +153,9 @@ export async function GET(request) {
       inDealRevenue: roundMoney(e.inDealRevenue),
       totalQty: e.standaloneQty + e.inDealQty,
       totalRevenue: roundMoney(e.standaloneRevenue + e.inDealRevenue),
+      // Cost is per unit of the item itself, so it applies the same way
+      // whether the unit was sold alone or bundled into a deal.
+      unitCost: menuCostById.get(e.refId) ?? null,
       deals: [...e.deals.entries()]
         .map(([dealLabel, v]) => ({ label: dealLabel, qty: v.qty, revenue: roundMoney(v.revenue) }))
         .sort((a, b) => b.qty - a.qty),

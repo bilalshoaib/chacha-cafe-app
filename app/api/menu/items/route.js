@@ -6,6 +6,7 @@ import {
   normalizeCategory,
   optionalTrimmedString,
   newItemId,
+  parseCostPrice,
 } from '@/lib/repositories/menuRepository'
 import { parseMenuItemBusinessType } from '@/lib/businessTypes'
 
@@ -32,6 +33,9 @@ export async function POST(request) {
     return NextResponse.json({ error: 'businessType must be cafe, burger, or both.' }, { status: 400 })
   }
 
+  const cost = parseCostPrice(body.costPrice)
+  if (cost.error) return NextResponse.json({ error: cost.error }, { status: 400 })
+
   const menu = await loadMenu()
   const item = {
     id: newItemId(),
@@ -39,6 +43,7 @@ export async function POST(request) {
     category: cat,
     businessType,
     price: Math.round(p * 100) / 100,
+    costPrice: cost.value,
     ...(size ? { size } : {}),
     ...(flavour ? { flavour } : {}),
   }

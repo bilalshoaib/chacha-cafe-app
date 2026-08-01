@@ -2371,6 +2371,38 @@ a.sm {
   flex-wrap: wrap;
   gap: 0.35rem;
 }
+
+/* The picked items, each with the price it is worth inside this deal. */
+.deal-selected-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.deal-selected-table th {
+  text-align: left;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 0 0.35rem 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+.deal-selected-table td {
+  padding: 0.3rem 0.35rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  vertical-align: middle;
+}
+.deal-selected-table tr:last-child td {
+  border-bottom: none;
+}
+.deal-selected-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.deal-selected-table .input-table {
+  max-width: 5rem;
+}
 .deal-chip {
   display: inline-flex;
   align-items: center;
@@ -3499,6 +3531,35 @@ button.link-add-menu-item {
   font-variant-numeric: tabular-nums;
   min-width: 5.5rem;
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+/* Cost + margin under the selling price. */
+.menu-item-margin {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Shared by the list and the add/edit form's live readout. */
+.menu-margin-good {
+  color: #0b7a5c;
+}
+.menu-margin-bad {
+  color: var(--danger);
+}
+
+/* Small helper text under a form input. Had no base rule before — only a
+   margin override scoped to the team form. */
+.field-hint {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  margin-top: 0.2rem;
 }
 
 .menu-items-toolbar {
