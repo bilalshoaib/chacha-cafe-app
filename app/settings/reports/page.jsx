@@ -79,11 +79,19 @@ function buildISO(dateStr, timeStr) {
   return d.toISOString()
 }
 
-// Default custom range: 6th of current month → 5th of next month (business month cycle).
-function defaultBusinessMonth() {
-  const now = new Date()
-  const from = new Date(now.getFullYear(), now.getMonth(), 6)
-  const to = new Date(now.getFullYear(), now.getMonth() + 1, 5)
+/**
+ * Default custom range: the business month *currently running*, which goes
+ * from the 6th of one month to the 5th of the next.
+ *
+ * On the 1st–5th that cycle opened on the 6th of the previous month, so the
+ * range has to reach backwards — otherwise the report would default to a
+ * period that hasn't started yet and show nothing.
+ */
+function defaultBusinessMonth(now = new Date()) {
+  const anchorMonth = now.getDate() >= 6 ? now.getMonth() : now.getMonth() - 1
+  // Month -1 rolls back to December of the previous year on its own.
+  const from = new Date(now.getFullYear(), anchorMonth, 6)
+  const to = new Date(now.getFullYear(), anchorMonth + 1, 5)
   return [dateInputValue(from), dateInputValue(to)]
 }
 
