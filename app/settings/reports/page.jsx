@@ -216,7 +216,7 @@ ${expenses.length === 0 ? '<p style="color:#6b7280">No expenses in this period.<
 }
 
 export default function ReportsPage() {
-  const [presetId, setPresetId] = useState('30d')
+  const [presetId, setPresetId] = useState('today')
   const [customFrom, setCustomFrom] = useState(() => defaultBusinessMonth()[0])
   const [customFromTime, setCustomFromTime] = useState('00:00')
   const [customTo, setCustomTo] = useState(() => defaultBusinessMonth()[1])
