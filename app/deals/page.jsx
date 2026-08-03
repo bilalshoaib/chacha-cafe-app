@@ -8,6 +8,7 @@ import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { BUSINESS_TYPES, DEAL_BUSINESS_TYPE_OPTIONS, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { dealMatchesQuery } from '@/utils/dealSearch.js'
+import useBackdropDismiss from '@/utils/useBackdropDismiss.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
@@ -67,6 +68,9 @@ export default function DealsPage() {
   const [editUnitPriceById, setEditUnitPriceById] = useState({})
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState('')
+
+  const addBackdrop = useBackdropDismiss(creating)
+  const editBackdrop = useBackdropDismiss(editSaving)
 
   function setQty(setter, id, q) {
     const n = Number(q)
@@ -419,17 +423,31 @@ export default function DealsPage() {
 
       <dialog
         ref={addDialogRef}
-        className="confirm-dialog add-menu-item-dialog deal-edit-dialog"
+        className="confirm-dialog form-dialog form-dialog-wide"
         aria-labelledby="add-deal-title"
         onClose={() => setAddOpen(false)}
         onCancel={(e) => { if (creating) e.preventDefault() }}
+        {...addBackdrop}
       >
-        <div className="confirm-dialog-inner">
-          <h2 id="add-deal-title" className="confirm-dialog-title">Create a new deal</h2>
-          <p className="muted small add-menu-item-intro">
-            Bundle price is what the customer pays. For combined deals, set how much goes to each business — the total is the sum of both portions.
-          </p>
-          <form className="deal-form" onSubmit={(e) => void submitDeal(e)}>
+        <header className="form-dialog-head">
+          <div className="form-dialog-head-text">
+            <h2 id="add-deal-title" className="form-dialog-title">Create a new deal</h2>
+            <p className="form-dialog-sub">
+              Bundle price is what the customer pays. For combined deals the total is the sum of both portions.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="form-dialog-close"
+            onClick={closeAddDialog}
+            disabled={creating}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </header>
+        <form className="form-dialog-form" onSubmit={(e) => void submitDeal(e)}>
+          <div className="form-dialog-body">
             <DealFormFields
               business={dealBusiness} setBusiness={setDealBusiness}
               onBusinessChange={() => { setQtyById({}); setUnitPriceById({}) }}
@@ -444,31 +462,46 @@ export default function DealsPage() {
               showMenuHint={false}
             />
             {createError ? <p className="banner error" role="alert">{createError}</p> : null}
-            <div className="confirm-dialog-actions add-menu-item-form-actions">
-              <button type="button" className="ghost" onClick={closeAddDialog} disabled={creating}>Cancel</button>
-              <button type="submit" className="primary" disabled={creating}>
-                {creating ? 'Saving…' : 'Save deal to menu'}
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+          <footer className="form-dialog-foot">
+            <button type="button" className="ghost" onClick={closeAddDialog} disabled={creating}>Cancel</button>
+            <button type="submit" className="primary" disabled={creating}>
+              {creating ? 'Saving…' : 'Save deal to menu'}
+            </button>
+          </footer>
+        </form>
       </dialog>
 
       <dialog
         ref={editDialogRef}
-        className="confirm-dialog add-menu-item-dialog deal-edit-dialog"
+        className="confirm-dialog form-dialog form-dialog-wide"
         aria-labelledby="edit-deal-title"
         onClose={() => setEditingDeal(null)}
         onCancel={(e) => { if (editSaving) e.preventDefault() }}
+        {...editBackdrop}
       >
         {editingDeal ? (
-          <div className="confirm-dialog-inner">
-            <h2 id="edit-deal-title" className="confirm-dialog-title">Edit deal</h2>
-            <p className="muted small add-menu-item-intro">
-              Update <strong>{editingDeal.name}</strong> ({editingDeal.id}). Existing orders and invoices keep their saved line prices.
-            </p>
-            <form className="deal-form" onSubmit={(e) => void submitEdit(e)}>
-              <DealFormFields
+          <>
+            <header className="form-dialog-head">
+              <div className="form-dialog-head-text">
+                <h2 id="edit-deal-title" className="form-dialog-title">Edit deal</h2>
+                <p className="form-dialog-sub">
+                  <strong>{editingDeal.name}</strong> · past invoices keep their saved prices.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="form-dialog-close"
+                onClick={closeEditDialog}
+                disabled={editSaving}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </header>
+            <form className="form-dialog-form" onSubmit={(e) => void submitEdit(e)}>
+              <div className="form-dialog-body">
+                <DealFormFields
                 business={editBusiness} setBusiness={setEditBusiness}
                 onBusinessChange={() => { setEditQtyById({}); setEditUnitPriceById({}) }}
                 name={editName} setName={setEditName}
@@ -478,18 +511,19 @@ export default function DealsPage() {
                 qtyById={editQtyById} setQty={(id, q) => setQty(setEditQtyById, id, q)}
                 unitPriceById={editUnitPriceById} setUnitPrice={(id, v) => setEditUnitPriceById((prev) => ({ ...prev, [id]: v }))}
                 categorySections={editCategorySections}
-                disabled={editSaving}
-                showMenuHint={false}
-              />
-              {editError ? <p className="banner error" role="alert">{editError}</p> : null}
-              <div className="confirm-dialog-actions add-menu-item-form-actions">
+                  disabled={editSaving}
+                  showMenuHint={false}
+                />
+                {editError ? <p className="banner error" role="alert">{editError}</p> : null}
+              </div>
+              <footer className="form-dialog-foot">
                 <button type="button" className="ghost" onClick={closeEditDialog} disabled={editSaving}>Cancel</button>
                 <button type="submit" className="primary" disabled={editSaving}>
                   {editSaving ? 'Saving…' : 'Save changes'}
                 </button>
-              </div>
+              </footer>
             </form>
-          </div>
+          </>
         ) : null}
       </dialog>
     </>

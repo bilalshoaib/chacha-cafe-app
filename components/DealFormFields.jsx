@@ -92,28 +92,32 @@ export default function DealFormFields({
 
   return (
     <>
-      <label className="field">
-        <span>Business</span>
-        <select
-          className="select"
-          value={business}
-          onChange={(e) => {
-            const next = e.target.value
-            setBusiness(next)
-            onBusinessChange?.(next)
-          }}
-          disabled={disabled}
-        >
+      <div className="field">
+        <span className="field-label">Business</span>
+        {/* Segmented control, matching the menu-item form: three options worth
+            seeing at once, and switching business resets the item picker. */}
+        <div className="segmented" role="group" aria-label="Business">
           {DEAL_BUSINESS_TYPE_OPTIONS.map((bt) => (
-            <option key={bt.id} value={bt.id}>
-              {bt.label}
-            </option>
+            <button
+              key={bt.id}
+              type="button"
+              className={`segmented-option${business === bt.id ? ' is-active' : ''}`}
+              onClick={() => {
+                if (business === bt.id) return
+                setBusiness(bt.id)
+                onBusinessChange?.(bt.id)
+              }}
+              disabled={disabled}
+              aria-pressed={business === bt.id}
+            >
+              {bt.shortLabel ?? bt.label}
+            </button>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
 
       <label className="field">
-        <span>Deal name</span>
+        <span className="field-label">Deal name</span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -129,47 +133,61 @@ export default function DealFormFields({
           </p>
           <div className="deal-split-row">
             <label className="field deal-split-field">
-              <span>Cafe portion (PKR)</span>
-              <input
-                value={cafeSplit ?? ''}
-                onChange={(e) => handleCafeSplitChange(e.target.value)}
-                placeholder="600"
-                inputMode="decimal"
-                disabled={disabled}
-              />
+              <span className="field-label">Cafe portion</span>
+              <span className="input-money">
+                <span className="input-money-prefix" aria-hidden="true">Rs</span>
+                <input
+                  value={cafeSplit ?? ''}
+                  onChange={(e) => handleCafeSplitChange(e.target.value)}
+                  placeholder="600"
+                  inputMode="decimal"
+                  disabled={disabled}
+                />
+              </span>
             </label>
             <label className="field deal-split-field">
-              <span>Burger portion (PKR)</span>
-              <input
-                value={burgerSplit ?? ''}
-                onChange={(e) => handleBurgerSplitChange(e.target.value)}
-                placeholder="400"
-                inputMode="decimal"
-                disabled={disabled}
-              />
+              <span className="field-label">Burger portion</span>
+              <span className="input-money">
+                <span className="input-money-prefix" aria-hidden="true">Rs</span>
+                <input
+                  value={burgerSplit ?? ''}
+                  onChange={(e) => handleBurgerSplitChange(e.target.value)}
+                  placeholder="400"
+                  inputMode="decimal"
+                  disabled={disabled}
+                />
+              </span>
             </label>
           </div>
           <label className="field">
-            <span>Bundle price (PKR) — auto-calculated</span>
-            <input
-              value={price}
-              readOnly
-              tabIndex={-1}
-              style={{ background: 'var(--bg)', color: 'var(--text-muted)', cursor: 'default' }}
-              placeholder="Sum of portions"
-            />
+            <span className="field-label">
+              Bundle price <span className="field-optional">auto-calculated</span>
+            </span>
+            <span className="input-money">
+              <span className="input-money-prefix" aria-hidden="true">Rs</span>
+              <input
+                className="input-readonly"
+                value={price}
+                readOnly
+                tabIndex={-1}
+                placeholder="Sum of portions"
+              />
+            </span>
           </label>
         </div>
       ) : (
         <label className="field">
-          <span>Bundle price (PKR)</span>
-          <input
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="19.99"
-            inputMode="decimal"
-            disabled={disabled}
-          />
+          <span className="field-label">Bundle price</span>
+          <span className="input-money">
+            <span className="input-money-prefix" aria-hidden="true">Rs</span>
+            <input
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="1200"
+              inputMode="decimal"
+              disabled={disabled}
+            />
+          </span>
         </label>
       )}
 

@@ -9,6 +9,7 @@ import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { ADD_MENU_ITEM_HASH } from '@/constants/categories.js'
 import { itemBusinessType } from '@/constants/businessTypes.js'
 import { clearAddMenuItemHash } from '@/utils/hashNavigation.js'
+import useBackdropDismiss from '@/utils/useBackdropDismiss.js'
 import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
@@ -48,6 +49,10 @@ export default function MenuItemsPage() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [businessFilter, setBusinessFilter] = useState('all')
+
+  const addBackdrop = useBackdropDismiss(addSaving)
+  const editBackdrop = useBackdropDismiss(editSaving)
+  const deleteBackdrop = useBackdropDismiss(deleting)
 
   const categoryTabs = useMemo(() => buildCategoryTabs(menu.items), [menu.items])
 
@@ -396,20 +401,32 @@ export default function MenuItemsPage() {
 
       <dialog
         ref={addDialogRef}
-        className="confirm-dialog add-menu-item-dialog"
+        className="confirm-dialog form-dialog"
         aria-labelledby="add-menu-item-page-title"
         onClose={() => {
           setAddOpen(false)
           clearAddMenuItemHash()
         }}
         onCancel={(e) => { if (addSaving) e.preventDefault() }}
+        {...addBackdrop}
       >
-        <div className="confirm-dialog-inner">
-          <h2 id="add-menu-item-page-title" className="confirm-dialog-title">Add menu item</h2>
-          <p className="muted small add-menu-item-intro">
-            Saved on the server immediately. Choose Cafe, Burger, or Both if the item is shared across menus.
-          </p>
-          <form className="deal-form add-menu-item-form" onSubmit={(e) => void submitAdd(e)}>
+        <header className="form-dialog-head">
+          <div className="form-dialog-head-text">
+            <h2 id="add-menu-item-page-title" className="form-dialog-title">Add menu item</h2>
+            <p className="form-dialog-sub">Saved straight away and available on the next order.</p>
+          </div>
+          <button
+            type="button"
+            className="form-dialog-close"
+            onClick={closeAddDialog}
+            disabled={addSaving}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </header>
+        <form className="form-dialog-form" onSubmit={(e) => void submitAdd(e)}>
+          <div className="form-dialog-body">
             <MenuItemFormFields
               name={addName} setName={setAddName}
               price={addPrice} setPrice={setAddPrice}
@@ -423,52 +440,67 @@ export default function MenuItemsPage() {
               categoryListId="menu-page-add-category-dl"
             />
             {addError ? <p className="banner error" role="alert">{addError}</p> : null}
-            <div className="confirm-dialog-actions add-menu-item-form-actions">
-              <button type="button" className="ghost" onClick={closeAddDialog} disabled={addSaving}>Cancel</button>
-              <button type="submit" className="primary" disabled={addSaving}>
-                {addSaving ? 'Saving…' : 'Add to menu'}
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+          <footer className="form-dialog-foot">
+            <button type="button" className="ghost" onClick={closeAddDialog} disabled={addSaving}>Cancel</button>
+            <button type="submit" className="primary" disabled={addSaving}>
+              {addSaving ? 'Saving…' : 'Add to menu'}
+            </button>
+          </footer>
+        </form>
       </dialog>
 
       <dialog
         ref={editDialogRef}
-        className="confirm-dialog add-menu-item-dialog"
+        className="confirm-dialog form-dialog"
         aria-labelledby="edit-menu-item-title"
         onClose={() => setEditingItem(null)}
         onCancel={(e) => { if (editSaving) e.preventDefault() }}
+        {...editBackdrop}
       >
         {editingItem ? (
-          <div className="confirm-dialog-inner">
-            <h2 id="edit-menu-item-title" className="confirm-dialog-title">Edit menu item</h2>
-            <p className="muted small add-menu-item-intro">
-              Update <strong>{editingItem.name}</strong> ({editingItem.id}). Existing orders and invoices keep their
-              saved line prices.
-            </p>
-            <form className="deal-form add-menu-item-form" onSubmit={(e) => void submitEdit(e)}>
-              <MenuItemFormFields
-                name={editName} setName={setEditName}
-                price={editPrice} setPrice={setEditPrice}
-                costPrice={editCostPrice} setCostPrice={setEditCostPrice}
-                category={editCategory} setCategory={setEditCategory}
-                businessType={editBusinessType} setBusinessType={setEditBusinessType}
-                size={editSize} setSize={setEditSize}
-                flavour={editFlavour} setFlavour={setEditFlavour}
-                categoryTabs={categoryTabs}
+          <>
+            <header className="form-dialog-head">
+              <div className="form-dialog-head-text">
+                <h2 id="edit-menu-item-title" className="form-dialog-title">Edit menu item</h2>
+                <p className="form-dialog-sub">
+                  <strong>{editingItem.name}</strong> · past invoices keep their saved prices.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="form-dialog-close"
+                onClick={closeEditDialog}
                 disabled={editSaving}
-                categoryListId="edit-menu-item-category-dl"
-              />
-              {editError ? <p className="banner error" role="alert">{editError}</p> : null}
-              <div className="confirm-dialog-actions add-menu-item-form-actions">
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </header>
+            <form className="form-dialog-form" onSubmit={(e) => void submitEdit(e)}>
+              <div className="form-dialog-body">
+                <MenuItemFormFields
+                  name={editName} setName={setEditName}
+                  price={editPrice} setPrice={setEditPrice}
+                  costPrice={editCostPrice} setCostPrice={setEditCostPrice}
+                  category={editCategory} setCategory={setEditCategory}
+                  businessType={editBusinessType} setBusinessType={setEditBusinessType}
+                  size={editSize} setSize={setEditSize}
+                  flavour={editFlavour} setFlavour={setEditFlavour}
+                  categoryTabs={categoryTabs}
+                  disabled={editSaving}
+                  categoryListId="edit-menu-item-category-dl"
+                />
+                {editError ? <p className="banner error" role="alert">{editError}</p> : null}
+              </div>
+              <footer className="form-dialog-foot">
                 <button type="button" className="ghost" onClick={closeEditDialog} disabled={editSaving}>Cancel</button>
                 <button type="submit" className="primary" disabled={editSaving}>
                   {editSaving ? 'Saving…' : 'Save changes'}
                 </button>
-              </div>
+              </footer>
             </form>
-          </div>
+          </>
         ) : null}
       </dialog>
 
@@ -478,6 +510,7 @@ export default function MenuItemsPage() {
         aria-labelledby="confirm-remove-title"
         onClose={() => setPendingDelete(null)}
         onCancel={(e) => { if (deleting) e.preventDefault() }}
+        {...deleteBackdrop}
       >
         {pendingDelete ? (
           <div className="confirm-dialog-inner">
