@@ -24,8 +24,27 @@ function toISOEnd(d) {
 function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1) }
 function endOfMonth(d) { return new Date(d.getFullYear(), d.getMonth() + 1, 0) }
 
+/**
+ * A business day runs from 6 PM to 5 PM the next day, matching the evening
+ * shift. `dayOffset` picks which one: 0 is the day opening this evening, -1
+ * is the one that opened yesterday evening.
+ *
+ * The end is derived from the start (not from `now`) so it is always exactly
+ * one calendar day later, even across month, year and DST boundaries.
+ */
+function businessDayRange(dayOffset, now = new Date()) {
+  const start = new Date(now)
+  start.setDate(start.getDate() + dayOffset)
+  start.setHours(18, 0, 0, 0)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 1)
+  end.setHours(17, 0, 0, 0)
+  return [start.toISOString(), end.toISOString()]
+}
+
 const PRESETS = [
-  { id: 'today', label: 'Today', range: () => { const n = new Date(); return [toISOStart(n), toISOEnd(n)] } },
+  { id: 'last_day', label: 'Last day (6 PM–5 PM)', range: () => businessDayRange(-1) },
+  { id: 'today', label: 'Today (6 PM–5 PM)', range: () => businessDayRange(0) },
   { id: '7d', label: 'Last 7 days', range: () => { const end = new Date(); const start = new Date(end); start.setDate(start.getDate() - 6); return [toISOStart(start), toISOEnd(end)] } },
   { id: '30d', label: 'Last 30 days', range: () => { const end = new Date(); const start = new Date(end); start.setDate(start.getDate() - 29); return [toISOStart(start), toISOEnd(end)] } },
   { id: 'this_month', label: 'This month', range: () => { const n = new Date(); return [toISOStart(startOfMonth(n)), toISOEnd(n)] } },
