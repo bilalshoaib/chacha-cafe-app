@@ -90,6 +90,10 @@ export default function OrdersPage() {
     setDiscountDraftByLine({})
     setLineQtySaving(null)
     setLineDiscountSaving(null)
+    // Ready to type the moment an order is open, so no click into the row first.
+    if (activeOrderId) {
+      queueMicrotask(() => searchInputRef.current?.focus({ preventScroll: true }))
+    }
   }, [activeOrderId])
 
   useEffect(() => {
@@ -303,7 +307,7 @@ export default function OrdersPage() {
         ) : (
           <>
             <ul className="order-hint-list">
-              <li><strong>Items</strong> — search in the last row, set qty, then <strong>Add line</strong>.</li>
+              <li><strong>Items</strong> — type 2–3 letters, <strong>Enter</strong> to pick, <strong>Enter</strong> again to add. Type a number in between for more than one.</li>
               <li><strong>Deals</strong> — use the <strong>Add a deal</strong> dropdown, not the item search.</li>
               <li><strong>Qty / Discount</strong> — edit any row, then press Enter or click away.</li>
             </ul>
@@ -478,6 +482,10 @@ export default function OrdersPage() {
                         value={entryQty}
                         disabled={!qtyEnabled}
                         onChange={(e) => setEntryQty(e.target.value)}
+                        // Picking an item jumps here with "1" already in the
+                        // box; selecting it means typing a qty replaces rather
+                        // than appends.
+                        onFocus={(e) => e.target.select()}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault()

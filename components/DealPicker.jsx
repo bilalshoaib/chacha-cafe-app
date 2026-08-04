@@ -6,8 +6,10 @@ import { dealMatchesQuery } from '@/utils/dealSearch.js'
 export default function DealPicker({ deals, itemLabelById, onSelect, disabled }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [highlight, setHighlight] = useState(0)
   const wrapRef = useRef(null)
   const searchRef = useRef(null)
+  const listRef = useRef(null)
 
   useEffect(() => {
     function onDocClick(e) {
@@ -27,6 +29,7 @@ export default function DealPicker({ deals, itemLabelById, onSelect, disabled })
   // Start each visit to the list from a clean slate, ready to type.
   useEffect(() => {
     if (!open) { setQuery(''); return }
+    setHighlight(0)
     queueMicrotask(() => searchRef.current?.focus())
   }, [open])
 
@@ -35,9 +38,48 @@ export default function DealPicker({ deals, itemLabelById, onSelect, disabled })
     [deals, query, itemLabelById],
   )
 
+  // Narrowing the list can strand the highlight past the end of it.
+  useEffect(() => {
+    setHighlight((h) => (h > filtered.length - 1 ? 0 : h))
+  }, [filtered.length])
+
+  useEffect(() => {
+    if (!open) return
+    listRef.current?.children[highlight]?.scrollIntoView({ block: 'nearest' })
+  }, [highlight, open])
+
   function pick(deal) {
     onSelect(deal.id)
     setOpen(false)
+  }
+
+  /** Arrow keys walk the list and Enter takes the highlighted deal, matching
+   *  the item search so both pickers work the same way without the mouse. */
+  function onSearchKeyDown(e) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlight((h) => Math.min(h + 1, filtered.length - 1))
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlight((h) => Math.max(h - 1, 0))
+      return
+    }
+    if (e.key === 'Home') {
+      e.preventDefault()
+      setHighlight(0)
+      return
+    }
+    if (e.key === 'End') {
+      e.preventDefault()
+      setHighlight(Math.max(0, filtered.length - 1))
+      return
+    }
+    if (e.key === 'Enter' && filtered[highlight]) {
+      e.preventDefault()
+      pick(filtered[highlight])
+    }
   }
 
   return (
@@ -47,6 +89,12 @@ export default function DealPicker({ deals, itemLabelById, onSelect, disabled })
         className="deal-picker-trigger"
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            e.preventDefault()
+            setOpen(true)
+          }
+        }}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Add a deal bundle to this order"
@@ -63,33 +111,34 @@ export default function DealPicker({ deals, itemLabelById, onSelect, disabled })
             className="deal-picker-search"
             placeholder="Search by name, price, or item inside…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              // One match left? Enter picks it, so search-then-Enter works.
-              if (e.key === 'Enter' && filtered.length === 1) {
-                e.preventDefault()
-                pick(filtered[0])
-              }
-            }}
+            onChange={(e) => { setQuery(e.target.value); setHighlight(0) }}
+            onKeyDown={onSearchKeyDown}
             aria-label="Search deals"
+            aria-autocomplete="list"
+            aria-activedescendant={filtered[highlight] ? `deal-option-${filtered[highlight].id}` : undefined}
           />
           {filtered.length === 0 ? (
             <p className="deal-picker-empty muted small">No deals match “{query.trim()}”.</p>
           ) : (
-            <ul className="deal-picker-list" role="listbox">
-              {filtered.map((d) => {
+            <ul className="deal-picker-list" role="listbox" ref={listRef}>
+              {filtered.map((d, i) => {
                 const includes = d.includes || []
                 return (
-                  <li key={d.id} role="option" aria-selected={false}>
-                    <button type="button" className="deal-picker-item" onClick={() => pick(d)}>
+                  <li key={d.id} id={`deal-option-${d.id}`} role="option" aria-selected={i === highlight}>
+                    <button
+                      type="button"
+                      className={`deal-picker-item${i === highlight ? ' active' : ''}`}
+                      onMouseEnter={() => setHighlight(i)}
+                      onClick={() => pick(d)}
+                    >
                       <div className="deal-picker-item-row">
                         <span className="deal-picker-item-name">{d.name}</span>
                         <span className="deal-picker-item-price">{formatMoney(d.price)}</span>
                       </div>
                       {includes.length > 0 ? (
                         <ul className="deal-picker-item-includes">
-                          {includes.map((inc, i) => (
-                            <li key={i}>
+                          {includes.map((inc, idx) => (
+                            <li key={idx}>
                               <span className="deal-picker-item-qty">{inc.qty}×</span>
                               {itemLabelById[inc.itemId] || inc.itemId}
                             </li>

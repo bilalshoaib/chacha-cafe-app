@@ -3,6 +3,25 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 
+/**
+ * Ranks a match, lowest first — a plain `includes` filter left the wanted item
+ * buried under earlier menu rows, so "type two letters and press Enter" landed
+ * on the wrong line. Returns -1 for no match.
+ */
+function matchScore(item, q) {
+  const name = item.name.toLowerCase()
+  if (name === q) return 0
+  if (name.startsWith(q)) return 1
+  const words = name.split(/\s+/).filter(Boolean)
+  if (words.some((w) => w.startsWith(q))) return 2
+  // Initials, so "cb" finds "Chicken Burger".
+  if (words.length > 1 && words.map((w) => w[0]).join('').startsWith(q)) return 3
+  if (name.includes(q)) return 4
+  const extras = [item.category, item.size, item.flavour]
+  if (extras.some((x) => x && String(x).toLowerCase().includes(q))) return 5
+  return -1
+}
+
 export default function ItemAutocomplete({
   items,
   searchValue,
@@ -24,17 +43,13 @@ export default function ItemAutocomplete({
 
   const filtered = useMemo(() => {
     const q = searchValue.trim().toLowerCase()
-    let list = items
-    if (q) {
-      list = items.filter(
-        (i) =>
-          i.name.toLowerCase().includes(q) ||
-          i.category.toLowerCase().includes(q) ||
-          (i.size && String(i.size).toLowerCase().includes(q)) ||
-          (i.flavour && String(i.flavour).toLowerCase().includes(q)),
-      )
-    }
-    return list.slice(0, 40)
+    if (!q) return items.slice(0, 40)
+    return items
+      .map((item) => ({ item, score: matchScore(item, q) }))
+      .filter((x) => x.score >= 0)
+      .sort((a, b) => a.score - b.score || a.item.name.localeCompare(b.item.name))
+      .slice(0, 40)
+      .map((x) => x.item)
   }, [items, searchValue])
 
   useEffect(() => {

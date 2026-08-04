@@ -552,13 +552,18 @@ a.danger-ghost:hover {
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
 }
 
-.deal-picker-item:hover {
+/* Keyboard highlight gets the same treatment as hover, so arrowing through the
+   list looks identical to moving the mouse over it. */
+.deal-picker-item:hover,
+.deal-picker-item.active {
   border-color: var(--accent);
   background: var(--accent-soft);
   transform: translateY(-1px);
 }
 .deal-picker-item:hover .deal-picker-item-price,
-.deal-picker-item:hover .deal-picker-item-qty {
+.deal-picker-item:hover .deal-picker-item-qty,
+.deal-picker-item.active .deal-picker-item-price,
+.deal-picker-item.active .deal-picker-item-qty {
   background: var(--surface);
 }
 
