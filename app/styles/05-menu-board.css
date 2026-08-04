@@ -1,0 +1,601 @@
+/* 05-menu-board.css — printable / shareable menu board
+   Split out of globals.css; load order is fixed by the @imports there. */
+
+/* ── Menu board (shareable / downloadable menu poster) ── */
+.menu-board-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.menu-board-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.menu-board-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0 2rem;
+}
+
+.menu-board-canvas {
+  width: 100%;
+  max-width: 900px;
+  background: linear-gradient(160deg, #072a26 0%, #0f3d38 55%, #072a26 100%);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 199, 44, 0.22);
+}
+
+.menu-board-banner {
+  position: relative;
+  text-align: center;
+  padding: 2.5rem 1.5rem 1.4rem;
+  overflow: hidden;
+  background: radial-gradient(120% 100% at 50% 0%, rgba(31, 95, 191, 0.14) 0%, rgba(0, 0, 0, 0) 60%);
+}
+
+.menu-board-photo {
+  position: absolute;
+  top: 0.5rem;
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.55));
+  z-index: 2;
+}
+
+.menu-board-photo-left {
+  left: 0.5rem;
+  transform: rotate(-6deg);
+}
+
+.menu-board-photo-right {
+  right: 0.5rem;
+  transform: rotate(6deg);
+}
+
+.menu-board-fresh-badge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 84px;
+  height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.05rem;
+  background: linear-gradient(135deg, #f0a830, #cf8c1c);
+  color: #0f3d38;
+  font-weight: 800;
+  font-size: 0.52rem;
+  line-height: 1.2;
+  text-transform: uppercase;
+  border-radius: 10px;
+  transform: rotate(-9deg);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.menu-board-fresh-badge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  border-radius: 10px;
+  transform: rotate(45deg);
+  z-index: -1;
+}
+
+.menu-board-fresh-badge strong {
+  font-size: 0.8rem;
+}
+
+.menu-board-brand-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.menu-board-logo-emblem {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+  margin-bottom: 0.5rem;
+}
+
+.menu-board-brand-name {
+  margin: 0.5rem 0 0;
+  font-size: 3.4rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: #f0a830;
+  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+  line-height: 1;
+}
+
+.menu-board-ribbon {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  margin: 0.6rem 0 0.35rem;
+  padding: 0.4rem 2.2rem;
+  background: linear-gradient(135deg, #8a1f1f, #c42626);
+  color: #fdf3e7;
+  font-weight: 800;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  clip-path: polygon(3% 0, 97% 0, 100% 50%, 97% 100%, 3% 100%, 0 50%);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.menu-board-brand-tag {
+  position: relative;
+  z-index: 1;
+  margin: 0.1rem 0 0;
+  color: #f0a830;
+  font-size: 1.05rem;
+  font-style: italic;
+  font-family: 'Brush Script MT', cursive;
+  letter-spacing: 0.03em;
+}
+
+.menu-board-phone {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  margin-top: 0.6rem;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 199, 44, 0.14);
+  border: 1px solid rgba(255, 199, 44, 0.4);
+  color: #f5ede0;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+.menu-board-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.1rem 1.5rem;
+  padding: 0.5rem 1.5rem 0.5rem;
+}
+
+.menu-board-section {
+  break-inside: avoid;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 199, 44, 0.16);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.menu-board-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.menu-board-section-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.menu-board-section-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fdf3e7;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.menu-board-item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.65rem 0.85rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.menu-board-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.menu-board-item-name-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.menu-board-item-name {
+  font-weight: 600;
+  color: #f5ede0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-board-item-extras {
+  font-size: 0.68rem;
+  color: rgba(245, 237, 224, 0.55);
+}
+
+.menu-board-item-dots {
+  flex: 1;
+  min-width: 0.75rem;
+  border-bottom: 2px dotted rgba(255, 199, 44, 0.4);
+  transform: translateY(-3px);
+}
+
+.menu-board-item-price {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: #f0a830;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.menu-board-deals {
+  margin: 1.1rem 1.5rem 0;
+}
+
+.menu-board-deals-ribbon {
+  text-align: center;
+  margin-bottom: 0.85rem;
+}
+
+.menu-board-deals-ribbon span {
+  display: inline-block;
+  padding: 0.4rem 2.4rem;
+  background: linear-gradient(135deg, #c42626, #8a1f1f);
+  color: #fdf3e7;
+  font-weight: 800;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  clip-path: polygon(3% 0, 97% 0, 100% 50%, 97% 100%, 3% 100%, 0 50%);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.menu-board-deal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.menu-board-deal-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 199, 44, 0.16);
+}
+
+.menu-board-deal-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.45rem 0.5rem 0.55rem;
+  text-align: center;
+}
+
+.menu-board-deal-badge-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.menu-board-deal-badge-price {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.menu-board-deal-includes {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0.55rem 0.6rem 0.4rem;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: rgba(245, 237, 224, 0.75);
+}
+
+.menu-board-deal-includes li {
+  position: relative;
+  padding-left: 0.85rem;
+}
+
+.menu-board-deal-includes li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #f0a830;
+}
+
+.menu-board-deal-photo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.6rem 0.7rem;
+}
+
+.menu-board-deal-photo {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+.menu-board-deal-featured {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+}
+
+.menu-board-deal-featured-info {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 84px;
+  text-align: center;
+}
+
+.menu-board-deal-featured-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.menu-board-deal-featured-price {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.menu-board-deal-featured-includes {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fdf3e7;
+}
+
+.menu-board-deal-featured-includes li {
+  position: relative;
+  padding-left: 0.85rem;
+}
+
+.menu-board-deal-featured-includes li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.menu-board-deal-featured-photo {
+  flex-shrink: 0;
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+}
+
+.menu-board-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.25rem 1.5rem 0;
+  padding: 0.9rem 0;
+  border-top: 1px dashed rgba(255, 199, 44, 0.25);
+}
+
+.menu-board-footer-badges {
+  display: flex;
+  gap: 1.1rem;
+}
+
+.menu-board-footer-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(245, 237, 224, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+}
+
+.menu-board-footer-badge-icon {
+  font-size: 1.4rem;
+}
+
+.menu-board-footer-thanks {
+  font-family: 'Brush Script MT', cursive;
+  font-style: italic;
+  font-size: 1.3rem;
+  color: #f0a830;
+}
+
+.menu-board-contact-strip {
+  text-align: center;
+  padding: 0.75rem 1.5rem 1.4rem;
+  color: rgba(245, 237, 224, 0.55);
+  font-size: 0.78rem;
+}
+
+.menu-board-contact-strip span:first-child {
+  color: #f0a830;
+  font-weight: 700;
+}
+
+.menu-board-contact-sep {
+  margin: 0 0.4rem;
+}
+
+@media (max-width: 600px) {
+  .menu-board-sections {
+    grid-template-columns: 1fr;
+    padding: 0.5rem 1rem;
+  }
+  .menu-board-deals {
+    margin: 1rem 1rem 0;
+  }
+  .menu-board-footer {
+    margin: 1rem 1rem 0;
+    justify-content: center;
+    text-align: center;
+  }
+  .menu-board-contact-strip {
+    padding: 0.75rem 1rem 1.25rem;
+  }
+  .menu-board-brand-name {
+    font-size: 2.4rem;
+  }
+  .menu-board-logo-emblem {
+    width: 46px;
+    height: 46px;
+  }
+  .menu-board-photo {
+    width: 84px;
+    height: 84px;
+  }
+  .menu-board-fresh-badge {
+    width: 68px;
+    height: 68px;
+    font-size: 0.44rem;
+  }
+  .menu-board-fresh-badge strong {
+    font-size: 0.68rem;
+  }
+  .menu-board-deal-featured {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .menu-board-deal-featured-includes {
+    justify-content: center;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Chacha brand theme — page polish (Orders).
+   Palette, fonts and primary buttons are now global (see :root + body).
+   This block only adds Orders-specific niceties on top of that base.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Card header — accent underline */
+.theme-chacha .card-head {
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+.theme-chacha .card h2 { font-size: 1.6rem; }
+
+/* Primary buttons get a soft blue lift on this page */
+.theme-chacha button.primary {
+  box-shadow: 0 6px 16px rgba(31, 95, 191, 0.28);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.theme-chacha button.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* Order-type cards — rounded + blue active state */
+.theme-chacha .order-type-option { border-radius: 12px; }
+.theme-chacha .order-type-option--active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-h);
+}
+
+/* Totals + line prices → Anton, tabular navy (per "prices = Anton") */
+.theme-chacha .total-row strong,
+.theme-chacha .total-row.big {
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.theme-chacha .total-row.big { font-size: 1.6rem; }
+
+/* Price columns: Each (6th) + Line (8th) + deal price */
+.theme-chacha .order-lines-table td:nth-child(6),
+.theme-chacha .order-lines-table td:nth-child(8),
+/* Anton is condensed, so prices need extra tracking to stay legible at badge size */
+.theme-chacha .deal-picker-item-price {
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  letter-spacing: 2px;
+  font-size: 1rem;
+  color: var(--accent-hover);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  font-variant-numeric: tabular-nums;
+}
+
+/* Table header — blue on tinted cream */
+.theme-chacha .order-lines-table thead th {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+/* Deal add strip — wider, roomier, soft-blue panel like the site */
+.theme-chacha .deal-add-field-top {
+  max-width: 560px;
+  background: var(--accent-soft);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+}
+.theme-chacha .deal-add-field-top > span {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.theme-chacha .business-type-picker .primary {
+  padding: 0.7rem 1.4rem;
+  font-size: 1rem;
+}
+

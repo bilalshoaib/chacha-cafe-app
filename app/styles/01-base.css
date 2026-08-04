@@ -1,0 +1,201 @@
+/* 01-base.css — palette, tokens, body background, typography
+   Split out of globals.css; load order is fixed by the @imports there. */
+
+
+/* ── Teal & Gold palette ─────────────────────────────────────────────────────
+   Deep teal + warm gold on a soft mint-cream. Every brand colour below is a
+   token — nothing should hardcode these hexes again. */
+:root {
+  --text: #17322e;
+  --text-muted: #62807b;
+  --text-h: #0f3d38;
+  --bg: #f4faf8;
+  --surface: #ffffff;
+  --border: rgba(15, 61, 56, 0.14);
+  --accent: #0d9488;
+  --accent-hover: #0f3d38;
+  --accent-soft: #e2f4f1;
+  --yellow: #f0a830;
+  --yellow-deep: #cf8c1c;
+  /* A clearly separate hue from --accent, so a destructive action never
+     reads as the main call to action. */
+  --danger: #b3261e;
+  --espresso-deep: #072a26;
+  --radius: 14px;
+  --shadow: 0 14px 30px rgba(15, 61, 56, 0.12);
+  font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/*
+ * Page backdrop: a soft gradient wash with a faint tiled food pattern over it
+ * (burger, cup, fries, star). Inline SVG rather than an image file, so it
+ * costs no request and stays crisp at any zoom. Fixed attachment keeps the
+ * pattern still while long tables scroll over it.
+ */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%230f3d38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' opacity='0.05'%3E%3Cpath d='M14 30h20a10 10 0 0 0-20 0Z'/%3E%3Cpath d='M13 34h22'/%3E%3Cpath d='M15 38h18a5 5 0 0 1-18 0Z'/%3E%3Cpath d='M74 22h14l-2 18a5 5 0 0 1-10 0Z'/%3E%3Cpath d='M88 26h4a4 4 0 0 1 0 8h-3'/%3E%3Cpath d='M26 78h16l-2 16H28Z'/%3E%3Cpath d='M29 78l2-8m5 8l1-8m5 8l3-8'/%3E%3Cpath d='M86 74l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8Z'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(1200px 620px at 12% -8%, color-mix(in srgb, var(--yellow) 22%, transparent) 0%, transparent 62%),
+    radial-gradient(1000px 560px at 96% 4%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 58%);
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-attachment: fixed, fixed, fixed;
+}
+
+/* Brand display type — Anton, uppercase, charcoal */
+h1,
+h2,
+h3,
+.sub {
+  font-family: 'Anton', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-h);
+  line-height: 1.1;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.app {
+  width: 100%;
+  padding: 1.25rem 8.5rem 3rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .app {
+    padding: 1rem 1rem 2rem;
+  }
+}
+
+.app.shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50svh;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.top-header-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.65rem 0.75rem;
+}
+
+.header-logout {
+  flex-shrink: 0;
+}
+
+.login-page {
+  max-width: 420px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.login-brand {
+  margin-bottom: 1.25rem;
+}
+
+.login-card {
+  padding: 1.15rem 1.25rem 1.25rem;
+}
+
+.login-heading {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+}
+
+.login-lede {
+  margin: 0 0 1rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.password-input-wrap {
+  position: relative;
+}
+
+.field .password-input-with-toggle {
+  width: 100%;
+  padding: 0.5rem 2.75rem 0.5rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.password-toggle-eye {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 0;
+}
+
+.password-toggle-eye:hover:not(:disabled) {
+  color: var(--text-h);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.password-toggle-eye:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.login-error {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.login-back-home {
+  margin: 0 0 0.85rem;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HOME PAGE  (public + staff)
+   ═══════════════════════════════════════════════════════════ */
+

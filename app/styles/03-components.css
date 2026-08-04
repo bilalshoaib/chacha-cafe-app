@@ -1,0 +1,2453 @@
+/* 03-components.css — toasts, badges, forms, buttons, tables, lists
+   Split out of globals.css; load order is fixed by the @imports there. */
+
+/* ── Toast notifications ─────────────────────────────────── */
+.toaster {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(360px, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.13);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  animation: toast-in 0.22s ease;
+  pointer-events: auto;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.toast-success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.toast-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.toast-message { flex: 1; }
+
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  opacity: 0.55;
+  padding: 0;
+  line-height: 1;
+  color: inherit;
+  flex-shrink: 0;
+  margin: 0;
+}
+.toast-close:hover { opacity: 1; }
+
+/* ── Role badges ─────────────────────────────────────────── */
+.badge-role {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+}
+
+.badge-role-super {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text-h);
+}
+
+.badge-role-admin-mid {
+  background: color-mix(in srgb, #0d9488 18%, transparent);
+  color: #0b5c53;
+  border: 1px solid color-mix(in srgb, #0d9488 28%, transparent);
+}
+
+.badge-role-staff {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.badge-role-cashier {
+  background: color-mix(in srgb, #059669 16%, transparent);
+  color: #065f46;
+  border: 1px solid color-mix(in srgb, #059669 28%, transparent);
+}
+
+.badge-role-returned {
+  background: color-mix(in srgb, #b45309 16%, transparent);
+  color: #92400e;
+  border: 1px solid color-mix(in srgb, #b45309 28%, transparent);
+}
+
+button.inline-link-button {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+button.inline-link-button:hover {
+  color: var(--accent-hover);
+}
+
+.settings-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.settings-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.settings-head h2 {
+  margin: 0 0 0.35rem;
+}
+
+.settings-card {
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.settings-card.settings-manage-admins .settings-form {
+  margin-top: 0.65rem;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 22rem;
+}
+
+.settings-inline-form {
+  max-width: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.65rem 1rem;
+}
+
+.settings-inline-form .field {
+  margin: 0;
+  min-width: 10rem;
+}
+
+.settings-inline-form .select {
+  min-width: 8rem;
+}
+
+.settings-table-wrap {
+  margin-top: 1rem;
+}
+
+.settings-banner-quiet {
+  font-size: 0.9rem;
+  padding: 0.45rem 0.55rem;
+}
+
+.settings-team-link-card .settings-team-link {
+  display: inline-flex;
+  margin-top: 0.65rem;
+  text-decoration: none;
+}
+
+.reports-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.reports-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.reports-head h2 {
+  margin: 0 0 0.35rem;
+}
+
+.reports-head-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.reports-filters-card {
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.reports-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.reports-custom-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  margin-top: 0.85rem;
+}
+
+.reports-datetime-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.reports-date-field {
+  margin: 0;
+  min-width: 9rem;
+}
+
+.reports-range-line {
+  margin: 0.75rem 0 0;
+}
+
+.reports-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+.reports-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.reports-filter-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.reports-filter-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.reports-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.reports-stat-card {
+  padding: 0.85rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 5.5rem;
+}
+
+.reports-stat-label {
+  display: block;
+}
+
+.reports-stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.skeleton {
+  display: block;
+  border-radius: 0.3rem;
+  background: linear-gradient(90deg, var(--border) 25%, var(--surface) 37%, var(--border) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+.reports-stat-card .skeleton-value {
+  width: 65%;
+  height: 1.2rem;
+  margin: 0.15rem 0;
+}
+.reports-stat-card .skeleton-sub {
+  width: 85%;
+  height: 0.75rem;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+/* Visible to screen readers only — pairs a spoken "Loading…" with the
+   silent shimmer blocks. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skeleton placeholder rows for the menu-item and deal lists. */
+.skeleton-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.2rem;
+  border-bottom: 1px solid var(--border);
+}
+.skeleton-menu-row:last-child { border-bottom: none; }
+.skeleton-menu-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+.skeleton-deal-block {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.skeleton-deal-block:last-child { border-bottom: none; }
+.skeleton-deal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.reports-table-card {
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.reports-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 1rem 0 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+.reports-tab {
+  padding: 0.55rem 0.95rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.reports-tab:hover:not(.active) {
+  color: var(--text-h);
+}
+.reports-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* Top sellers → per-item standalone vs in-deal breakdown */
+.reports-item-breakdown {
+  margin: 0.5rem 0 1rem;
+}
+.reports-item-select {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* Searchable item picker */
+.item-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.item-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 17rem;
+  max-width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.item-picker-trigger:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+.item-picker-trigger.has-value {
+  color: var(--text-h);
+  border-color: var(--accent);
+}
+.item-picker-trigger-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.item-picker-trigger-count {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+.item-picker-chevron {
+  flex: none;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+.item-picker-clear {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.item-picker-clear:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.item-picker-pop {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(28rem, 85vw);
+  padding: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.item-picker-search {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  margin-bottom: 0.4rem;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+.item-picker-empty {
+  margin: 0.4rem 0.3rem 0.2rem;
+}
+.item-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 17rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.item-picker-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.item-picker-option.active {
+  background: var(--accent-soft);
+}
+.item-picker-option.selected {
+  border-color: var(--accent);
+}
+.item-picker-option-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-h);
+}
+.item-picker-option-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.item-picker-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 10%, transparent);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+.item-picker-chip-total {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.reports-breakdown-panel {
+  margin-top: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+.reports-breakdown-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+.reports-breakdown-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 8.5rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.reports-breakdown-stat strong {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  color: var(--text-h);
+}
+/* The money each split earned, sitting just under its unit count. */
+.reports-breakdown-money {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-h);
+  line-height: 1.3;
+}
+.reports-breakdown-total .reports-breakdown-money {
+  color: var(--accent);
+}
+
+.reports-breakdown-note {
+  margin: 0.15rem 0 0.75rem;
+  max-width: 60ch;
+}
+
+/* Totals row under the per-deal breakdown. */
+.reports-invoice-table tfoot td {
+  border-top: 2px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+
+.reports-breakdown-total {
+  border-color: var(--accent);
+}
+.reports-breakdown-total strong {
+  color: var(--accent);
+}
+
+.reports-sellers-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+
+
+.reports-invoice-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.reports-expense-note {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.team-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.team-page-head h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1.35rem;
+}
+
+.team-detail-kicker {
+  margin: 0 0 0.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.72rem;
+}
+
+.team-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.team-list-card {
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.team-list-table .team-col-action {
+  text-align: right;
+  width: 4rem;
+}
+
+.team-row-link {
+  font-weight: 600;
+  color: var(--text-h);
+  text-decoration: none;
+}
+
+.team-row-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.team-detail-card {
+  padding: 1.15rem 1.25rem;
+}
+
+.team-detail-dl {
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.team-detail-dl div {
+  margin: 0;
+}
+
+.team-detail-dl dt {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.team-detail-dl dd {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.team-form-card {
+  padding: 1.15rem 1.25rem;
+  max-width: 26rem;
+}
+
+.team-user-form .field-hint {
+  margin: -0.25rem 0 0.25rem;
+}
+
+.team-form-actions {
+  margin-top: 0.35rem;
+}
+
+.banner.success {
+  background: color-mix(in srgb, #22c55e 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, #16a34a 30%, var(--border));
+  color: #14532d;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+}
+
+/* Neutral guidance — used when an action is unavailable and the user needs
+   to know what to do first. */
+.banner.info {
+  background: color-mix(in srgb, var(--yellow) 16%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  color: #0b5c53;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+}
+
+.brand {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  text-align: left;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.65rem;
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+}
+
+.tagline {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  border: 2px solid var(--yellow);
+  box-shadow: var(--shadow);
+}
+
+.tabs {
+  display: flex;
+  gap: 0.35rem;
+  background: var(--surface);
+  padding: 0.25rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.tabs button,
+.tabs a {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--text-muted);
+  text-decoration: none;
+  font: inherit;
+}
+
+.tabs button.active,
+.tabs a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.banner.error {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.grid.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.grid.single,
+.grid.invoices {
+  display: grid;
+  gap: 1rem;
+}
+
+.grid.invoices {
+  grid-template-columns: minmax(220px, 280px) 1fr;
+}
+
+.grid.menu-manage {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.grid.menu-manage.menu-manage-list-only {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 900px) {
+  .grid.two,
+  .grid.invoices,
+  .grid.menu-manage {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.15rem;
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  color: var(--text-h);
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.chip {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.chip.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.item-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.item-list li > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sub {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-h);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.muted.small,
+.small {
+  font-size: 0.82rem;
+}
+
+/*
+ * Button skin. Links opt in by carrying the same class names — plenty of
+ * navigation actions ("Add expense", "← Take order", "Cancel", "Edit") are
+ * <Link>s that must look identical to real buttons. These rules used to be
+ * scoped to `button` alone, which left every one of those links rendering as
+ * a default underlined browser link.
+ */
+button,
+a.primary,
+a.ghost,
+a.wide,
+a.danger-solid,
+a.danger-ghost {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.75rem;
+  background: var(--surface);
+  cursor: pointer;
+  color: var(--text-h);
+}
+
+/* Strip the anchor defaults so a link-as-button matches a button exactly. */
+a.primary,
+a.ghost,
+a.wide,
+a.danger-solid,
+a.danger-ghost {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  font: inherit;
+  line-height: normal;
+}
+
+button.primary,
+a.primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+button.primary:hover:not(:disabled),
+a.primary:hover {
+  background: var(--accent-hover);
+  /* Restated so the visited-link colour can't win over the white label. */
+  color: #fff;
+}
+
+button.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.wide,
+a.wide {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.65rem;
+  font-weight: 600;
+}
+
+button.ghost,
+a.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--accent);
+}
+
+button.ghost:hover,
+a.ghost:hover {
+  color: var(--accent-hover);
+}
+
+button.ghost.danger,
+a.ghost.danger {
+  color: var(--danger);
+}
+
+button.sm,
+a.sm {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+}
+
+
+.select {
+  min-width: 180px;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.lines {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.lines li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.lines li:last-child {
+  border-bottom: none;
+}
+
+.line-name {
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+  border-top: 2px solid var(--border);
+  font-size: 1.05rem;
+}
+
+.total-row.big {
+  font-size: 1.2rem;
+  margin-top: 1rem;
+}
+
+.discount-input {
+  width: 5.5rem;
+  text-align: right;
+}
+
+.order-line-discount {
+  width: 5.5rem;
+}
+
+.line-discount-badge {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-success, #16a34a);
+  margin-top: 2px;
+}
+
+.invoice-totals-block .total-row {
+  border-top: none;
+  padding-top: 0.2rem;
+  margin-top: 0;
+  font-size: 0.95rem;
+}
+
+.invoice-totals-block .total-row.big.invoice-view-total {
+  border-top: 2px solid var(--border);
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.invoice-totals-block .subtotal-row {
+  color: var(--muted, #888);
+  font-size: 0.9rem;
+}
+
+.discount-summary-row {
+  color: var(--color-success, #16a34a);
+  font-size: 0.9rem;
+}
+
+.invoice-discount-cell {
+  white-space: nowrap;
+}
+
+.invoice-line-discount-badge {
+  color: var(--color-success, #16a34a);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.invoices-table-discount {
+  white-space: nowrap;
+}
+
+.invoice-list-discount-badge {
+  color: var(--color-success, #16a34a);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.field input {
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.deal-form {
+  margin-top: 0.75rem;
+}
+
+.deal-drinks-hint {
+  margin: 0.5rem 0 0;
+  max-width: 42rem;
+  line-height: 1.45;
+}
+
+.deal-category-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.deal-category-block + .deal-category-block {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+}
+
+.deal-category-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.deal-empty-cats {
+  margin: 0.25rem 0;
+}
+
+.deal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 360px;
+  overflow: auto;
+  padding: 0.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+/* Running summary of the picked items — the list below scrolls, so this keeps
+   the current selection and its value in view while pricing the bundle. */
+.deal-summary {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.deal-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* The picked items, each with the price it is worth inside this deal. */
+.deal-selected-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.deal-selected-table th {
+  text-align: left;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 0 0.35rem 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+.deal-selected-table td {
+  padding: 0.3rem 0.35rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  vertical-align: middle;
+}
+.deal-selected-table tr:last-child td {
+  border-bottom: none;
+}
+.deal-selected-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.deal-selected-table .input-table {
+  max-width: 5rem;
+}
+.deal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.deal-chip-remove {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  color: var(--text-muted);
+  border-radius: 999px;
+}
+.deal-chip-remove:hover:not(:disabled) {
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+  color: #b91c1c;
+}
+.deal-summary-value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.deal-savings-good {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #15803d;
+}
+.deal-savings-bad {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+.deal-item-search {
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+.deal-row-price {
+  color: var(--text-h);
+  font-weight: 600;
+  margin-left: 0.15rem;
+}
+
+.deal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+}
+
+.deal-row input {
+  width: 4.5rem;
+  padding: 0.35rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.badge-paid {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, #22c55e 24%, transparent);
+  color: #14532d;
+  border: 1px solid color-mix(in srgb, #16a34a 35%, transparent);
+}
+
+.inv-badge-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.badge-returned {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, #c77d2b 22%, transparent);
+  color: var(--text-h);
+}
+
+.badge-unpaid {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.badge-payment-method {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #15803d;
+}
+
+.invoice-status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  align-items: center;
+}
+
+.invoice-meta-line {
+  margin: 0.35rem 0 0;
+}
+
+.invoice-return-reason {
+  margin: 0.65rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, #c77d2b 10%, var(--bg));
+  font-size: 0.92rem;
+}
+
+.invoice-add-lines-heading {
+  margin: 0.75rem 0 0.35rem;
+}
+
+.invoice-add-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.invoice-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.75rem;
+}
+
+.invoice-add-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.invoice-add-label .select {
+  min-width: 12rem;
+  max-width: 100%;
+}
+
+.inv-qty-input {
+  max-width: 4rem;
+}
+
+.invoice-return-section {
+  margin: 1rem 0;
+  padding: 0.85rem 0 0;
+  border-top: 1px dashed var(--border);
+}
+
+.invoice-returned-actions {
+  margin-top: 1rem;
+}
+
+/* Invoice view (read-only detail) */
+.invoice-detail-view {
+  padding-bottom: 1rem;
+}
+
+.invoice-view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.invoice-view-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.invoice-edit-disabled-hint {
+  margin: 0;
+  white-space: nowrap;
+}
+
+a.invoice-edit-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+a.invoice-edit-link:hover {
+  filter: brightness(1.05);
+}
+
+.invoice-view-document {
+  padding: 1.15rem 1.25rem;
+}
+
+.invoice-view-header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.invoice-view-kicker {
+  margin: 0 0 0.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+}
+
+.invoice-view-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: -0.02em;
+}
+
+.invoice-order-num {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent, var(--text-h));
+}
+
+.invoice-view-dates .invoice-view-date-main {
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.invoice-view-note {
+  margin: 1rem 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.invoice-view-note p {
+  margin: 0.35rem 0 0;
+  line-height: 1.45;
+}
+
+.invoice-view-callout p {
+  margin: 0.35rem 0 0;
+}
+
+.invoice-view-table-wrap {
+  margin-top: 0.5rem;
+}
+
+.inv-table-view th {
+  font-size: 0.75rem;
+}
+
+.invoice-line-title {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.invoice-line-business-badge {
+  font-size: 0.58rem;
+  padding: 0.1rem 0.35rem;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.invoice-view-total {
+  margin-top: 0.5rem;
+}
+
+.invoice-detail-actions {
+  margin-top: 1rem;
+  padding: 1rem 1.15rem;
+}
+
+.invoice-detail-actions .invoice-return-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.invoice-payment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.invoice-return-dialog .invoice-return-dialog-field textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+}
+
+.invoice-return-dialog .invoice-return-dialog-field {
+  margin: 1rem 0 0;
+}
+
+.invoice-edit-table-hint {
+  margin: 0 0 0.75rem;
+  max-width: 40rem;
+}
+
+.inv-table-edit tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.inv-table-edit .invoice-add-line-row td {
+  vertical-align: middle;
+}
+
+/* Invoice edit route */
+.invoice-edit-page .invoice-edit-header {
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+}
+
+.invoice-edit-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.invoice-edit-kicker {
+  margin: 0 0 0.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.invoice-edit-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.invoice-edit-header-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.invoice-edit-sub {
+  margin: 0.75rem 0 0;
+  max-width: 40rem;
+}
+
+.invoice-edit-top-nav {
+  margin-bottom: 0.75rem;
+}
+
+.invoice-edit-back-link {
+  margin-top: 0.75rem;
+}
+
+.invoice-sheet .invoice-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.note {
+  margin-top: 0.35rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.invoice-paid-banner {
+  margin: 0.35rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.invoice-unpaid-label {
+  margin: 0.35rem 0 0;
+}
+
+.invoice-actions {
+  margin: 0.75rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.invoice-note-edit textarea {
+  width: 100%;
+  min-height: 3.2rem;
+  resize: vertical;
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+}
+
+.invoice-note-actions {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.invoice-order-ref {
+  margin: 0 0 0.35rem;
+}
+
+.invoices-list-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.expenses-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.expenses-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.expenses-head h2 {
+  margin: 0 0 0.35rem;
+}
+
+.expenses-head-actions {
+  align-items: center;
+}
+
+.expense-detail-card dd {
+  word-break: break-word;
+}
+
+.expenses-filters-card,
+.expenses-form-card,
+.expenses-summary-card,
+.expenses-table-card {
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.expenses-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.expenses-range-line {
+  margin: 0.65rem 0 0;
+}
+
+.expenses-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.85rem 1rem;
+}
+
+.expenses-note-field {
+  margin-top: 0.85rem;
+}
+
+.expenses-form-actions {
+  margin-top: 1rem;
+}
+
+.expenses-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.expenses-total-value {
+  font-size: 1.25rem;
+  color: var(--text-h);
+}
+
+.expenses-table .expenses-title-cell {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.expenses-note-cell {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expenses-actions-col {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.expenses-actions-cell {
+  white-space: nowrap;
+}
+
+.expenses-actions-cell .ghost {
+  margin-right: 0.25rem;
+}
+
+.invoices-list-card {
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.invoices-list-lede {
+  margin: 0 0 0.75rem;
+  max-width: 40rem;
+}
+
+/* Invoice ID search */
+.invoices-search-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+.invoices-search-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.invoices-search-field {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  max-width: 26rem;
+}
+.invoices-search-input {
+  flex: 1;
+  min-width: 0;
+}
+.invoices-search-clear {
+  flex-shrink: 0;
+}
+
+/* Payment method modal */
+.pay-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.pay-modal {
+  background: var(--card-bg, #fff);
+  border-radius: 1rem;
+  padding: 2rem 2rem 1.5rem;
+  width: min(22rem, 90vw);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.pay-modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.pay-modal-sub {
+  margin: 0;
+}
+.pay-modal-options {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.pay-method-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem 0.75rem;
+  border: 2px solid var(--border, #e5e7eb);
+  border-radius: 0.75rem;
+  background: var(--card-bg, #fff);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.pay-method-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.pay-method-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+.pay-method-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.pay-modal-cancel {
+  align-self: center;
+  margin-top: 0.25rem;
+}
+
+.invoices-date-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.invoices-custom-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.85rem;
+}
+
+.invoices-date-field {
+  margin: 0;
+  min-width: 10rem;
+}
+
+.invoices-range-line {
+  margin: 0.65rem 0 0;
+}
+
+.invoices-business-heading {
+  margin-top: 1.15rem;
+}
+
+.invoices-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+/* Pagination footer: rows-per-page control + numbered page nav */
+.pagination-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1.25rem 0 0.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.pagination-size {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.pagination-size-options {
+  display: flex;
+  gap: 0.3rem;
+}
+.pagination-size-btn {
+  min-width: 2.4rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.pagination-size-btn:hover:not(:disabled):not(.active) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pagination-size-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  cursor: default;
+}
+.pagination-size-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+.pagination-btn {
+  min-width: 2.1rem;
+  height: 2.1rem;
+  padding: 0 0.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.pagination-btn:hover:not(:disabled):not(.active) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pagination-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  cursor: default;
+}
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pagination-nav {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.pagination-ellipsis {
+  min-width: 1.5rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.invoices-table-wrap {
+  margin-top: 0.5rem;
+}
+
+.invoices-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.invoices-table thead th {
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.invoices-table thead th.num {
+  text-align: right;
+}
+
+.invoices-table tbody td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.invoices-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.invoices-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.invoices-table-id {
+  font-weight: 600;
+  color: var(--text-h);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88rem;
+}
+
+.invoices-table-shift-num {
+  font-weight: 700;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+.invoices-table-total {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.invoices-table-badges {
+  justify-content: flex-start;
+}
+
+.invoices-table-row {
+  cursor: pointer;
+  outline: none;
+}
+
+.invoices-table-row:hover td {
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+
+.invoices-table-row:focus-visible td {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.invoice-detail-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.invoice-detail-nav {
+  margin-bottom: 0.85rem;
+}
+
+.invoice-detail-nav-bottom {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+}
+
+a.invoice-return-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 22rem;
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-h);
+  text-decoration: none;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+
+a.invoice-return-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+}
+
+.invoice-view-card {
+  margin-bottom: 1rem;
+}
+
+.invoice-display-note {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg));
+  font-size: 0.92rem;
+}
+
+.invoice-edit-card h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.invoice-edit-lede {
+  margin: 0 0 1rem;
+  max-width: 36rem;
+}
+
+.invoice-edit-save-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.invoice-save-hint {
+  margin: 0;
+}
+
+.invoice-lines-heading {
+  margin: 1rem 0 0.35rem;
+}
+
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  font-size: 0.92rem;
+}
+
+.inv-table th,
+.inv-table td {
+  text-align: left;
+  padding: 0.5rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.inv-table th:last-child,
+.inv-table td:last-child {
+  text-align: right;
+}
+
+.includes {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.foot {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.foot-link {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+.foot-link:hover {
+  color: var(--accent-hover);
+}
+
+.link-add-menu-item {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button.link-add-menu-item {
+  appearance: none;
+}
+
+.link-add-menu-item:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-hover);
+}
+
+.inline-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 2px;
+}
+
+.inline-link:hover {
+  color: var(--accent-hover);
+}
+
+.menu-item-admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.menu-items-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.menu-items-section-head h2 {
+  margin: 0;
+}
+
+.menu-items-lede {
+  margin: 0 0 0.75rem;
+}
+
+.menu-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.menu-filter-bar .invoices-filter-tabs {
+  margin: 0;
+}
+
+/* Deals: business tabs on the left, search on the right, wrapping on narrow
+   screens. Mirrors the menu-items filter bar. */
+.deals-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin: 0 0 0.75rem;
+}
+.deals-filter-bar .invoices-filter-tabs {
+  margin: 0;
+}
+.deals-search-input {
+  margin-left: auto;
+}
+.deals-search-count {
+  margin: 0 0 0.75rem;
+}
+
+.menu-search-input {
+  flex: 1 1 180px;
+  min-width: 140px;
+  max-width: 280px;
+  padding: 0.38rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-input, var(--bg));
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  outline: none;
+}
+
+.menu-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.menu-item-admin-price {
+  font-weight: 600;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+  min-width: 5.5rem;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+/* Cost + margin under the selling price. */
+.menu-item-margin {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Shared by the list and the add/edit form's live readout. */
+.menu-margin-good {
+  color: #0b7a5c;
+}
+.menu-margin-bad {
+  color: var(--danger);
+}
+
+/* Small helper text under a form input. Had no base rule before — only a
+   margin override scoped to the team form. */
+.field-hint {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  margin-top: 0.2rem;
+}
+
+.menu-items-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+}
+
+.select-all-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.menu-item-admin-list li.menu-item-admin-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.65rem 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.menu-item-check {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.menu-item-admin-main {
+  min-width: 0;
+  text-align: left;
+  .menu-item-admin-name {
+    text-transform: capitalize;
+  }
+}
+
+.menu-item-admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+

@@ -4,11 +4,11 @@ import Link from 'next/link'
 import { api } from '@/api.js'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import DealFormFields from '@/components/DealFormFields.jsx'
+import Modal, { FormActions } from '@/components/Modal.jsx'
 import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { BUSINESS_TYPES, DEAL_BUSINESS_TYPE_OPTIONS, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { dealMatchesQuery } from '@/utils/dealSearch.js'
-import useBackdropDismiss from '@/utils/useBackdropDismiss.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
@@ -41,8 +41,6 @@ function includesFromQtyMap(qtyById, unitPriceById = {}) {
 export default function DealsPage() {
   const { menu, loading, refreshAll, setError } = useOrders()
   const toast = useToast()
-  const addDialogRef = useRef(null)
-  const editDialogRef = useRef(null)
   const [listFilter, setListFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [archivingIds, setArchivingIds] = useState(new Set())
@@ -68,9 +66,6 @@ export default function DealsPage() {
   const [editUnitPriceById, setEditUnitPriceById] = useState({})
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState('')
-
-  const addBackdrop = useBackdropDismiss(creating)
-  const editBackdrop = useBackdropDismiss(editSaving)
 
   function setQty(setter, id, q) {
     const n = Number(q)
@@ -113,20 +108,6 @@ export default function DealsPage() {
   const createCategorySections = useMemo(() => buildDealCategorySections(menu.items, dealBusiness), [menu.items, dealBusiness])
   const editCategorySections = useMemo(() => buildDealCategorySections(menu.items, editBusiness), [menu.items, editBusiness])
 
-  useEffect(() => {
-    const el = addDialogRef.current
-    if (!el) return
-    if (addOpen) { if (!el.open) el.showModal() }
-    else if (el.open) { el.close() }
-  }, [addOpen])
-
-  useEffect(() => {
-    const el = editDialogRef.current
-    if (!el) return
-    if (editingDeal) { if (!el.open) el.showModal() }
-    else if (el.open) { el.close() }
-  }, [editingDeal])
-
   function openAddDialog() {
     setCreateError('')
     setName('')
@@ -139,7 +120,7 @@ export default function DealsPage() {
     setAddOpen(true)
   }
 
-  function closeAddDialog() { addDialogRef.current?.close() }
+  function closeAddDialog() { setAddOpen(false) }
 
   function openEditDialog(deal) {
     setEditError('')
@@ -167,7 +148,7 @@ export default function DealsPage() {
     setEditUnitPriceById(p)
   }
 
-  function closeEditDialog() { editDialogRef.current?.close() }
+  function closeEditDialog() { setEditingDeal(null) }
 
   async function submitDeal(e) {
     e.preventDefault()
@@ -421,111 +402,63 @@ export default function DealsPage() {
 
       </main>
 
-      <dialog
-        ref={addDialogRef}
-        className="confirm-dialog form-dialog form-dialog-wide"
-        aria-labelledby="add-deal-title"
+      <Modal
+        open={addOpen}
         onClose={() => setAddOpen(false)}
-        onCancel={(e) => { if (creating) e.preventDefault() }}
-        {...addBackdrop}
+        busy={creating}
+        size="wide"
+        title="Create a new deal"
+        subtitle="Bundle price is what the customer pays. For combined deals the total is the sum of both portions."
+        onSubmit={(e) => void submitDeal(e)}
+        actions={<FormActions onCancel={closeAddDialog} busy={creating} submitLabel="Save deal to menu" />}
       >
-        <header className="form-dialog-head">
-          <div className="form-dialog-head-text">
-            <h2 id="add-deal-title" className="form-dialog-title">Create a new deal</h2>
-            <p className="form-dialog-sub">
-              Bundle price is what the customer pays. For combined deals the total is the sum of both portions.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="form-dialog-close"
-            onClick={closeAddDialog}
-            disabled={creating}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </header>
-        <form className="form-dialog-form" onSubmit={(e) => void submitDeal(e)}>
-          <div className="form-dialog-body">
-            <DealFormFields
-              business={dealBusiness} setBusiness={setDealBusiness}
-              onBusinessChange={() => { setQtyById({}); setUnitPriceById({}) }}
-              name={name} setName={setName}
-              price={price} setPrice={setPrice}
-              cafeSplit={cafeSplit} setCafeSplit={setCafeSplit}
-              burgerSplit={burgerSplit} setBurgerSplit={setBurgerSplit}
-              qtyById={qtyById} setQty={(id, q) => setQty(setQtyById, id, q)}
-              unitPriceById={unitPriceById} setUnitPrice={(id, v) => setUnitPriceById((prev) => ({ ...prev, [id]: v }))}
-              categorySections={createCategorySections}
-              disabled={creating}
-              showMenuHint={false}
-            />
-            {createError ? <p className="banner error" role="alert">{createError}</p> : null}
-          </div>
-          <footer className="form-dialog-foot">
-            <button type="button" className="ghost" onClick={closeAddDialog} disabled={creating}>Cancel</button>
-            <button type="submit" className="primary" disabled={creating}>
-              {creating ? 'Saving…' : 'Save deal to menu'}
-            </button>
-          </footer>
-        </form>
-      </dialog>
+        <DealFormFields
+          business={dealBusiness} setBusiness={setDealBusiness}
+          onBusinessChange={() => { setQtyById({}); setUnitPriceById({}) }}
+          name={name} setName={setName}
+          price={price} setPrice={setPrice}
+          cafeSplit={cafeSplit} setCafeSplit={setCafeSplit}
+          burgerSplit={burgerSplit} setBurgerSplit={setBurgerSplit}
+          qtyById={qtyById} setQty={(id, q) => setQty(setQtyById, id, q)}
+          unitPriceById={unitPriceById} setUnitPrice={(id, v) => setUnitPriceById((prev) => ({ ...prev, [id]: v }))}
+          categorySections={createCategorySections}
+          disabled={creating}
+          showMenuHint={false}
+        />
+        {createError ? <p className="banner error" role="alert">{createError}</p> : null}
+      </Modal>
 
-      <dialog
-        ref={editDialogRef}
-        className="confirm-dialog form-dialog form-dialog-wide"
-        aria-labelledby="edit-deal-title"
+      <Modal
+        open={Boolean(editingDeal)}
         onClose={() => setEditingDeal(null)}
-        onCancel={(e) => { if (editSaving) e.preventDefault() }}
-        {...editBackdrop}
+        busy={editSaving}
+        size="wide"
+        title="Edit deal"
+        subtitle={
+          editingDeal ? <><strong>{editingDeal.name}</strong> · past invoices keep their saved prices.</> : null
+        }
+        onSubmit={(e) => void submitEdit(e)}
+        actions={<FormActions onCancel={closeEditDialog} busy={editSaving} submitLabel="Save changes" />}
       >
         {editingDeal ? (
           <>
-            <header className="form-dialog-head">
-              <div className="form-dialog-head-text">
-                <h2 id="edit-deal-title" className="form-dialog-title">Edit deal</h2>
-                <p className="form-dialog-sub">
-                  <strong>{editingDeal.name}</strong> · past invoices keep their saved prices.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="form-dialog-close"
-                onClick={closeEditDialog}
-                disabled={editSaving}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </header>
-            <form className="form-dialog-form" onSubmit={(e) => void submitEdit(e)}>
-              <div className="form-dialog-body">
-                <DealFormFields
-                business={editBusiness} setBusiness={setEditBusiness}
-                onBusinessChange={() => { setEditQtyById({}); setEditUnitPriceById({}) }}
-                name={editName} setName={setEditName}
-                price={editPrice} setPrice={setEditPrice}
-                cafeSplit={editCafeSplit} setCafeSplit={setEditCafeSplit}
-                burgerSplit={editBurgerSplit} setBurgerSplit={setEditBurgerSplit}
-                qtyById={editQtyById} setQty={(id, q) => setQty(setEditQtyById, id, q)}
-                unitPriceById={editUnitPriceById} setUnitPrice={(id, v) => setEditUnitPriceById((prev) => ({ ...prev, [id]: v }))}
-                categorySections={editCategorySections}
-                  disabled={editSaving}
-                  showMenuHint={false}
-                />
-                {editError ? <p className="banner error" role="alert">{editError}</p> : null}
-              </div>
-              <footer className="form-dialog-foot">
-                <button type="button" className="ghost" onClick={closeEditDialog} disabled={editSaving}>Cancel</button>
-                <button type="submit" className="primary" disabled={editSaving}>
-                  {editSaving ? 'Saving…' : 'Save changes'}
-                </button>
-              </footer>
-            </form>
+            <DealFormFields
+              business={editBusiness} setBusiness={setEditBusiness}
+              onBusinessChange={() => { setEditQtyById({}); setEditUnitPriceById({}) }}
+              name={editName} setName={setEditName}
+              price={editPrice} setPrice={setEditPrice}
+              cafeSplit={editCafeSplit} setCafeSplit={setEditCafeSplit}
+              burgerSplit={editBurgerSplit} setBurgerSplit={setEditBurgerSplit}
+              qtyById={editQtyById} setQty={(id, q) => setQty(setEditQtyById, id, q)}
+              unitPriceById={editUnitPriceById} setUnitPrice={(id, v) => setEditUnitPriceById((prev) => ({ ...prev, [id]: v }))}
+              categorySections={editCategorySections}
+              disabled={editSaving}
+              showMenuHint={false}
+            />
+            {editError ? <p className="banner error" role="alert">{editError}</p> : null}
           </>
         ) : null}
-      </dialog>
+      </Modal>
     </>
   )
 }

@@ -1,0 +1,1198 @@
+/* 04-pages.css — orders, invoices, deals, expenses, settings
+   Split out of globals.css; load order is fixed by the @imports there. */
+
+@media (max-width: 520px) {
+  .menu-item-admin-list li.menu-item-admin-row {
+    grid-template-columns: auto 1fr;
+  }
+
+  .menu-item-admin-actions {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+  }
+}
+
+.confirm-dialog {
+  max-width: 420px;
+  width: calc(100vw - 2rem);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(26, 20, 16, 0.4);
+}
+
+.confirm-dialog-inner {
+  padding: 1.25rem 1.35rem;
+}
+
+.confirm-dialog-title {
+  margin: 0 0 0.65rem;
+  font-size: 1.15rem;
+  color: var(--text-h);
+}
+
+.confirm-dialog-body {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.confirm-dialog-list {
+  margin: 0.65rem 0 0;
+  padding: 0.5rem 0.65rem;
+  max-height: 200px;
+  overflow: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 0.9rem;
+}
+
+.confirm-dialog-list li {
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.confirm-dialog-list li:last-child {
+  border-bottom: none;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+button.danger-solid {
+  background: var(--danger);
+  border-color: transparent;
+  color: #fff;
+}
+
+button.danger-solid:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+button.danger-solid:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.order-flow {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.business-type-picker {
+  padding: 0.5rem 0 0.25rem;
+}
+
+.business-type-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.business-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  box-shadow: var(--shadow);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.business-type-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  transform: translateY(-1px);
+}
+
+.business-type-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.business-type-card-desc {
+  line-height: 1.4;
+}
+
+.business-type-resume-hint {
+  margin: 0.5rem 0 0;
+}
+
+.order-business-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+}
+
+.order-new-other-btn {
+  margin-left: auto;
+}
+
+.badge-business {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 6px;
+}
+
+/* Badge hues sit clear of both the teal accent and the gold highlight, so a
+   badge is never mistaken for a button, a price, or an alert. */
+.badge-business-cafe {
+  background: color-mix(in srgb, #6d4c7d 14%, transparent);
+  color: #563963;
+  border: 1px solid color-mix(in srgb, #6d4c7d 28%, transparent);
+}
+
+.badge-business-burger {
+  background: color-mix(in srgb, #9a3412 14%, transparent);
+  color: #7c2d12;
+  border: 1px solid color-mix(in srgb, #9a3412 28%, transparent);
+}
+
+.badge-business-both {
+  background: color-mix(in srgb, #475569 14%, transparent);
+  color: #334155;
+  border: 1px solid color-mix(in srgb, #475569 26%, transparent);
+}
+
+/* Combined = both businesses, so it blends the cafe plum and burger rust. */
+.badge-business-combined {
+  background: color-mix(in srgb, #6d4c7d 12%, color-mix(in srgb, #9a3412 12%, transparent));
+  color: #6b3a4a;
+  border: 1px solid color-mix(in srgb, #6d4c7d 26%, transparent);
+}
+
+.menu-item-business-badge {
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+.invoices-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.65rem 0 1rem;
+}
+
+.order-table-hint {
+  margin: 0 0 0.75rem;
+}
+
+/* Scannable replacement for the old run-on instructions paragraph. */
+.order-hint-list {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.7rem 0.55rem 1.6rem;
+  list-style: disc;
+  border-left: 3px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  border-radius: 0 8px 8px 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.order-hint-list li + li {
+  margin-top: 0.2rem;
+}
+.order-hint-list strong {
+  color: var(--text-h);
+}
+
+.table-scroll {
+  overflow-x: auto;
+  margin: 0 0 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.order-lines-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: var(--surface);
+}
+
+.order-lines-table th,
+.order-lines-table td {
+  padding: 0.5rem 0.45rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.order-lines-table thead th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: var(--bg);
+}
+
+.order-lines-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.order-entry-row td {
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+}
+
+.cell-readonly {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.line-cell-name {
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.input-table {
+  width: 100%;
+  max-width: 4.5rem;
+  padding: 0.4rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+}
+
+/* A discount box greys out while the other kind of discount is in use, so it
+   reads as unavailable rather than merely empty. */
+.input-table:disabled {
+  background: var(--bg);
+  color: var(--text-muted);
+  border-style: dashed;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.deal-split-fields {
+  margin-top: 0.15rem;
+}
+
+.deal-split-hint {
+  margin: 0.35rem 0 0.5rem;
+}
+
+.deal-split-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.deal-split-field {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.deal-add-field {
+  margin-top: 0.5rem;
+  max-width: 420px;
+}
+
+.deal-add-field-top {
+  margin: 0 0 0.85rem;
+  max-width: 420px;
+}
+
+.deal-add-missing {
+  margin: 0 0 0.85rem;
+  max-width: 40rem;
+}
+
+.deals-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.saved-deals-lede {
+  margin: 0 0 0.75rem;
+  max-width: 40rem;
+}
+
+.saved-deals-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.saved-deal-block {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.saved-deal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.saved-deal-head-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.saved-deal-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.saved-deal-price-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.saved-deal-split {
+  line-height: 1.2;
+}
+
+.saved-deal-archived {
+  opacity: 0.55;
+}
+
+.badge-muted {
+  background: var(--surface-raised, #e5e7eb);
+  color: var(--text-muted, #6b7280);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+}
+
+button.danger-ghost,
+a.danger-ghost {
+  color: var(--danger);
+}
+button.danger-ghost:hover:not(:disabled),
+a.danger-ghost:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.saved-deal-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.saved-deal-price {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.saved-deal-includes-label {
+  margin: 0.5rem 0 0.2rem;
+}
+
+.saved-deal-includes {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+}
+
+.saved-deal-includes li {
+  margin: 0.15rem 0;
+}
+
+.deal-select {
+  width: 100%;
+}
+
+.deal-picker {
+  position: relative;
+  width: 100%;
+}
+
+.deal-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.deal-picker-trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.deal-picker-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.deal-picker-trigger-icon {
+  flex: none;
+}
+
+.deal-picker-trigger-label {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-muted);
+}
+
+.deal-picker-trigger-chevron {
+  flex: none;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* The popup shell: search stays put while the results below it scroll. */
+.deal-picker-panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  padding: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.deal-picker-search {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 0.9rem;
+}
+.deal-picker-search:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.deal-picker-empty {
+  margin: 0;
+  padding: 0.6rem 0.5rem;
+  text-align: center;
+}
+
+.deal-picker-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 20rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.deal-picker-list li {
+  display: block;
+}
+
+.deal-picker-item {
+  display: block;
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.deal-picker-item:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+.deal-picker-item:hover .deal-picker-item-price,
+.deal-picker-item:hover .deal-picker-item-qty {
+  background: var(--surface);
+}
+
+.deal-picker-item-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.deal-picker-item-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-h);
+  line-height: 1.3;
+}
+
+.deal-picker-item-price {
+  flex: none;
+  font-weight: 800;
+  font-size: 0.92rem;
+  letter-spacing: 0.6px;
+  color: var(--accent-hover);
+  white-space: nowrap;
+  background: var(--accent-soft);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.deal-picker-item-includes {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.deal-picker-item-includes li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.deal-picker-item-qty {
+  flex: none;
+  min-width: 2.1rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 0.1rem 0.4rem;
+}
+
+.item-autocomplete {
+  position: relative;
+  min-width: 180px;
+}
+
+.item-autocomplete input {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+}
+
+/* List is portaled to document.body with position:fixed (see ItemAutocomplete) so it is not clipped by .table-scroll overflow. */
+.item-autocomplete-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 240px;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.item-autocomplete-list li {
+  padding: 0.45rem 0.55rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+
+.item-autocomplete-list li:last-child {
+  border-bottom: none;
+}
+
+.item-autocomplete-list li.active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.item-autocomplete-list .ac-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.item-autocomplete-list .ac-meta {
+  margin-top: 0.1rem;
+}
+
+.item-autocomplete-hint {
+  cursor: default;
+  padding: 0.55rem 0.6rem;
+  border-top: 1px dashed var(--border);
+  pointer-events: none;
+}
+
+.order-entry-row .input-table.wide-price {
+  max-width: 6.5rem;
+}
+
+.order-entry-row .select.compact-cat {
+  min-width: 0;
+  max-width: 8rem;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.4rem;
+}
+
+/* ── Order type selector (orders page) ───────────────────── */
+.order-type-block {
+  margin: 1rem 0 0.25rem;
+}
+
+.order-type-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.order-type-options {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.order-type-option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: border-color 0.14s, background 0.14s, color 0.14s;
+  user-select: none;
+  flex: 1;
+  min-width: 7rem;
+  justify-content: center;
+}
+
+.order-type-option:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  color: var(--text-h);
+}
+
+.order-type-option--active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--text-h);
+  font-weight: 700;
+}
+
+.order-type-radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.order-type-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.order-type-text {
+  white-space: nowrap;
+}
+
+/* ── Order type badge (invoices list + detail) ───────────── */
+.badge-order-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.badge-order-type-dine {
+  background: color-mix(in srgb, #0d9488 14%, transparent);
+  color: #0b5c53;
+  border: 1px solid color-mix(in srgb, #0d9488 28%, transparent);
+}
+
+.badge-order-type-take {
+  background: color-mix(in srgb, #7c3aed 14%, transparent);
+  color: #5b21b6;
+  border: 1px solid color-mix(in srgb, #7c3aed 28%, transparent);
+}
+
+.badge-order-type-delivery {
+  background: color-mix(in srgb, #059669 14%, transparent);
+  color: #065f46;
+  border: 1px solid color-mix(in srgb, #059669 28%, transparent);
+}
+
+@media (max-width: 600px) {
+  .order-type-options {
+    flex-direction: column;
+  }
+  .order-type-option {
+    min-width: 0;
+    flex: none;
+  }
+}
+
+/* ============================================================
+   HAMBURGER / MOBILE NAV DRAWER
+   ============================================================ */
+
+/* Hamburger button — hidden on desktop, shown on mobile */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.hamburger-bar {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text-h);
+  border-radius: 2px;
+  transition: background 0.15s;
+}
+
+.hamburger-btn:hover .hamburger-bar {
+  background: var(--accent);
+}
+
+/* Slide-in nav drawer (always in DOM, off-screen by default) */
+.mobile-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(280px, 85vw);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(26, 20, 16, 0.15);
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+
+.mobile-nav-drawer.mobile-nav-open {
+  transform: translateX(0);
+}
+
+.mobile-nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 20, 16, 0.45);
+  z-index: 899;
+  animation: overlay-in 0.2s ease;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.mobile-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.mobile-nav-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-h);
+}
+
+.mobile-nav-close {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  color: var(--text-muted);
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.mobile-nav-close:hover {
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.mobile-nav-links {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0.65rem 0;
+}
+
+.mobile-nav-links a {
+  display: block;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.97rem;
+  color: var(--text);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.mobile-nav-links a:hover {
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.mobile-nav-links a.active {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  border-left-color: var(--accent);
+}
+
+.mobile-nav-footer {
+  padding: 1rem 1.15rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.mobile-nav-logout {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mobile-nav-logout:hover {
+  background: var(--bg);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
+}
+
+/* Desktop: show desktop nav, hide hamburger + drawer */
+.top-header-desktop {
+  display: flex;
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE OVERRIDES
+   ============================================================ */
+
+/* ---------- Tablets & large phones (≤ 768px) ---------- */
+@media (max-width: 768px) {
+  /* Forms fill available width */
+  .settings-form {
+    max-width: 100%;
+  }
+
+  .team-form-card {
+    max-width: 100%;
+  }
+
+  /* Reports custom date ranges wrap cleanly */
+  .reports-custom-dates,
+  .invoices-custom-dates {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .reports-date-field,
+  .invoices-date-field {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* ---------- Phones (≤ 600px) ---------- */
+@media (max-width: 600px) {
+  /* Header: brand left, hamburger right — flat single row */
+  .top {
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+  }
+
+  /* Hide desktop nav on mobile */
+  .top-header-desktop {
+    display: none;
+  }
+
+  /* Show hamburger on mobile */
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .brand h1 {
+    font-size: 1.2rem;
+  }
+
+  .tagline {
+    font-size: 0.75rem;
+  }
+
+  /* Selects: remove forced min-width so they don't overflow */
+  .select {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .item-autocomplete {
+    min-width: 0;
+  }
+
+  /* Card head: stack actions below title */
+  .card-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  /* Page heads: stack */
+  .reports-head,
+  .expenses-head,
+  .settings-head,
+  .team-page-head {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .reports-head-actions {
+    flex-wrap: wrap;
+  }
+
+  /* Invoice view toolbar */
+  .invoice-view-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .invoice-view-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  /* Invoice edit header */
+  .invoice-edit-header-row {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .invoice-edit-disabled-hint {
+    white-space: normal;
+  }
+
+  /* Invoice receipt / sheet inner header */
+  .invoice-sheet .invoice-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .invoice-sheet .invoice-header .text-right {
+    text-align: left;
+  }
+
+  /* Invoice payment actions: stack on phones */
+  .invoice-payment-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Order business banner */
+  .order-business-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-new-other-btn {
+    margin-left: 0;
+  }
+
+  /* Invoices list meta */
+  .invoices-list-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .pagination-bar {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Home public header */
+  .home-public-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  /* Home page grids: single column */
+  .home-deals-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-menu-columns {
+    grid-template-columns: 1fr;
+  }
+
+  /* Business type picker: single column */
+  .business-type-cards {
+    grid-template-columns: 1fr;
+  }
+
+  /* Reports summary: 2-column grid on phones */
+  .reports-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Deal split row: stack vertically */
+  .deal-split-row {
+    flex-direction: column;
+  }
+
+  .deal-split-field {
+    min-width: 0;
+    flex: none;
+    width: 100%;
+  }
+
+  /* Invoice add row selects */
+  .invoice-add-label .select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Saved deals: stack head sections */
+  .saved-deal-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .saved-deal-price-info {
+    align-items: flex-start;
+  }
+
+  /* Settings inline form: stack to column */
+  .settings-inline-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-inline-form .field,
+  .settings-inline-form .select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Reports filter row: stack groups */
+  .reports-filter-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+/* ---------- Very small phones (≤ 380px) ---------- */
+@media (max-width: 380px) {
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+
+  .brand h1 {
+    font-size: 1.1rem;
+  }
+
+  /* Payment modal: stack options vertically */
+  .pay-modal-options {
+    flex-direction: column;
+  }
+
+  /* Reports summary: single column */
+  .reports-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -1,0 +1,955 @@
+/* 02-home.css — public home page: shell, hero, menus, footer
+   Split out of globals.css; load order is fixed by the @imports there. */
+
+/* ── Shell ── */
+.hp-shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.hp-staff-shell {
+  display: flex;
+  flex-direction: column;
+  /* Break out of the .app horizontal padding so the hero is full-width */
+  margin-left: -8.5rem;
+  margin-right: -8.5rem;
+  margin-top: -1.25rem;
+}
+
+@media (max-width: 768px) {
+  .hp-staff-shell {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    margin-top: -1rem;
+  }
+}
+
+/* ── Hero ── */
+.hp-hero {
+  position: relative;
+  width: 100%;
+  min-height: 88svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  background-color: #0f3d38;
+}
+
+.hp-staff-hero {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center top;
+  background-color: #0f3d38;
+}
+
+.hp-hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 5, 0, 0.55) 0%,
+    rgba(10, 5, 0, 0.72) 60%,
+    rgba(10, 5, 0, 0.92) 100%
+  );
+}
+
+.hp-hero-overlay--shallow {
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 5, 0, 0.45) 0%,
+    rgba(10, 5, 0, 0.78) 100%
+  );
+}
+
+.hp-hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 2rem 1.5rem 3rem;
+  max-width: 700px;
+  width: 100%;
+}
+
+.hp-hero-content--staff {
+  padding: 1.5rem 1.5rem 2rem;
+}
+
+/* ── Logo typography ── */
+.hp-hero-kicker {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f0a830;
+  margin-bottom: 0.75rem;
+}
+
+.hp-logo-chacha {
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  margin: 0;
+  color: #f0a830;
+  -webkit-text-stroke: 2px #0f3d38;
+  text-shadow: 0 4px 18px rgba(15, 61, 56, 0.55);
+}
+
+.hp-logo-chacha--sm {
+  font-size: clamp(2.2rem, 6vw, 4rem);
+}
+
+.hp-logo-sub {
+  font-size: clamp(1rem, 3.5vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin: 0.25rem 0 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.hp-logo-sub--sm {
+  font-size: clamp(0.75rem, 2.5vw, 1.15rem);
+  margin: 0.15rem 0 0.5rem;
+}
+
+.hp-logo-star {
+  color: #f0a830;
+  font-size: 0.75em;
+}
+
+.hp-logo-tagline {
+  font-size: clamp(0.85rem, 2vw, 1.1rem);
+  color: #fde6b8;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  margin: 0 0 2rem;
+}
+
+.hp-hero-actions {
+  display: flex;
+  gap: 0.85rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hp-hero-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 2rem;
+  background: #f0a830;
+  color: #0f3d38;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: 0 8px 22px rgba(255, 199, 44, 0.4);
+  transition: filter 0.15s, transform 0.12s;
+}
+
+.hp-hero-btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.hp-hero-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.72rem 1.75rem;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.hp-hero-btn-ghost:hover {
+  border-color: #f0a830;
+  background: rgba(255, 199, 44, 0.12);
+}
+
+/* ── Category strip ── */
+.hp-cat-strip {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  padding: 1.25rem 1.5rem;
+  background: #0f3d38;
+  border-bottom: 3px solid #f0a830;
+}
+
+.hp-cat-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.hp-cat-chip-icon {
+  font-size: 1.05rem;
+}
+
+.hp-cat-chip-label {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+}
+
+/* ── Main content area ── */
+.hp-main {
+  flex: 1;
+  padding: 2.5rem 1.5rem 3rem;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.hp-main--staff {
+  max-width: none;
+  padding: 2rem 8.5rem 3rem;
+}
+
+.hp-loading-text {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* ── Section headers ── */
+.hp-section {
+  margin-bottom: 3rem;
+}
+
+.hp-section-head {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.hp-section-title {
+  margin: 0 0 0.25rem;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-h);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hp-section-icon {
+  font-size: 1.2rem;
+}
+
+/* ── Deals grid ── */
+.hp-deals-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1rem;
+}
+
+.hp-deal-card {
+  position: relative;
+  background: linear-gradient(135deg, #0f3d38 0%, #0d9488 65%, #0f3d38 100%);
+  border: none;
+  border-radius: 18px;
+  padding: 1.2rem 1.25rem 1.25rem;
+  box-shadow: 0 16px 34px rgba(15, 61, 56, 0.22);
+  transition: transform 0.15s, box-shadow 0.15s;
+  overflow: hidden;
+}
+
+.hp-deal-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 44px rgba(15, 61, 56, 0.3);
+}
+
+.hp-deal-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+}
+
+.hp-deal-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.6rem;
+  margin-top: 0.35rem;
+}
+
+.hp-deal-name {
+  font-family: 'Anton', system-ui, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 1.15rem;
+  color: #ffffff;
+  max-width: 80%;
+}
+
+.hp-deal-price {
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 2.2rem;
+  font-weight: 400;
+  color: #f0a830;
+  line-height: 1;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.hp-deal-includes-label {
+  margin: 0 0 0.3rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+}
+
+.hp-deal-includes {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.55;
+}
+
+.hp-deal-includes strong {
+  color: #f0a830;
+}
+
+/* ── Menu grid — website-style white cards with yellow price pills ── */
+.hp-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.hp-menu-cat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.1rem 1.2rem 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.hp-menu-cat-title {
+  margin: 0 0 0.85rem;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--accent-soft);
+}
+
+.hp-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.hp-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.hp-menu-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.hp-menu-name {
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.hp-menu-price {
+  font-family: 'Anton', system-ui, sans-serif;
+  font-weight: 400;
+  color: var(--text-h);
+  background: var(--yellow);
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  font-size: 0.92rem;
+  line-height: 1;
+  letter-spacing: 0.3px;
+}
+
+/* ── About strip ── */
+.hp-about {
+  background: linear-gradient(135deg, #0f3d38 0%, #0d9488 100%);
+  border-top: 3px solid #f0a830;
+  border-bottom: 3px solid #f0a830;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  margin: 0 -1.5rem;
+}
+
+.hp-about-inner {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.hp-about-title {
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #ffffff;
+  margin: 0 0 0.75rem;
+}
+
+.hp-about-text {
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.6;
+  margin: 0 0 1.25rem;
+}
+
+.hp-about-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.hp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.03em;
+}
+
+/* ── Staff bar ── */
+.hp-staff-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.5rem;
+  background: var(--espresso-deep);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hp-staff-bar-text {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.hp-staff-bar-link {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f0a830;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.hp-staff-bar-link:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* ── Footer ── */
+.hp-footer {
+  background: #0f3d38;
+  padding: 2rem 1.5rem 2.5rem;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hp-footer-logo {
+  margin-bottom: 0.35rem;
+}
+
+.hp-footer-chacha {
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: #f0a830;
+}
+
+.hp-footer-cafe {
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: #ffffff;
+  letter-spacing: 0.1em;
+}
+
+.hp-footer-tagline {
+  color: rgba(255, 255, 255, 0.75);
+  font-style: italic;
+  font-size: 0.88rem;
+  margin: 0 0 0.65rem;
+}
+
+.hp-footer-copy {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .hp-main--staff {
+    padding: 1.5rem 1rem 2rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .hp-hero {
+    min-height: 80svh;
+  }
+  .hp-hero-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  .hp-deals-grid {
+    grid-template-columns: 1fr;
+  }
+  .hp-menu-grid {
+    grid-template-columns: 1fr;
+  }
+  .hp-about {
+    margin: 0 -1.5rem;
+    padding: 2rem 1.25rem;
+  }
+  .hp-cat-strip {
+    gap: 0.4rem 0.65rem;
+  }
+}
+
+/* ── Page hero banners (menu, deals, settings, etc.) ── */
+.page-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: linear-gradient(135deg, #0f3d38 0%, #0d9488 60%, #0f3d38 100%);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.75rem 1.6rem;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  border: none;
+  box-shadow: 0 14px 30px rgba(15, 61, 56, 0.2);
+}
+
+.page-hero-action {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.page-hero-action:hover {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/*
+ * The hero sits on a dark gradient, so a ghost action inside it can't use the
+ * accent colour — it all but disappears. Give it the same translucent-white
+ * pill as .page-hero-action instead.
+ */
+.page-hero button.ghost,
+.page-hero a.ghost {
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.page-hero button.ghost:hover,
+.page-hero a.ghost:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.page-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 80% 50%, rgba(255, 199, 44, 0.16) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.page-hero-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.page-hero-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.page-hero-title {
+  margin: 0 0 0.2rem;
+  font-family: 'Anton', system-ui, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  color: #ffffff;
+  letter-spacing: 0.4px;
+  line-height: 1.15;
+}
+
+.page-hero-sub {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.page-hero-deco {
+  position: absolute;
+  right: 1.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.8rem;
+  opacity: 0.1;
+  letter-spacing: 0.9rem;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+}
+
+@media (max-width: 600px) {
+  .page-hero {
+    padding: 1.15rem 1.15rem 1.2rem;
+  }
+  .page-hero-deco {
+    display: none;
+  }
+  .page-hero-title {
+    font-size: 1.35rem;
+  }
+}
+
+/* ── Legacy home-* kept for AppShell ── */
+.home-public-shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 2rem;
+  box-sizing: border-box;
+}
+
+.home-public-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.home-public-brand h1 {
+  margin: 0 0 0.2rem;
+  font-size: 1.35rem;
+}
+
+.home-staff-link {
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.home-public-footer {
+  margin-top: auto;
+  padding-top: 2rem;
+  text-align: center;
+}
+
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.home-page-staff {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.home-hero {
+  padding: 1.25rem 1.35rem 1.35rem;
+}
+
+.home-hero-kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.home-hero-title {
+  margin: 0 0 0.65rem;
+  font-size: 1.45rem;
+  line-height: 1.25;
+  color: var(--text-h);
+}
+
+.home-hero-lede {
+  margin: 0 0 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.home-hero-points {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.home-banner {
+  margin: 0;
+}
+
+.home-loading {
+  margin: 0;
+}
+
+.home-empty {
+  margin: 0;
+}
+
+.home-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.home-section-head h3 {
+  margin: 0 0 0.15rem;
+  font-size: 1.15rem;
+}
+
+.home-section-head .small {
+  margin: 0;
+}
+
+.home-deals-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.75rem;
+}
+
+.home-deal-card {
+  padding: 1rem 1.1rem 1.1rem;
+  margin: 0;
+}
+
+.home-deal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.home-deal-name {
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.home-deal-price {
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-includes-label {
+  margin: 0 0 0.35rem;
+}
+
+.home-deal-includes {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.home-menu-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+.home-menu-category {
+  padding: 0.85rem 1rem 1rem;
+  margin: 0;
+}
+
+.home-menu-cat-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  color: var(--text-h);
+}
+
+.home-menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.home-menu-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.88rem;
+}
+
+.home-menu-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.home-menu-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.home-menu-extras {
+  display: block;
+}
+
+.home-menu-price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-h);
+  flex-shrink: 0;
+}
+
+.home-about {
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.home-about .sub {
+  margin-top: 0;
+}
+
+.staff-accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.staff-accounts-table th,
+.staff-accounts-table td {
+  text-align: left;
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.staff-accounts-table thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+

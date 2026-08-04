@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { api } from '@/api.js'
+import Modal, { ConfirmActions } from '@/components/Modal.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import { businessTypeLabel, invoiceBusinessType } from '@/constants/businessTypes.js'
 import { categoryLabel, formatItemExtras, formatMoney, formatShortDateTime } from '@/utils/formatting.js'
@@ -72,9 +73,8 @@ export default function InvoiceDetailPage() {
   const [returnNoteDraft, setReturnNoteDraft] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const confirmDialogRef = useRef(null)
-  const returnDialogRef = useRef(null)
   const [confirmAction, setConfirmAction] = useState(null)
+  const [returnOpen, setReturnOpen] = useState(false)
   const [showPayMethodModal, setShowPayMethodModal] = useState(false)
 
   const loadInvoice = useCallback(async () => {
@@ -88,11 +88,6 @@ export default function InvoiceDetailPage() {
 
   useEffect(() => { void loadInvoice() }, [loadInvoice])
   useEffect(() => { if (!invoice) return; setReturnNoteDraft(invoice.returnNote ?? '') }, [invoice])
-  useEffect(() => {
-    if (!confirmAction) return
-    const el = confirmDialogRef.current
-    if (el && !el.open) el.showModal()
-  }, [confirmAction])
 
   const itemLabelById = useMemo(() => {
     const m = {}
@@ -103,14 +98,13 @@ export default function InvoiceDetailPage() {
     return m
   }, [menu.items])
 
-  function closeConfirm() { confirmDialogRef.current?.close(); setConfirmAction(null) }
+  function closeConfirm() { setConfirmAction(null) }
   function openReturnDialog() {
     if (!invoice) return
     setReturnNoteDraft(invoice.returnNote ?? '')
-    const el = returnDialogRef.current
-    if (el && !el.open) el.showModal()
+    setReturnOpen(true)
   }
-  function closeReturnDialog() { returnDialogRef.current?.close() }
+  function closeReturnDialog() { setReturnOpen(false) }
 
   async function executeConfirmed() {
     const action = confirmAction; const inv = invoice; closeConfirm()
@@ -375,18 +369,23 @@ export default function InvoiceDetailPage() {
         </nav>
       </main>
 
-      <dialog ref={confirmDialogRef} className="confirm-dialog" aria-labelledby="invoice-detail-confirm-title" onClose={() => setConfirmAction(null)} onCancel={(e) => { if (saving) e.preventDefault() }}>
-        {confirmConfig ? (
-          <div className="confirm-dialog-inner">
-            <h2 id="invoice-detail-confirm-title" className="confirm-dialog-title">{confirmConfig.title}</h2>
-            <p className="confirm-dialog-body">{confirmConfig.body}</p>
-            <div className="confirm-dialog-actions">
-              <button type="button" className="ghost" onClick={closeConfirm} disabled={saving}>Cancel</button>
-              <button type="button" className="primary" disabled={saving} onClick={() => void executeConfirmed()}>{saving ? '…' : confirmConfig.confirm}</button>
-            </div>
-          </div>
-        ) : null}
-      </dialog>
+      <Modal
+        open={Boolean(confirmAction)}
+        onClose={() => setConfirmAction(null)}
+        busy={saving}
+        size="compact"
+        title={confirmConfig?.title ?? ''}
+        actions={
+          <>
+            <button type="button" className="ghost" onClick={closeConfirm} disabled={saving}>Cancel</button>
+            <button type="button" className="primary" disabled={saving} onClick={() => void executeConfirmed()}>
+              {saving ? '…' : confirmConfig?.confirm}
+            </button>
+          </>
+        }
+      >
+        {confirmConfig ? <p className="confirm-dialog-body">{confirmConfig.body}</p> : null}
+      </Modal>
 
       {showPayMethodModal ? (
         <div className="pay-modal-overlay" role="dialog" aria-modal="true" aria-label="Select payment method">
@@ -424,20 +423,27 @@ export default function InvoiceDetailPage() {
         </div>
       ) : null}
 
-      <dialog ref={returnDialogRef} className="confirm-dialog invoice-return-dialog" aria-labelledby="invoice-return-dialog-title" onCancel={(e) => { if (saving) e.preventDefault() }}>
-        <div className="confirm-dialog-inner">
-          <h2 id="invoice-return-dialog-title" className="confirm-dialog-title">Record return or refund</h2>
-          <p className="muted small confirm-dialog-body">The invoice will be marked Returned and locked. It stays in your history for records. You can add an optional note below.</p>
-          <label className="field invoice-return-dialog-field">
-            <span>Return note (optional)</span>
-            <textarea rows={3} value={returnNoteDraft} onChange={(e) => setReturnNoteDraft(e.target.value)} placeholder="Reason, items returned, how refund was given…" maxLength={300} />
-          </label>
-          <div className="confirm-dialog-actions">
-            <button type="button" className="ghost" onClick={closeReturnDialog} disabled={saving}>Cancel</button>
-            <button type="button" className="danger-solid" disabled={saving} onClick={() => void submitReturnFromDialog()}>{saving ? '…' : 'Record return / refund'}</button>
-          </div>
-        </div>
-      </dialog>
+      <Modal
+        open={returnOpen}
+        onClose={() => setReturnOpen(false)}
+        busy={saving}
+        title="Record return or refund"
+        subtitle="The invoice will be marked Returned and locked. It stays in your history for records."
+        actions={
+          <ConfirmActions
+            onCancel={closeReturnDialog}
+            onConfirm={() => void submitReturnFromDialog()}
+            busy={saving}
+            busyLabel="…"
+            confirmLabel="Record return / refund"
+          />
+        }
+      >
+        <label className="field invoice-return-dialog-field">
+          <span className="field-label">Return note (optional)</span>
+          <textarea rows={3} value={returnNoteDraft} onChange={(e) => setReturnNoteDraft(e.target.value)} placeholder="Reason, items returned, how refund was given…" maxLength={300} />
+        </label>
+      </Modal>
     </>
   )
 }
