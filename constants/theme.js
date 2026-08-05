@@ -19,8 +19,14 @@
  * Current theme: Teal & Gold — deep teal + warm gold.
  * ══════════════════════════════════════════════════════════════════════════
  */
-export const BRAND_PRIMARY = '#0d9488'
-export const BRAND_SECONDARY = '#f0a830'
+// export const BRAND_PRIMARY = '#0d9488'
+// export const BRAND_SECONDARY = '#f0a830'
+
+
+
+// // slate blue + sand
+export const BRAND_PRIMARY = '#4a5a6a'
+export const BRAND_SECONDARY = '#d9c4a3'
 
 /**
  * Mirrors CSS `color-mix(in srgb, <a> <pct>%, <b>)`.
