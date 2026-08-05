@@ -61,7 +61,6 @@
   font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.55;
   color: var(--text);
-  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -73,24 +72,33 @@
 }
 
 /*
- * Page backdrop: a soft gradient wash, with a faint tiled food pattern
- * (burger, cup, fries, star) laid over it by body::before.
+ * Page backdrop: a soft gradient wash on <html>, with a faint tiled food
+ * pattern (burger, cup, fries, star) over it from body::before.
  *
- * The gradients live here because they can reference tokens directly. The
- * pattern cannot — a colour inside a data: URI is opaque to CSS variables, so
- * tinting it would mean re-encoding the SVG on every re-skin. Instead the SVG
- * is used as a *mask* and the colour comes from background-color, which is a
- * token like everything else.
+ * The wash sits on <html> and not on <body> on purpose. body::before has to
+ * paint *behind* the page content, which means z-index: -1 — and a negative
+ * z-index child paints behind its parent's own background. With the wash on
+ * body, body's opaque background covered the pattern completely. On <html>
+ * the pattern lands between the two, which is where it belongs.
+ *
+ * The pattern is a mask rather than a background-image because a colour
+ * inside a data: URI is opaque to CSS variables — tinting it directly would
+ * mean re-encoding the SVG on every re-skin. As a mask, the colour comes from
+ * background-color, so it is a token like everything else.
  */
-body {
-  margin: 0;
-  min-height: 100vh;
+html {
   background-color: var(--bg);
   background-image:
     radial-gradient(1200px 620px at 12% -8%, color-mix(in srgb, var(--yellow) 22%, transparent) 0%, transparent 62%),
     radial-gradient(1000px 560px at 96% 4%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 58%);
   background-repeat: no-repeat, no-repeat;
   background-attachment: fixed, fixed;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: transparent;
 }
 
 body::before {
