@@ -84,9 +84,9 @@
 }
 
 .badge-role-admin-mid {
-  background: color-mix(in srgb, #0d9488 18%, transparent);
-  color: #0b5c53;
-  border: 1px solid color-mix(in srgb, #0d9488 28%, transparent);
+  background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+  color: var(--brand-dark);
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 28%, transparent);
 }
 
 .badge-role-staff {
@@ -741,7 +741,7 @@ button.inline-link-button:hover {
 .banner.info {
   background: color-mix(in srgb, var(--yellow) 16%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
-  color: #0b5c53;
+  color: var(--brand-dark);
   border-radius: 10px;
   padding: 0.55rem 0.65rem;
 }
@@ -2386,7 +2386,7 @@ button.link-add-menu-item {
 
 /* Shared by the list and the add/edit form's live readout. */
 .menu-margin-good {
-  color: #0b7a5c;
+  color: #15803d;
 }
 .menu-margin-bad {
   color: var(--danger);

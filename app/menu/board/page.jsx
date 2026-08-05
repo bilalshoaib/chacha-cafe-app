@@ -19,6 +19,12 @@ const CATEGORY_ICONS = {
   other: '🍽️',
 }
 
+/**
+ * Deliberately NOT derived from the brand theme (see the THEME SOURCE block in
+ * app/styles/01-base.css). The poster wants each food category to read as its
+ * own band at a glance, so these stay categorical — re-skinning the app does
+ * not, and should not, recolour them. Same for DEAL_COLORS below.
+ */
 const CATEGORY_COLORS = {
   pizza: '#8a1f1f',
   burger: '#c45c26',

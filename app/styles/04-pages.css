@@ -164,8 +164,8 @@ button.danger-solid:disabled {
   border-radius: 6px;
 }
 
-/* Badge hues sit clear of both the teal accent and the gold highlight, so a
-   badge is never mistaken for a button, a price, or an alert. */
+/* Badge hues sit clear of both the espresso accent and the amber highlight, so
+   a badge is never mistaken for a button, a price, or an alert. */
 .badge-business-cafe {
   background: color-mix(in srgb, #6d4c7d 14%, transparent);
   color: #563963;
@@ -775,9 +775,9 @@ a.danger-ghost:hover {
 }
 
 .badge-order-type-dine {
-  background: color-mix(in srgb, #0d9488 14%, transparent);
-  color: #0b5c53;
-  border: 1px solid color-mix(in srgb, #0d9488 28%, transparent);
+  background: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+  color: var(--brand-dark);
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 28%, transparent);
 }
 
 .badge-order-type-take {

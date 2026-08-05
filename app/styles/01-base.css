@@ -2,27 +2,62 @@
    Split out of globals.css; load order is fixed by the @imports there. */
 
 
-/* ── Teal & Gold palette ─────────────────────────────────────────────────────
-   Deep teal + warm gold on a soft mint-cream. Every brand colour below is a
-   token — nothing should hardcode these hexes again. */
+/* ══════════════════════════════════════════════════════════════════════════
+   To change the theme, edit constants/theme.js — NOT this file.
+
+   --brand-primary and --brand-secondary are deliberately not declared in any
+   stylesheet. app/layout.jsx injects them into :root from constants/theme.js,
+   which is also what paints the favicon and the mobile browser-chrome colour.
+   Keeping them out of CSS is what makes a re-skin a one-file change.
+
+   Everything below is derived from those two values. Nothing in any
+   stylesheet may hardcode a brand colour; a hex written elsewhere is a bug
+   that will survive the next re-skin.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Derived ramps ──────────────────────────────────────────────────────────
+   Edit these only to change how the theme is *built*, not to change the
+   theme itself. */
 :root {
-  --text: #17322e;
-  --text-muted: #62807b;
-  --text-h: #0f3d38;
-  --bg: #f4faf8;
+  /* Primary, dark → light. Mixed toward black so the hue is preserved. */
+  --brand-deepest: color-mix(in srgb, var(--brand-primary) 30%, #000);
+  --brand-deep: color-mix(in srgb, var(--brand-primary) 43%, #000);
+  --brand-dark: color-mix(in srgb, var(--brand-primary) 67%, #000);
+
+  /* Secondary, dark → light. */
+  --brand-gold: var(--brand-secondary);
+  --brand-gold-deep: color-mix(in srgb, var(--brand-secondary) 78%, #000);
+  --brand-gold-pale: color-mix(in srgb, var(--brand-secondary) 35%, #fff);
+
+  /* Near-whites carrying a trace of the secondary, for text on dark panels
+     and for the page background — keeps "white" from going cold. */
+  --cream: color-mix(in srgb, var(--brand-secondary) 10%, #fff);
+  --cream-dim: color-mix(in srgb, var(--brand-secondary) 16%, #fff);
+
+  /* ── Semantic tokens — what the rest of the app actually uses ── */
+  --text: color-mix(in srgb, var(--brand-primary) 25%, #120c08);
+  --text-muted: color-mix(in srgb, var(--brand-primary) 40%, #7a7a7a);
+  --text-h: var(--brand-deep);
+  --bg: color-mix(in srgb, var(--brand-secondary) 7%, #fff);
   --surface: #ffffff;
-  --border: rgba(15, 61, 56, 0.14);
-  --accent: #0d9488;
-  --accent-hover: #0f3d38;
-  --accent-soft: #e2f4f1;
-  --yellow: #f0a830;
-  --yellow-deep: #cf8c1c;
-  /* A clearly separate hue from --accent, so a destructive action never
-     reads as the main call to action. */
+  --border: color-mix(in srgb, var(--brand-deep) 14%, transparent);
+  --accent: var(--brand-primary);
+  --accent-hover: var(--brand-dark);
+  --accent-soft: color-mix(in srgb, var(--brand-primary) 12%, #fff);
+  --yellow: var(--brand-gold);
+  --yellow-deep: var(--brand-gold-deep);
+  /* Fixed, not derived: danger must stay unmistakably itself no matter what
+     the brand hue becomes, or a destructive action starts reading as the
+     main call to action. Same reasoning for the semantic greens in
+     03-components.css and the categorical badge hues in 04-pages.css. */
   --danger: #b3261e;
-  --espresso-deep: #072a26;
+  /* Also fixed: the menu-board "special deals" ribbons. A deal flash should
+     read as a deal flash whatever the brand hue becomes. */
+  --ribbon: #c42626;
+  --ribbon-deep: #8a1f1f;
+  --espresso-deep: var(--brand-deepest);
   --radius: 14px;
-  --shadow: 0 14px 30px rgba(15, 61, 56, 0.12);
+  --shadow: 0 14px 30px color-mix(in srgb, var(--brand-deep) 12%, transparent);
   font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.55;
   color: var(--text);
@@ -38,24 +73,42 @@
 }
 
 /*
- * Page backdrop: a soft gradient wash with a faint tiled food pattern over it
- * (burger, cup, fries, star). Inline SVG rather than an image file, so it
- * costs no request and stays crisp at any zoom. Fixed attachment keeps the
- * pattern still while long tables scroll over it.
+ * Page backdrop: a soft gradient wash, with a faint tiled food pattern
+ * (burger, cup, fries, star) laid over it by body::before.
+ *
+ * The gradients live here because they can reference tokens directly. The
+ * pattern cannot — a colour inside a data: URI is opaque to CSS variables, so
+ * tinting it would mean re-encoding the SVG on every re-skin. Instead the SVG
+ * is used as a *mask* and the colour comes from background-color, which is a
+ * token like everything else.
  */
 body {
   margin: 0;
   min-height: 100vh;
   background-color: var(--bg);
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%230f3d38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' opacity='0.05'%3E%3Cpath d='M14 30h20a10 10 0 0 0-20 0Z'/%3E%3Cpath d='M13 34h22'/%3E%3Cpath d='M15 38h18a5 5 0 0 1-18 0Z'/%3E%3Cpath d='M74 22h14l-2 18a5 5 0 0 1-10 0Z'/%3E%3Cpath d='M88 26h4a4 4 0 0 1 0 8h-3'/%3E%3Cpath d='M26 78h16l-2 16H28Z'/%3E%3Cpath d='M29 78l2-8m5 8l1-8m5 8l3-8'/%3E%3Cpath d='M86 74l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8Z'/%3E%3C/g%3E%3C/svg%3E"),
     radial-gradient(1200px 620px at 12% -8%, color-mix(in srgb, var(--yellow) 22%, transparent) 0%, transparent 62%),
     radial-gradient(1000px 560px at 96% 4%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 58%);
-  background-repeat: repeat, no-repeat, no-repeat;
-  background-attachment: fixed, fixed, fixed;
+  background-repeat: no-repeat, no-repeat;
+  background-attachment: fixed, fixed;
 }
 
-/* Brand display type — Anton, uppercase, charcoal */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--brand-deep);
+  opacity: 0.05;
+  --food-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 30h20a10 10 0 0 0-20 0Z'/%3E%3Cpath d='M13 34h22'/%3E%3Cpath d='M15 38h18a5 5 0 0 1-18 0Z'/%3E%3Cpath d='M74 22h14l-2 18a5 5 0 0 1-10 0Z'/%3E%3Cpath d='M88 26h4a4 4 0 0 1 0 8h-3'/%3E%3Cpath d='M26 78h16l-2 16H28Z'/%3E%3Cpath d='M29 78l2-8m5 8l1-8m5 8l3-8'/%3E%3Cpath d='M86 74l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8Z'/%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask-image: var(--food-pattern);
+  mask-image: var(--food-pattern);
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+}
+
+/* Brand display type — Anton, uppercase, espresso */
 h1,
 h2,
 h3,
