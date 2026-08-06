@@ -249,6 +249,14 @@ button.inline-link-button:hover {
   min-width: 9rem;
 }
 
+/* Steps both ends of the custom range a month at a time — sits alongside the
+   date boxes so it reads as another way to set the same range. */
+.reports-month-step {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .reports-range-line {
   margin: 0.75rem 0 0;
 }

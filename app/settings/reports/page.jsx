@@ -96,6 +96,22 @@ function parseDateInput(s) {
   return new Date(y, m - 1, d)
 }
 
+/**
+ * Moves a "YYYY-MM-DD" value by whole months, keeping the day of the month.
+ *
+ * The day is clamped to the target month's length so stepping back from the
+ * 31st lands on the 28th/30th rather than rolling over into the next month,
+ * which is what plain `setMonth` would do.
+ */
+function shiftMonths(dateStr, delta) {
+  const d = parseDateInput(dateStr)
+  if (!d) return dateStr
+  const targetMonthStart = new Date(d.getFullYear(), d.getMonth() + delta, 1)
+  const daysInTarget = endOfMonth(targetMonthStart).getDate()
+  targetMonthStart.setDate(Math.min(d.getDate(), daysInTarget))
+  return dateInputValue(targetMonthStart)
+}
+
 // Build an ISO string from a date string ("YYYY-MM-DD") + time string ("HH:MM").
 function buildISO(dateStr, timeStr) {
   const d = parseDateInput(dateStr)
@@ -249,6 +265,16 @@ export default function ReportsPage() {
   const [sellerItems, setSellerItems] = useState([])
   const [breakdownItemId, setBreakdownItemId] = useState('')
   const [expenseData, setExpenseData] = useState(null)
+
+  /**
+   * Steps the whole custom range by a month, both ends together, so a range
+   * like 6 Aug → 5 Sep becomes 6 Jul → 5 Aug. The times are left alone, which
+   * keeps the range on the 6 PM–5 PM shift boundaries.
+   */
+  const stepCustomMonths = useCallback((delta) => {
+    setCustomFrom((f) => shiftMonths(f, delta))
+    setCustomTo((t) => shiftMonths(t, delta))
+  }, [])
 
   const applyPreset = useCallback((id) => {
     const p = PRESETS.find((x) => x.id === id)
@@ -412,6 +438,24 @@ export default function ReportsPage() {
                   <span>End time</span>
                   <input type="time" value={customToTime} onChange={(e) => e.target.value && setCustomToTime(e.target.value)} />
                 </label>
+              </div>
+              <div className="reports-month-step">
+                <button
+                  type="button"
+                  className="ghost sm"
+                  onClick={() => stepCustomMonths(-1)}
+                  aria-label="Shift the range back one month"
+                >
+                  ← Prev month
+                </button>
+                <button
+                  type="button"
+                  className="ghost sm"
+                  onClick={() => stepCustomMonths(1)}
+                  aria-label="Shift the range forward one month"
+                >
+                  Next month →
+                </button>
               </div>
             </div>
           ) : null}
