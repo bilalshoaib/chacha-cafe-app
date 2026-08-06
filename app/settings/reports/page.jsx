@@ -122,18 +122,24 @@ function buildISO(dateStr, timeStr) {
 }
 
 /**
- * Default custom range: the business month *currently running*, which goes
- * from the 6th of one month to the 5th of the next.
+ * Default custom range: the business month *currently running*. It covers the
+ * business days that open on the 6th through the 5th, and since the business
+ * day opening on the 5th does not close until 5 PM on the 6th, the range ends
+ * on the 6th — e.g. 6 Aug 6 PM → 6 Sep 5 PM. Ending it on the 5th would drop
+ * the cycle's last night of trade.
  *
- * On the 1st–5th that cycle opened on the 6th of the previous month, so the
- * range has to reach backwards — otherwise the report would default to a
- * period that hasn't started yet and show nothing.
+ * The cycle turns over at 6 PM on the 6th, not at midnight, so the anchor is
+ * taken from the business day in progress rather than the calendar date.
+ * Without that, the whole of the 6th up to 6 PM would default to a range that
+ * has not started yet and the report would read zero.
  */
 function defaultBusinessMonth(now = new Date()) {
-  const anchorMonth = now.getDate() >= 6 ? now.getMonth() : now.getMonth() - 1
-  // Month -1 rolls back to December of the previous year on its own.
-  const from = new Date(now.getFullYear(), anchorMonth, 6)
-  const to = new Date(now.getFullYear(), anchorMonth + 1, 5)
+  const anchor = new Date(now)
+  if (anchor.getHours() < SHIFT_START_HOUR) anchor.setDate(anchor.getDate() - 1)
+  const anchorMonth = anchor.getDate() >= 6 ? anchor.getMonth() : anchor.getMonth() - 1
+  // Month -1 / +1 roll across the year boundary on their own.
+  const from = new Date(anchor.getFullYear(), anchorMonth, 6)
+  const to = new Date(anchor.getFullYear(), anchorMonth + 1, 6)
   return [dateInputValue(from), dateInputValue(to)]
 }
 
@@ -439,22 +445,25 @@ export default function ReportsPage() {
                   <input type="time" value={customToTime} onChange={(e) => e.target.value && setCustomToTime(e.target.value)} />
                 </label>
               </div>
-              <div className="reports-month-step">
+              <div className="reports-month-step" role="group" aria-label="Shift the range by a month">
                 <button
                   type="button"
-                  className="ghost sm"
+                  className="month-step-btn"
                   onClick={() => stepCustomMonths(-1)}
                   aria-label="Shift the range back one month"
                 >
-                  ← Prev month
+                  <span className="month-step-chevron" aria-hidden="true">‹</span>
+                  Prev
                 </button>
+                <span className="month-step-label" aria-hidden="true">month</span>
                 <button
                   type="button"
-                  className="ghost sm"
+                  className="month-step-btn"
                   onClick={() => stepCustomMonths(1)}
                   aria-label="Shift the range forward one month"
                 >
-                  Next month →
+                  Next
+                  <span className="month-step-chevron" aria-hidden="true">›</span>
                 </button>
               </div>
             </div>
