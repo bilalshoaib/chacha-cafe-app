@@ -24,6 +24,13 @@ function toISOEnd(d) {
 function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1) }
 function endOfMonth(d) { return new Date(d.getFullYear(), d.getMonth() + 1, 0) }
 
+/** A business day opens at 6 PM and closes at 5 PM the next day. */
+const SHIFT_START_HOUR = 18
+const SHIFT_END_HOUR = 17
+
+/** As a "HH:MM" value for the custom range's <input type="time"> fields. */
+const timeInputValue = (hour) => `${String(hour).padStart(2, '0')}:00`
+
 /**
  * A business day runs from 6 PM to 5 PM the next day, matching the evening
  * shift. `dayOffset` picks which one: 0 is the day opening this evening, -1
@@ -35,10 +42,10 @@ function endOfMonth(d) { return new Date(d.getFullYear(), d.getMonth() + 1, 0) }
 function businessDayRange(dayOffset, now = new Date()) {
   const start = new Date(now)
   start.setDate(start.getDate() + dayOffset)
-  start.setHours(18, 0, 0, 0)
+  start.setHours(SHIFT_START_HOUR, 0, 0, 0)
   const end = new Date(start)
   end.setDate(end.getDate() + 1)
-  end.setHours(17, 0, 0, 0)
+  end.setHours(SHIFT_END_HOUR, 0, 0, 0)
   return [start.toISOString(), end.toISOString()]
 }
 
@@ -217,10 +224,13 @@ ${expenses.length === 0 ? '<p style="color:#6b7280">No expenses in this period.<
 
 export default function ReportsPage() {
   const [presetId, setPresetId] = useState('today')
+  // Custom defaults to the shift boundaries, not midnight — a range that
+  // started at 00:00 cut the previous evening's shift in half and counted the
+  // tail of it against the wrong day.
   const [customFrom, setCustomFrom] = useState(() => defaultBusinessMonth()[0])
-  const [customFromTime, setCustomFromTime] = useState('00:00')
+  const [customFromTime, setCustomFromTime] = useState(timeInputValue(SHIFT_START_HOUR))
   const [customTo, setCustomTo] = useState(() => defaultBusinessMonth()[1])
-  const [customToTime, setCustomToTime] = useState('23:59')
+  const [customToTime, setCustomToTime] = useState(timeInputValue(SHIFT_END_HOUR))
   const [fromIso, setFromIso] = useState('')
   const [toIso, setToIso] = useState('')
   const [error, setError] = useState('')
@@ -375,7 +385,8 @@ export default function ReportsPage() {
               if (presetId !== 'custom') {
                 const [f, t] = defaultBusinessMonth()
                 setCustomFrom(f); setCustomTo(t)
-                setCustomFromTime('00:00'); setCustomToTime('23:59')
+                setCustomFromTime(timeInputValue(SHIFT_START_HOUR))
+                setCustomToTime(timeInputValue(SHIFT_END_HOUR))
               }
               setPresetId('custom')
             }}>Custom</button>
