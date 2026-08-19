@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/session'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import { saveInvoice, nextInvoiceNumber, nextShiftNumber } from '@/lib/repositories/invoicesRepository'
 import { buildOrderLine } from '@/lib/orderLines'
+import { invoiceBusinessTypeForLines } from '@/lib/businessTypes'
 import { shiftDateForInstant } from '@/lib/shift'
 
 function invoiceSlug(businessType) {
@@ -82,7 +83,7 @@ async function handleCheckout(request, marks, ctx) {
   ctx.lineCount = lines.length
 
   const subtotal = Math.round(lines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100
-  const businessType = 'combined'
+  const businessType = invoiceBusinessTypeForLines(lines)
 
   const VALID_PAYMENT_METHODS = ['cash', 'online']
   const paymentMethod = VALID_PAYMENT_METHODS.includes(body.paymentMethod) ? body.paymentMethod : null

@@ -65,6 +65,8 @@ export const api = {
   getReportTopSellers: (params) => request(`/api/reports/top-sellers?${reportQuery(params)}`),
   getReportExpenses: (params) => request(`/api/reports/expenses?${reportQuery(params)}`),
   getMenu: () => request('/api/menu'),
+  // The home page is public, so it reads the menu that carries no cost prices.
+  getPublicMenu: () => request('/api/menu-public'),
   createMenuItem: (body) => request('/api/menu/items', { method: 'POST', body: JSON.stringify(body) }),
   updateMenuItem: (id, body) =>
     request(`/api/menu/items/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),

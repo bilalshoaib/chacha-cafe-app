@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { loadMenu } from '@/lib/repositories/menuRepository'
+import { toPublicMenu } from '@/lib/publicMenu'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,9 +9,15 @@ const corsHeaders = {
   'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
 }
 
+/**
+ * The menu as a customer may see it — what things are called and what they
+ * cost to buy. Everything describing what the business pays (item cost prices,
+ * per-item prices inside a deal) is stripped by toPublicMenu(), because this
+ * route is unauthenticated and world-readable via CORS.
+ */
 export async function GET() {
   const menu = await loadMenu()
-  return NextResponse.json(menu, { headers: corsHeaders })
+  return NextResponse.json(toPublicMenu(menu), { headers: corsHeaders })
 }
 
 export async function OPTIONS() {
