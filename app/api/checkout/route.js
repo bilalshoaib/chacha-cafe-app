@@ -7,11 +7,21 @@ import { buildOrderLine } from '@/lib/orderLines'
 import { invoiceBusinessTypeForLines } from '@/lib/businessTypes'
 import { shiftDateForInstant } from '@/lib/shift'
 
-function invoiceSlug(businessType) {
-  if (businessType === 'burger') return 'burger'
-  if (businessType === 'combined') return 'combined'
-  return 'cafe'
-}
+/**
+ * Every invoice draws its number from one continuous sequence, whichever
+ * business it belongs to.
+ *
+ * Which business that is lives in the business_type column, which is what the
+ * reports read — encoding it in the id as well would mean three parallel
+ * series, two of them starting from 1 partway through the café's life, while
+ * staff look invoices up by the number printed on the receipt.
+ *
+ * The sequence is still named invoice_seq_combined: it is the one that has
+ * been issuing numbers since June 2026 and holds the current position, and
+ * renaming it on a live database would buy nothing. The multi-tenant work
+ * replaces all three with a per-location counters table.
+ */
+const INVOICE_SEQUENCE = 'combined'
 
 // ── Timing instrumentation ───────────────────────────────────────────────────
 // Module scope runs once per lambda instance, so MODULE_LOADED_AT lets us tell
@@ -97,14 +107,13 @@ async function handleCheckout(request, marks, ctx) {
     : 0
   const total = Math.round((subtotal + deliveryCharge) * 100) / 100
 
-  const slug = invoiceSlug(businessType)
-  const invoiceNum = await timed(marks, 'nextInvoiceNumber', () => nextInvoiceNumber(slug))
+  const invoiceNum = await timed(marks, 'nextInvoiceNumber', () => nextInvoiceNumber(INVOICE_SEQUENCE))
   const createdAt = new Date()
   const shiftDate = shiftDateForInstant(createdAt)
   const shiftNumber = await timed(marks, 'nextShiftNumber', () => nextShiftNumber(shiftDate))
 
   const invoice = {
-    id: `inv-${slug}-${invoiceNum}`,
+    id: `inv-${invoiceNum}`,
     businessType,
     orderId: null,
     createdAt: createdAt.toISOString(),
