@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { pool } from '@/lib/db'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import { saveInvoice, nextInvoiceNumber, nextShiftNumber } from '@/lib/repositories/invoicesRepository'
 import { buildOrderLine } from '@/lib/orderLines'
@@ -51,7 +51,7 @@ async function timed(marks, label, fn) {
 export async function POST(request) {
   const requestStarted = performance.now()
   const marks = []
-  const ctx = {}
+  const stats = {}
   const isColdRequest = requestsServedByThisInstance === 0
   const instanceAgeAtEntry = Date.now() - MODULE_LOADED_AT
   requestsServedByThisInstance += 1
@@ -59,21 +59,21 @@ export async function POST(request) {
   // finally, not a trailing call, so a slow request that ends in an early
   // return or a throw still reports its timings.
   try {
-    return await handleCheckout(request, marks, ctx)
+    return await handleCheckout(request, marks, stats)
   } finally {
     const totalMs = Math.round(performance.now() - requestStarted)
     console.log(
       `[checkout] total=${totalMs}ms ${marks.join(' ')} ` +
-      `lines=${ctx.lineCount ?? 0} menuItems=${ctx.menuItems ?? 0} menuDeals=${ctx.menuDeals ?? 0} ` +
+      `lines=${stats.lineCount ?? 0} menuItems=${stats.menuItems ?? 0} menuDeals=${stats.menuDeals ?? 0} ` +
       `cold=${isColdRequest} instanceAgeMs=${instanceAgeAtEntry} reqOnInstance=${requestsServedByThisInstance} ` +
       `poolTotal=${pool.totalCount} poolIdle=${pool.idleCount} poolWaiting=${pool.waitingCount}`,
     )
   }
 }
 
-async function handleCheckout(request, marks, ctx) {
-  const session = await timed(marks, 'requireAuth', () => requireAuth())
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+async function handleCheckout(request, marks, stats) {
+  const ctx = await timed(marks, 'requireTenant', () => requireTenant())
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json().catch(() => ({}))
   const rawLines = Array.isArray(body.lines) ? body.lines : []
@@ -81,8 +81,8 @@ async function handleCheckout(request, marks, ctx) {
 
   // 3 queries in parallel: SELECT * on menu_items, deals, deal_includes.
   const menu = await timed(marks, 'loadMenu', () => loadMenu())
-  ctx.menuItems = menu.items.length
-  ctx.menuDeals = menu.deals.length
+  stats.menuItems = menu.items.length
+  stats.menuDeals = menu.deals.length
 
   const lines = []
   for (const raw of rawLines) {
@@ -90,7 +90,7 @@ async function handleCheckout(request, marks, ctx) {
     if (error) return NextResponse.json({ error }, { status: status || 400 })
     lines.push(line)
   }
-  ctx.lineCount = lines.length
+  stats.lineCount = lines.length
 
   const subtotal = Math.round(lines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100
   const businessType = invoiceBusinessTypeForLines(lines)
@@ -128,6 +128,6 @@ async function handleCheckout(request, marks, ctx) {
     ...(orderType ? { orderType } : {}),
   }
 
-  await timed(marks, 'saveInvoice', () => saveInvoice(invoice))
+  await timed(marks, 'saveInvoice', () => saveInvoice(ctx, invoice))
   return NextResponse.json({ invoice }, { status: 201 })
 }

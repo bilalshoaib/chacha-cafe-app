@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
-import { requireSuperAdmin } from '@/lib/session'
+import { requireTenantSuperAdmin } from '@/lib/session'
 import { findExpenses } from '@/lib/repositories/expensesRepository'
 import { parseReportFilters, parseReportRange, roundMoney } from '@/lib/reports'
 
 /** Expense rows for the reports Expenses tab, filtered by date spent. */
 export async function GET(request) {
-  const session = await requireSuperAdmin()
-  if (!session) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
+  const ctx = await requireTenantSuperAdmin()
+  if (!ctx) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const range = parseReportRange(searchParams)
@@ -16,7 +16,7 @@ export async function GET(request) {
 
   // Date range and business are applied by the database; this loop only shapes
   // the rows it is given.
-  const matching = await findExpenses({
+  const matching = await findExpenses(ctx, {
     from: from.toISOString(),
     to: to.toISOString(),
     businessType: business,

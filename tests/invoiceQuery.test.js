@@ -75,3 +75,18 @@ test('filters are combined with AND', () => {
   const { whereSql } = buildInvoiceWhere({ from: 'A', to: 'B' })
   assert.match(whereSql, /^WHERE .+ AND .+$/)
 })
+
+test('the tenant predicate comes first and shifts the rest along', () => {
+  const { whereSql, values } = buildInvoiceWhere({ tenantId: 't-chacha', from: 'A', search: 'b' })
+  assert.deepEqual(values, ['t-chacha', 'A', 'b'])
+  assert.match(whereSql, /tenant_id = \$1/)
+  assert.match(whereSql, /created_at >= \$2/)
+  assert.match(whereSql, /position\(\$3 IN lower\(id\)\)/)
+})
+
+test('without a tenant no tenant predicate is emitted', () => {
+  // The repository always supplies one; this pins down that the builder does
+  // not quietly invent a filter of its own when it is missing.
+  const { whereSql } = buildInvoiceWhere({ from: 'A' })
+  assert.doesNotMatch(whereSql, /tenant_id/)
+})

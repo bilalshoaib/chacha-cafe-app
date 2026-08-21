@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import { countInvoices, findInvoices } from '@/lib/repositories/invoicesRepository'
 import { normalizeBusinessType } from '@/lib/businessTypes'
 
@@ -15,8 +15,8 @@ function parsePageSizeParam(raw, fallback = 20) {
 }
 
 export async function GET(request) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
 
@@ -43,13 +43,13 @@ export async function GET(request) {
   // The count comes first because a page number past the end is clamped to the
   // last page rather than returning nothing — the offset can't be worked out
   // until the total is known.
-  const total = await countInvoices(filters)
+  const total = await countInvoices(ctx, filters)
   const totalPages = Math.max(1, Math.ceil(total / pageSize) || 1)
   const page = Math.min(requestedPage, totalPages)
 
   const invoices = total === 0
     ? []
-    : await findInvoices(filters, { limit: pageSize, offset: (page - 1) * pageSize })
+    : await findInvoices(ctx, filters, { limit: pageSize, offset: (page - 1) * pageSize })
 
   return NextResponse.json({
     invoices,

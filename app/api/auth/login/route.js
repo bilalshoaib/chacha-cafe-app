@@ -20,6 +20,10 @@ export async function POST(request) {
   session.userId = user.id
   session.email = user.email
   session.role = user.role
+  // The tenant is resolved from the account, never from the request. A tenant
+  // id the client could supply would be a tenant id the client could forge.
+  session.tenantId = user.tenantId
+  session.platformOwner = user.platformOwner
   await session.save()
 
   return NextResponse.json({ ok: true, user: usersRepo.toPublicUser(user) })

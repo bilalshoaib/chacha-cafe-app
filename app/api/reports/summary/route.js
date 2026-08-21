@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireSuperAdmin } from '@/lib/session'
+import { requireTenantSuperAdmin } from '@/lib/session'
 import { getInvoicesInRange } from '@/lib/repositories/invoicesRepository'
 import { findExpenses } from '@/lib/repositories/expensesRepository'
 import {
@@ -14,8 +14,8 @@ import {
 
 /** Headline totals for the reports Summary tab. Reads no invoice line detail. */
 export async function GET(request) {
-  const session = await requireSuperAdmin()
-  if (!session) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
+  const ctx = await requireTenantSuperAdmin()
+  if (!ctx) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const range = parseReportRange(searchParams)
@@ -23,7 +23,7 @@ export async function GET(request) {
   const { from, to } = range
   const { business, payment } = parseReportFilters(searchParams)
 
-  const inRange = await getInvoicesInRange(from.toISOString(), to.toISOString())
+  const inRange = await getInvoicesInRange(ctx, from.toISOString(), to.toISOString())
 
   let grossTotal = 0, returnedCount = 0, returnedTotal = 0
   let paidCount = 0, unpaidCount = 0, cafeNetSales = 0, burgerNetSales = 0
@@ -63,7 +63,7 @@ export async function GET(request) {
   // delivery charge — so it already excludes delivery.
   const netSalesExclDelivery = netSalesTotal
 
-  const matchingExpenses = await findExpenses({
+  const matchingExpenses = await findExpenses(ctx, {
     from: from.toISOString(),
     to: to.toISOString(),
     businessType: business,

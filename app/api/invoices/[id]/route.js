@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import { getInvoiceById, saveInvoice } from '@/lib/repositories/invoicesRepository'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import { buildOrderLine } from '@/lib/orderLines'
@@ -62,19 +62,19 @@ function repriceLines(rawLines, menu, storedLines) {
 }
 
 export async function GET(_request, { params }) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
-  const inv = await getInvoiceById(id)
+  const inv = await getInvoiceById(ctx, id)
   if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
   return NextResponse.json(inv)
 }
 
 export async function PATCH(request, { params }) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id } = await params
-  const inv = await getInvoiceById(id)
+  const inv = await getInvoiceById(ctx, id)
   if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
   const { customerNote, paid, returned, returnNote, lines, paymentMethod } = await request.json().catch(() => ({}))
 
@@ -94,7 +94,7 @@ export async function PATCH(request, { params }) {
   }
   if (customerNote !== undefined) inv.customerNote = String(customerNote).slice(0, 200)
   if (paid !== undefined) {
-    if (!Boolean(paid) && session.role === 'counter_cashier') {
+    if (!Boolean(paid) && ctx.role === 'counter_cashier') {
       return NextResponse.json({ error: 'Counter cashier accounts cannot mark an invoice as unpaid.' }, { status: 403 })
     }
     inv.paid = Boolean(paid)
@@ -110,6 +110,6 @@ export async function PATCH(request, { params }) {
   const VALID_PAYMENT_METHODS = ['cash', 'online']
   if (paymentMethod !== undefined) inv.paymentMethod = VALID_PAYMENT_METHODS.includes(paymentMethod) ? paymentMethod : null
 
-  await saveInvoice(inv)
+  await saveInvoice(ctx, inv)
   return NextResponse.json(inv)
 }
