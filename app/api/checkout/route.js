@@ -80,7 +80,7 @@ async function handleCheckout(request, marks, stats) {
   if (!rawLines.length) return NextResponse.json({ error: 'Add at least one line before checkout' }, { status: 400 })
 
   // 3 queries in parallel: SELECT * on menu_items, deals, deal_includes.
-  const menu = await timed(marks, 'loadMenu', () => loadMenu())
+  const menu = await timed(marks, 'loadMenu', () => loadMenu(ctx))
   stats.menuItems = menu.items.length
   stats.menuDeals = menu.deals.length
 

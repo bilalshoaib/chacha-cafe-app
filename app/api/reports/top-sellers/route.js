@@ -29,7 +29,7 @@ export async function GET(request) {
 
   const [inRange, menu] = await Promise.all([
     getInvoicesInRange(ctx, from.toISOString(), to.toISOString()),
-    loadMenu(),
+    loadMenu(ctx),
   ])
 
   // Deal lines only store item ids, so resolve display names from the menu.

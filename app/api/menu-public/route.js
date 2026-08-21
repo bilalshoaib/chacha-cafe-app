@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import { toPublicMenu } from '@/lib/publicMenu'
+import { resolvePublicTenantId } from '@/lib/publicTenant'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,8 +16,12 @@ const corsHeaders = {
  * per-item prices inside a deal) is stripped by toPublicMenu(), because this
  * route is unauthenticated and world-readable via CORS.
  */
-export async function GET() {
-  const menu = await loadMenu()
+export async function GET(request) {
+  const slug = new URL(request.url).searchParams.get('tenant')
+  const tenantId = await resolvePublicTenantId(slug)
+  if (!tenantId) return NextResponse.json({ error: 'Menu not found.' }, { status: 404, headers: corsHeaders })
+
+  const menu = await loadMenu({ tenantId })
   return NextResponse.json(toPublicMenu(menu), { headers: corsHeaders })
 }
 

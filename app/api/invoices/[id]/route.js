@@ -84,7 +84,7 @@ export async function PATCH(request, { params }) {
   }
 
   if (lines !== undefined) {
-    const menu = await loadMenu()
+    const menu = await loadMenu(ctx)
     const repriced = repriceLines(lines, menu, inv.lines)
     if (repriced.error) return NextResponse.json({ error: repriced.error }, { status: repriced.status || 400 })
     inv.lines = repriced.lines

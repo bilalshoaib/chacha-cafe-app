@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 
 /**
@@ -11,9 +11,9 @@ import { loadMenu } from '@/lib/repositories/menuRepository'
  * /api/menu-public, which strips both.
  */
 export async function GET() {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const menu = await loadMenu()
+  const menu = await loadMenu(ctx)
   return NextResponse.json(menu)
 }

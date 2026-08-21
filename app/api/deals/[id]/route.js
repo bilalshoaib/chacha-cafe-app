@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import { loadMenu, saveMenu, parseDealIncludes } from '@/lib/repositories/menuRepository'
 import { dealBusinessType, itemMatchesBusiness, normalizeBusinessType, businessTypeLabel } from '@/lib/businessTypes'
 
@@ -18,11 +18,11 @@ function validateDealIncludes(menu, includes, businessType) {
 }
 
 export async function PATCH(request, { params }) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await params
-  const menu = await loadMenu()
+  const menu = await loadMenu(ctx)
   const idx = menu.deals.findIndex((d) => d.id === id)
   if (idx === -1) return NextResponse.json({ error: 'Deal not found' }, { status: 404 })
 
@@ -79,6 +79,6 @@ export async function PATCH(request, { params }) {
     deal.includes = validated.includes
   }
 
-  await saveMenu(menu)
+  await saveMenu(ctx, menu)
   return NextResponse.json(deal)
 }
