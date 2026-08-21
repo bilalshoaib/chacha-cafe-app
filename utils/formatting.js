@@ -1,4 +1,4 @@
-import { CATEGORIES } from '@/constants/categories.js'
+import { CATEGORIES } from '../constants/categories.js'
 
 export function categoryLabel(key) {
   const c = CATEGORIES.find((x) => x.key === key)
@@ -11,8 +11,17 @@ export function categoryLabel(key) {
     .join(' ')
 }
 
-export function formatMoney(n) {
-  return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR' }).format(n)
+/**
+ * The café's own currency and number formatting.
+ *
+ * Both come from the location, not from here: a customer can open across a
+ * border, and a second café may not price in rupees at all. The defaults keep
+ * every existing call site rendering exactly as it does today, so the money
+ * on screen does not change the day this ships — only where the choice lives
+ * does.
+ */
+export function formatMoney(n, { locale = 'en-PK', currency = 'PKR' } = {}) {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n)
 }
 
 export function formatShortDateTime(value) {

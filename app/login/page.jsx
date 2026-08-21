@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext.jsx'
+import { useBranding } from '@/context/BrandingContext.jsx'
 
 export default function LoginPage() {
+  const branding = useBranding()
   const { authenticated, login } = useAuth()
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -40,7 +42,7 @@ export default function LoginPage() {
       <div className="brand login-brand">
         <span className="brand-mark" aria-hidden="true" />
         <div>
-          <h1>Chacha burger Cafe</h1>
+          <h1>{branding?.name}</h1>
           <p className="tagline">Sign in to continue</p>
         </div>
       </div>

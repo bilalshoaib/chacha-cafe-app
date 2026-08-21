@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext.jsx'
+import { useBranding } from '@/context/BrandingContext.jsx'
 import { OrdersProvider } from '@/context/OrdersContext.jsx'
 import { ADD_MENU_ITEM_HASH } from '@/constants/categories.js'
 
@@ -23,6 +24,7 @@ function NavLink({ href, children, className, onClick, end = false }) {
 }
 
 function AppNav({ user, onLogout }) {
+  const branding = useBranding()
   const pathname = usePathname()
   const [navOpen, setNavOpen] = useState(false)
   const closeNav = () => setNavOpen(false)
@@ -37,8 +39,8 @@ function AppNav({ user, onLogout }) {
         <div className="brand">
           <span className="brand-mark" aria-hidden="true" />
           <div>
-            <h1>Chacha Burger &amp; Cafe</h1>
-            <p className="tagline">Good Food ★ Good Mood</p>
+            <h1>{branding?.name}</h1>
+            {branding?.tagline ? <p className="tagline">{branding.tagline}</p> : null}
           </div>
         </div>
 
