@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
-import { getExpenses, saveExpenses } from '@/lib/repositories/expensesRepository'
+import { findExpenses, saveExpenses } from '@/lib/repositories/expensesRepository'
 import { normalizeBusinessType } from '@/lib/businessTypes'
 import { randomUUID } from 'crypto'
 
@@ -21,25 +21,19 @@ export async function GET(request) {
   if (denied) return denied
 
   const { searchParams } = new URL(request.url)
-  let list = await getExpenses()
-
-  const businessRaw = normalizeBusinessType(searchParams.get('businessType'))
-  if (businessRaw) list = list.filter((e) => normalizeBusinessType(e.businessType) === businessRaw)
 
   const fromRaw = searchParams.get('from')
   const toRaw = searchParams.get('to')
-  if (fromRaw || toRaw) {
-    const from = fromRaw ? new Date(fromRaw) : null
-    const to = toRaw ? new Date(toRaw) : null
-    if (fromRaw && Number.isNaN(from.getTime())) return NextResponse.json({ error: 'Invalid from date.' }, { status: 400 })
-    if (toRaw && Number.isNaN(to.getTime())) return NextResponse.json({ error: 'Invalid to date.' }, { status: 400 })
-    const fromMs = from ? from.getTime() : -Infinity
-    const toMs = to ? to.getTime() : Infinity
-    list = list.filter((e) => {
-      const t = new Date(e.spentAt || e.createdAt).getTime()
-      return !Number.isNaN(t) && t >= fromMs && t <= toMs
-    })
-  }
+  const from = fromRaw ? new Date(fromRaw) : null
+  const to = toRaw ? new Date(toRaw) : null
+  if (fromRaw && Number.isNaN(from.getTime())) return NextResponse.json({ error: 'Invalid from date.' }, { status: 400 })
+  if (toRaw && Number.isNaN(to.getTime())) return NextResponse.json({ error: 'Invalid to date.' }, { status: 400 })
+
+  const list = await findExpenses({
+    from: from ? from.toISOString() : null,
+    to: to ? to.toISOString() : null,
+    businessType: normalizeBusinessType(searchParams.get('businessType')),
+  })
 
   const total = roundMoney(list.reduce((s, e) => s + Number(e.amount || 0), 0))
   return NextResponse.json({ expenses: list, total })
