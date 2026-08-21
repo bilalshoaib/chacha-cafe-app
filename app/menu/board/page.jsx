@@ -2,6 +2,7 @@
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useOrders } from '@/context/OrdersContext.jsx'
+import { useBranding } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { BUSINESS_TYPES, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, formatItemExtras, formatMoney } from '@/utils/formatting.js'
@@ -73,6 +74,7 @@ function buildMenuBoardSections(items, business) {
 }
 
 export default function MenuBoardPage() {
+  const branding = useBranding()
   const { menu, loading } = useOrders()
   const toast = useToast()
   const boardRef = useRef(null)
@@ -182,7 +184,7 @@ export default function MenuBoardPage() {
                 <img src="/menu-board/pizza-photo.png" alt="" className="menu-board-photo menu-board-photo-right" aria-hidden="true" />
                 <div className="menu-board-brand-row">
                   <img src="/menu-board/logo-emblem.png" alt="" className="menu-board-logo-emblem" aria-hidden="true" />
-                  <h2 className="menu-board-brand-name">Chacha</h2>
+                  <h2 className="menu-board-brand-name">{branding?.name}</h2>
                 </div>
                 <div className="menu-board-ribbon"><span>• {ribbonLabel.toUpperCase()} •</span></div>
                 <p className="menu-board-brand-tag">Good Food • Good Mood</p>

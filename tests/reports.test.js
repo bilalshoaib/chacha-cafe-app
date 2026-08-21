@@ -101,14 +101,18 @@ test('items with neither a stated nor a menu price split evenly per unit', () =>
   assert.equal(parts.find((p) => p.itemId === 'b').revenue, 200)
 })
 
+// Chacha's two counters. calcInvoiceSplits takes the tenant's own brands now,
+// so these tests pass the pair that used to be hardcoded inside it — the
+// behaviour for that pair must not have changed.
+const CHACHA = [{ slug: 'cafe' }, { slug: 'burger' }]
+const portions = (inv, brands = CHACHA) => Object.fromEntries(calcInvoiceSplits(inv, brands))
+
 test('a combined deal credits each business its own portion', () => {
   const inv = {
     total: 2000,
     lines: [{ isCombined: true, qty: 1, lineTotal: 2000, cafeSplit: 1600, burgerSplit: 400 }],
   }
-  const { cafePortion, burgerPortion } = calcInvoiceSplits(inv, 'combined')
-  assert.equal(cafePortion, 1600)
-  assert.equal(burgerPortion, 400)
+  assert.deepEqual(portions(inv), { cafe: 1600, burger: 400 })
 })
 
 test('a discount on a combined deal is shared 50/50 between the businesses', () => {
@@ -116,26 +120,68 @@ test('a discount on a combined deal is shared 50/50 between the businesses', () 
     total: 1900,
     lines: [{ isCombined: true, qty: 1, lineTotal: 1900, cafeSplit: 1600, burgerSplit: 400, discount: 100 }],
   }
-  const { cafePortion, burgerPortion } = calcInvoiceSplits(inv, 'combined')
-  assert.equal(cafePortion, 1550)
-  assert.equal(burgerPortion, 350)
-  assert.equal(roundMoney(cafePortion + burgerPortion), 1900)
+  const p = portions(inv)
+  assert.equal(p.cafe, 1550)
+  assert.equal(p.burger, 350)
+  assert.equal(roundMoney(p.cafe + p.burger), 1900)
 })
 
-test('shared "both" items are credited to the cafe', () => {
+test('shared "both" items are credited to the first brand', () => {
   const inv = { total: 500, lines: [{ lineBusinessType: 'both', qty: 1, lineTotal: 500 }] }
-  const { cafePortion, burgerPortion } = calcInvoiceSplits(inv, 'combined')
-  assert.equal(cafePortion, 500)
-  assert.equal(burgerPortion, 0)
+  assert.deepEqual(portions(inv), { cafe: 500, burger: 0 })
 })
 
 test('legacy lines with no business tag fall back to the invoice business', () => {
   const inv = { total: 300, lines: [{ qty: 1, lineTotal: 300 }] }
-  assert.equal(calcInvoiceSplits(inv, 'burger').burgerPortion, 300)
-  assert.equal(calcInvoiceSplits(inv, 'cafe').cafePortion, 300)
+  assert.equal(portions({ ...inv, businessType: 'burger' }).burger, 300)
+  assert.equal(portions({ ...inv, businessType: 'cafe' }).cafe, 300)
 })
 
 test('an invoice with no lines still attributes its total', () => {
-  assert.equal(calcInvoiceSplits({ total: 250, lines: [] }, 'burger').burgerPortion, 250)
-  assert.equal(calcInvoiceSplits({ total: 250, lines: [] }, 'cafe').cafePortion, 250)
+  assert.equal(portions({ total: 250, lines: [], businessType: 'burger' }).burger, 250)
+  assert.equal(portions({ total: 250, lines: [], businessType: 'cafe' }).cafe, 250)
+})
+
+test('a café with a single brand gets everything credited to it', () => {
+  // The shape Chacha's two-column split could never represent. Lines tagged
+  // with a brand this tenant does not have still land somewhere rather than
+  // vanishing.
+  const solo = [{ slug: 'main' }]
+  const inv = {
+    total: 800,
+    lines: [
+      { lineBusinessType: 'main', qty: 1, lineTotal: 500 },
+      { lineBusinessType: 'cafe', qty: 1, lineTotal: 300 },
+    ],
+  }
+  assert.deepEqual(portions(inv, solo), { main: 800 })
+})
+
+test('a café with three brands gets a column for each, including empty ones', () => {
+  const three = [{ slug: 'coffee' }, { slug: 'bakery' }, { slug: 'deli' }]
+  const inv = {
+    total: 700,
+    lines: [
+      { lineBusinessType: 'coffee', qty: 1, lineTotal: 400 },
+      { lineBusinessType: 'deli', qty: 1, lineTotal: 300 },
+    ],
+  }
+  assert.deepEqual(portions(inv, three), { coffee: 400, bakery: 0, deli: 300 })
+})
+
+test('brandSplits keyed by slug take precedence over the legacy pair', () => {
+  const inv = {
+    total: 900,
+    lines: [{
+      isCombined: true, qty: 1, lineTotal: 900,
+      brandSplits: { coffee: 600, bakery: 300 },
+      cafeSplit: 999, burgerSplit: 999,
+    }],
+  }
+  assert.deepEqual(portions(inv, [{ slug: 'coffee' }, { slug: 'bakery' }]), { coffee: 600, bakery: 300 })
+})
+
+test('every brand appears in the result even when it sold nothing', () => {
+  const inv = { total: 100, lines: [{ lineBusinessType: 'cafe', qty: 1, lineTotal: 100 }] }
+  assert.deepEqual(Object.keys(portions(inv)), ['cafe', 'burger'])
 })

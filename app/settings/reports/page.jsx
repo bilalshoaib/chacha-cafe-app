@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/api.js'
+import { useBranding } from '@/context/BrandingContext.jsx'
 import RequireSuperAdmin from '@/components/RequireSuperAdmin.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import Pagination from '@/components/Pagination.jsx'
@@ -68,10 +69,27 @@ const TABS = [
 
 const INVOICE_PAGE_SIZE = 25
 
+/**
+ * A stat card per brand, built from whatever the café actually has.
+ *
+ * These used to be two entries hardcoded to Chacha's counters. A café with one
+ * brand gets none of them — its net sales tile already says the same thing, and
+ * showing a single "brand" column next to it would be inventing a distinction
+ * the owner does not have.
+ */
+function brandStats(summary) {
+  const brands = summary?.brands ?? []
+  if (brands.length < 2) return []
+  return brands.map((b) => ({
+    key: `brand-${b.slug}`,
+    label: b.name,
+    value: () => formatMoney(b.netSales),
+    sub: () => `${b.invoiceCount} invoice${b.invoiceCount === 1 ? '' : 's'}`,
+  }))
+}
+
 const SUMMARY_STATS = [
   { key: 'netSales', label: 'Net sales', value: (s) => formatMoney(s.netSalesTotal), sub: () => 'Excluding returns' },
-  { key: 'cafe', label: 'Chacha Cafe', value: (s) => formatMoney(s.cafeNetSales), sub: (s) => `${s.cafeInvoiceCount} invoices` },
-  { key: 'burger', label: 'Chacha Burger', value: (s) => formatMoney(s.burgerNetSales), sub: (s) => `${s.burgerInvoiceCount} invoices` },
   { key: 'invoiceCount', label: 'Invoices', value: (s) => s.invoiceCount, sub: () => 'In range' },
   { key: 'grossTotal', label: 'Gross total', value: (s) => formatMoney(s.grossTotal), sub: () => 'All invoices' },
   { key: 'returns', label: 'Returns', value: (s) => s.returnedCount, sub: (s) => `${formatMoney(s.returnedTotal)} refunded / voided` },
@@ -149,13 +167,13 @@ function paymentLabel(method) {
   return '—'
 }
 function businessLabel(type) {
-  if (type === 'cafe') return 'Chacha Cafe'
-  if (type === 'burger') return 'Chacha Burger'
+  if (type === 'cafe') return 'Cafe'
+  if (type === 'burger') return 'Burger'
   if (type === 'combined') return 'Combined (Cafe + Burger)'
   return type
 }
 
-function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sellerSort, businessFilter, paymentFilter }) {
+function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sellerSort, businessFilter, paymentFilter, tenantName }) {
   const filterNote = [
     businessFilter !== 'all' ? `Business: ${businessLabel(businessFilter)}` : '',
     paymentFilter !== 'all' ? `Payment: ${paymentLabel(paymentFilter)}` : '',
@@ -224,8 +242,7 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sel
   <div class="stat"><span class="stat-label">Net Sales</span><span class="stat-value">${formatMoney(summary.netSalesTotal)}</span><span class="stat-sub">Excl. returns</span></div>
   <div class="stat"><span class="stat-label">Sales excl. delivery</span><span class="stat-value">${formatMoney(summary.netSalesExclDelivery ?? summary.netSalesTotal)}</span><span class="stat-sub">Net sales − delivery charges</span></div>
   <div class="stat"><span class="stat-label">Delivery charges</span><span class="stat-value">${formatMoney(summary.deliveryChargesTotal ?? 0)}</span><span class="stat-sub">${summary.deliveryOrderCount ?? 0} delivery orders</span></div>
-  <div class="stat"><span class="stat-label">Chacha Cafe</span><span class="stat-value">${formatMoney(summary.cafeNetSales)}</span><span class="stat-sub">${summary.cafeInvoiceCount} invoices</span></div>
-  <div class="stat"><span class="stat-label">Chacha Burger</span><span class="stat-value">${formatMoney(summary.burgerNetSales)}</span><span class="stat-sub">${summary.burgerInvoiceCount} invoices</span></div>
+  ${(summary.brands ?? []).length > 1 ? (summary.brands ?? []).map((b) => `<div class="stat"><span class="stat-label">${b.name}</span><span class="stat-value">${formatMoney(b.netSales)}</span><span class="stat-sub">${b.invoiceCount} invoices</span></div>`).join('') : ''}
   <div class="stat"><span class="stat-label">Invoices</span><span class="stat-value">${summary.invoiceCount}</span><span class="stat-sub">In range</span></div>
   <div class="stat"><span class="stat-label">Gross Total</span><span class="stat-value">${formatMoney(summary.grossTotal)}</span><span class="stat-sub">All invoices</span></div>
   <div class="stat"><span class="stat-label">Returns</span><span class="stat-value">${summary.returnedCount}</span><span class="stat-sub">${formatMoney(summary.returnedTotal)} refunded</span></div>
@@ -239,12 +256,13 @@ ${topSellers.length === 0 ? '<p style="color:#6b7280">No sales in this period.</
 ${invoices.length === 0 ? '<p style="color:#6b7280">No invoices match the selected filters.</p>' : `<table><thead><tr><th>Business</th><th>Invoice ID</th><th>Issued</th><th>Order type</th><th style="text-align:right">Total</th><th style="text-align:right">Delivery</th><th>Status</th><th>Payment</th></tr></thead><tbody>${invoiceRows}</tbody></table>`}
 <h2>Expenses (${expenses.length})</h2>
 ${expenses.length === 0 ? '<p style="color:#6b7280">No expenses in this period.</p>' : `<table><thead><tr><th>Spent</th><th>Title</th><th>Business</th><th>Category</th><th style="text-align:right">Amount</th><th>Note</th></tr></thead><tbody>${expenseRows}</tbody></table>`}
-<p class="footer">Generated ${new Date().toLocaleString()} · Chacha Burger Cafe</p>
+<p class="footer">Generated ${new Date().toLocaleString()}${tenantName ? ` · ${tenantName}` : ''}</p>
 </body>
 </html>`
 }
 
 export default function ReportsPage() {
+  const branding = useBranding()
   const [presetId, setPresetId] = useState('today')
   // Custom defaults to the shift boundaries, not midnight — a range that
   // started at 00:00 cut the previous evening's shift in half and counted the
@@ -377,6 +395,7 @@ export default function ReportsPage() {
         expenses: expenseRes.expenses,
         topSellers: sellerRes.topSellers,
         sellerSort, businessFilter, paymentFilter,
+        tenantName: branding?.name,
       })
       const win = window.open('', '_blank', 'width=900,height=700')
       if (!win) return
@@ -474,7 +493,7 @@ export default function ReportsPage() {
             <div className="reports-filter-group">
               <span className="reports-filter-label">Business</span>
               <div className="reports-filter-btns">
-                {[{ id: 'all', label: 'All' }, { id: 'cafe', label: 'Chacha Cafe' }, { id: 'burger', label: 'Chacha Burger' }].map((opt) => (
+                {[{ id: 'all', label: 'All' }, ...(summary?.brands ?? []).map((b) => ({ id: b.slug, label: b.name }))].map((opt) => (
                   <button key={opt.id} type="button" className={businessFilter === opt.id ? 'primary sm' : 'ghost sm'} onClick={() => setBusinessFilter(opt.id)}>{opt.label}</button>
                 ))}
               </div>
@@ -515,7 +534,7 @@ export default function ReportsPage() {
         {tab === 'summary' ? (
           loading || summary ? (
             <section className="reports-summary-grid">
-              {SUMMARY_STATS.map((stat) => (
+              {[SUMMARY_STATS[0], ...brandStats(summary), ...SUMMARY_STATS.slice(1)].map((stat) => (
                 <article key={stat.key} className="card reports-stat-card">
                   <span className="muted small reports-stat-label">{stat.label}</span>
                   {loading ? (

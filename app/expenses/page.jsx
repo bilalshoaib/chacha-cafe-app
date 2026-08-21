@@ -57,7 +57,7 @@ export default function ExpensesListPage() {
       <div className="expenses-head">
         <div>
           <h2>Expenses</h2>
-          <p className="muted small">Operating costs by date (PKR). Filter by business, Chacha Cafe or Chacha Burger.</p>
+          <p className="muted small">Operating costs by date. Filter by business, or leave it on All.</p>
         </div>
         <div className="expenses-head-actions row">
           <Link href="/expenses/new" className="primary sm">Add expense</Link>

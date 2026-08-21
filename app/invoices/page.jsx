@@ -119,7 +119,7 @@ export default function InvoicesListPage() {
       <section className="card invoices-list-card">
         <h2>Invoices</h2>
         <p className="muted small invoices-list-lede">
-          Chacha Cafe and Chacha Burger each have separate invoices. Filter by date and business, or open any row for details.
+          Filter by date and business, or open any row for details.
         </p>
 
         <div className="invoices-search-row">

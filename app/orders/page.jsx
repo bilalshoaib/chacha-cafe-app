@@ -289,7 +289,7 @@ export default function OrdersPage() {
 
         {!activeOrder ? (
           <div className="business-type-picker">
-            <p className="muted">Start a new order to add items from both Chacha Cafe and Chacha Burger.</p>
+            <p className="muted">Start a new order to add items from the whole menu.</p>
             <button
               type="button"
               className="primary"
