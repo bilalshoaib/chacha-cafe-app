@@ -93,3 +93,43 @@ test('a missing tenant is refused rather than treated as no filter', async () =>
       `${JSON.stringify(bad)} must not be allowed to query`)
   }
 })
+
+test('row level security is enforced, not merely enabled', async () => {
+  // The failure this guards against is subtle: ENABLE ROW LEVEL SECURITY on a
+  // table whose owner holds BYPASSRLS leaves the policies switched on and
+  // completely inert, which reads like protection in every schema dump.
+  const { rows } = await pool.query(`
+    SELECT c.relname, c.relrowsecurity AS enabled, c.relforcerowsecurity AS forced,
+           (SELECT COUNT(*)::int FROM pg_policies p WHERE p.tablename = c.relname) AS policies
+    FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relname IN ('menu_items','deals','deal_includes','invoices','expenses')`)
+  assert.equal(rows.length, 5, 'all five data tables must be present')
+  for (const r of rows) {
+    assert.ok(r.enabled, `${r.relname} has RLS enabled`)
+    assert.ok(r.forced, `${r.relname} forces RLS on its owner`)
+    assert.equal(r.policies, 1, `${r.relname} has exactly one policy`)
+  }
+
+  const role = await pool.query(`SELECT rolbypassrls FROM pg_roles WHERE rolname = 'app_tenant'`)
+  assert.ok(role.rows[0], 'app_tenant must exist')
+  assert.equal(role.rows[0].rolbypassrls, false,
+    'app_tenant must not bypass RLS — that attribute is what made the first attempt inert')
+})
+
+test('the policy refuses a write into another tenant', async () => {
+  const { withTenant } = await import('../../lib/db.js')
+  await pool.query(
+    `INSERT INTO tenants (id, slug, name) VALUES ('t-rls-probe','rls-probe','RLS Probe')
+     ON CONFLICT (id) DO NOTHING`)
+  try {
+    await assert.rejects(
+      () => withTenant(otherCtx, (client) => client.query(
+        `INSERT INTO expenses (id, title, amount, category, business_type, note, spent_at, created_at, tenant_id)
+         VALUES ('e-rls-probe','probe',1,'other','cafe','',NOW(),NOW(),'t-rls-probe')`)),
+      /row-level security/,
+      'WITH CHECK must stop a row being written into a tenant other than the declared one')
+  } finally {
+    await pool.query(`DELETE FROM tenants WHERE id = 't-rls-probe'`)
+  }
+})
