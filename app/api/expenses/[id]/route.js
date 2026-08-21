@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session'
-import { getExpenses, saveExpenses, deleteExpenseById } from '@/lib/repositories/expensesRepository'
+import { getExpenseById, saveExpenses, deleteExpenseById } from '@/lib/repositories/expensesRepository'
 import { normalizeBusinessType } from '@/lib/businessTypes'
 
 function roundMoney(n) {
@@ -19,8 +19,7 @@ export async function GET(_request, { params }) {
   const denied = forbidCashier(session)
   if (denied) return denied
   const { id } = await params
-  const expenses = await getExpenses()
-  const row = expenses.find((e) => e.id === id)
+  const row = await getExpenseById(id)
   if (!row) return NextResponse.json({ error: 'Expense not found.' }, { status: 404 })
   return NextResponse.json(row)
 }
@@ -31,8 +30,7 @@ export async function PATCH(request, { params }) {
   const denied = forbidCashier(session)
   if (denied) return denied
   const { id } = await params
-  const expenses = await getExpenses()
-  const existing = expenses.find((e) => e.id === id)
+  const existing = await getExpenseById(id)
   if (!existing) return NextResponse.json({ error: 'Expense not found.' }, { status: 404 })
 
   const body = await request.json().catch(() => ({}))

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireSuperAdmin } from '@/lib/session'
 import { getInvoicesInRange } from '@/lib/repositories/invoicesRepository'
-import { getExpenses } from '@/lib/repositories/expensesRepository'
+import { findExpenses } from '@/lib/repositories/expensesRepository'
 import {
   calcInvoiceSplits,
   invoiceBusinessType,
@@ -63,18 +63,14 @@ export async function GET(request) {
   // delivery charge — so it already excludes delivery.
   const netSalesExclDelivery = netSalesTotal
 
-  const fromMs = from.getTime()
-  const toMs = to.getTime()
-  const allExpenses = await getExpenses()
+  const matchingExpenses = await findExpenses({
+    from: from.toISOString(),
+    to: to.toISOString(),
+    businessType: business,
+  })
   let expensesTotal = 0
-  let expenseCount = 0
-  for (const e of Array.isArray(allExpenses) ? allExpenses : []) {
-    const t = new Date(e.spentAt || e.createdAt).getTime()
-    if (Number.isNaN(t) || t < fromMs || t > toMs) continue
-    if (business && (e.businessType ?? 'cafe') !== business) continue
-    expensesTotal += roundMoney(e.amount ?? 0)
-    expenseCount += 1
-  }
+  for (const e of matchingExpenses) expensesTotal += roundMoney(e.amount ?? 0)
+  const expenseCount = matchingExpenses.length
   expensesTotal = roundMoney(expensesTotal)
 
   return NextResponse.json({
