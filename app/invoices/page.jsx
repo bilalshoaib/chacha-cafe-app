@@ -129,7 +129,7 @@ export default function InvoicesListPage() {
               id="invoice-id-search"
               type="search"
               className="input invoices-search-input"
-              placeholder="e.g. inv-cafe-abc123 or 12"
+              placeholder="e.g. inv-4340 or 12"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
               aria-label="Search invoices by ID"

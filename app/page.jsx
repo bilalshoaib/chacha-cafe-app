@@ -16,7 +16,7 @@ export default function HomePage() {
     setLoading(true)
     ;(async () => {
       try {
-        const m = await api.getMenu()
+        const m = await api.getPublicMenu()
         if (!cancelled) { setMenu(m); setError('') }
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load menu.')
