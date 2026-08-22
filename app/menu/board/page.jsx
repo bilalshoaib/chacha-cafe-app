@@ -9,34 +9,6 @@ import { buildCategoryTabs, formatItemExtras, formatMoney, categoryIcon, categor
 
 const SHOP_PHONE = '0315-9988295'
 
-const CATEGORY_ICONS = {
-  pizza: '🍕',
-  burger: '🍔',
-  fries: '🍟',
-  wings: '🍗',
-  shawarma: '🌯',
-  roll: '🌯',
-  drinks: '🥤',
-  other: '🍽️',
-}
-
-/**
- * Deliberately NOT derived from the brand theme (see the THEME SOURCE block in
- * app/styles/01-base.css). The poster wants each food category to read as its
- * own band at a glance, so these stay categorical — re-skinning the app does
- * not, and should not, recolour them. Same for DEAL_COLORS below.
- */
-const CATEGORY_COLORS = {
-  pizza: '#8a1f1f',
-  burger: '#c45c26',
-  fries: '#b8860b',
-  wings: '#6b3fa0',
-  shawarma: '#1f7a5c',
-  roll: '#1f7a5c',
-  drinks: '#1f7a3c',
-  other: '#55483c',
-}
-
 const DEAL_COLORS = ['#c42626', '#8a1f1f', '#c45c26', '#a01f3a', '#c42626', '#8a1f1f']
 
 const DEAL_PHOTOS = ['/menu-board/pizza-photo.png', '/menu-board/burger-photo.png', '/menu-board/wings-photo.png', '/menu-board/drinks-photo.png']
