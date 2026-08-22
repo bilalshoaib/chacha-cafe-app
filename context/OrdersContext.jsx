@@ -61,7 +61,7 @@ function buildDealLine(deal, qty, discounts = {}) {
 
 export function OrdersProvider({ children }) {
   const router = useRouter()
-  const { authenticated } = useAuth()
+  const { authenticated, user } = useAuth()
   const [menu, setMenu] = useState({ items: [], deals: [], categories: [] })
   const [orders, setOrders] = useState([])
   const [activeOrderId, setActiveOrderId] = useState(null)
@@ -84,13 +84,19 @@ export function OrdersProvider({ children }) {
     }
   }, [])
 
+  // The platform owner signs in with no café of their own, and only acquires
+  // one by opening a support session. Asking for a menu before then would get
+  // a 401, which the client reads as a dead session and signs them straight
+  // back out — so it does not ask.
+  const hasTenant = Boolean(user?.tenantId)
+
   useEffect(() => {
-    if (authenticated) {
+    if (authenticated && hasTenant) {
       void refreshAll()
     } else {
       setLoading(false)
     }
-  }, [authenticated, refreshAll])
+  }, [authenticated, hasTenant, refreshAll])
 
   const categoryTabs = useMemo(() => buildCategoryTabs(menu.items, menu.categories), [menu.items, menu.categories])
 

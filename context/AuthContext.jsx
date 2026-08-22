@@ -38,6 +38,9 @@ export function AuthProvider({ children }) {
     const r = await api.login(email, password)
     setAuthenticated(true)
     setUser(r.user ?? null)
+    // Returned so the caller can route on who just signed in — a platform
+    // owner has no till to be sent to.
+    return r
   }, [])
 
   const logout = useCallback(async () => {

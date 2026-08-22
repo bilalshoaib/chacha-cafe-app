@@ -28,8 +28,10 @@ export default function LoginPage() {
     setError('')
     setSubmitting(true)
     try {
-      await login(email, password)
-      router.push('/orders')
+      const { user } = await login(email, password)
+      // Somebody who runs the platform rather than a café lands on the café
+      // list; there is no till for them to stand at.
+      router.push(user?.platformOwner && !user?.tenantId ? '/platform' : '/orders')
     } catch (err) {
       setError(err.message || 'Could not sign in')
     } finally {

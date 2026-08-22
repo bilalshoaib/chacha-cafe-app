@@ -58,6 +58,22 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
+  // A platform owner with no café open has nothing to see on a café's screens:
+  // every query there needs a tenant, and without one they would get a string
+  // of 401s that the client reads as a dead session. Send them to the café
+  // list, where the way in is to open one. Opening a café sets
+  // impersonatedTenantId, and from then on every page works normally.
+  if (
+    session.userId &&
+    session.platformOwner &&
+    !session.tenantId &&
+    !session.impersonatedTenantId &&
+    !isPlatformPath(pathname) &&
+    !PUBLIC_PATHS.includes(pathname)
+  ) {
+    return NextResponse.redirect(new URL('/platform', request.url))
+  }
+
   if (session.userId && isSuperAdminPath(pathname) && session.role !== 'super_admin') {
     return NextResponse.redirect(new URL('/settings', request.url))
   }
