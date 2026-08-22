@@ -46,6 +46,8 @@ export default function MenuItemsPage() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [businessFilter, setBusinessFilter] = useState('all')
+  // More than one counter is the only reason to show a counter picker anywhere.
+  const hasCounters = (menu.brands?.length ?? 0) > 1
 
   const categoryTabs = useMemo(() => buildCategoryTabs(menu.items, menu.categories), [menu.items, menu.categories])
 
@@ -71,8 +73,9 @@ export default function MenuItemsPage() {
 
   const filteredItems = useMemo(() => {
     let items = sortedItems
-    if (businessFilter === 'cafe') items = items.filter((i) => i.businessType === 'cafe' || i.businessType === 'both')
-    else if (businessFilter === 'burger') items = items.filter((i) => i.businessType === 'burger' || i.businessType === 'both')
+    if (businessFilter !== 'all') {
+      items = items.filter((i) => i.businessType === businessFilter || i.businessType === 'both')
+    }
     const q = searchQuery.trim().toLowerCase()
     if (q) items = items.filter((i) => i.name.toLowerCase().includes(q) || (i.category ?? '').toLowerCase().includes(q))
     return items
@@ -238,7 +241,7 @@ export default function MenuItemsPage() {
           <div className="page-hero-icon">🍽️</div>
           <div>
             <h1 className="page-hero-title">Menu Items</h1>
-            <p className="page-hero-sub">Add, edit, and manage items across your cafe &amp; burger menu.</p>
+            <p className="page-hero-sub">Add, edit, and manage everything on your menu.</p>
           </div>
         </div>
         <Link href="/menu/board" className="page-hero-action">
@@ -284,9 +287,24 @@ export default function MenuItemsPage() {
           </p>
           <div className="menu-filter-bar">
             <div className="invoices-filter-tabs">
-              <button type="button" className={businessFilter === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setBusinessFilter('all')}>All</button>
-              <button type="button" className={businessFilter === 'cafe' ? 'primary sm' : 'ghost sm'} onClick={() => setBusinessFilter('cafe')}>Cafe</button>
-              <button type="button" className={businessFilter === 'burger' ? 'primary sm' : 'ghost sm'} onClick={() => setBusinessFilter('burger')}>Burger</button>
+              {/* Only where there is a choice to make. A café with one counter
+                  has nothing to filter by, and offering "All / <its own name>"
+                  would be Chacha's shape showing through somebody else's app. */}
+              {hasCounters ? (
+                <>
+                  <button type="button" className={businessFilter === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setBusinessFilter('all')}>All</button>
+                  {menu.brands.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      className={businessFilter === b.slug ? 'primary sm' : 'ghost sm'}
+                      onClick={() => setBusinessFilter(b.slug)}
+                    >
+                      {b.name}
+                    </button>
+                  ))}
+                </>
+              ) : null}
             </div>
             <input
               type="search"
@@ -383,6 +401,7 @@ export default function MenuItemsPage() {
         <MenuItemFormFields
           name={addName} setName={setAddName}
           price={addPrice} setPrice={setAddPrice}
+          brands={menu.brands ?? []}
           costPrice={addCostPrice} setCostPrice={setAddCostPrice}
           category={addCategory} setCategory={setAddCategory}
           businessType={addBusinessType} setBusinessType={setAddBusinessType}
@@ -411,6 +430,7 @@ export default function MenuItemsPage() {
             <MenuItemFormFields
               name={editName} setName={setEditName}
               price={editPrice} setPrice={setEditPrice}
+              brands={menu.brands ?? []}
               costPrice={editCostPrice} setCostPrice={setEditCostPrice}
               category={editCategory} setCategory={setEditCategory}
               businessType={editBusinessType} setBusinessType={setEditBusinessType}

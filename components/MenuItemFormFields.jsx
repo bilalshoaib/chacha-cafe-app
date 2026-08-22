@@ -1,5 +1,4 @@
 'use client'
-import { MENU_ITEM_BUSINESS_OPTIONS } from '@/constants/businessTypes.js'
 import { formatMoney } from '@/utils/formatting.js'
 
 export default function MenuItemFormFields({
@@ -18,6 +17,7 @@ export default function MenuItemFormFields({
   flavour,
   setFlavour,
   categoryTabs,
+  brands = [],
   disabled = false,
   categoryListId = 'menu-item-category-dl',
 }) {
@@ -52,12 +52,17 @@ export default function MenuItemFormFields({
             />
           </label>
 
+          {/* Only asked where there is something to choose between. A café
+              with one counter has every item on that counter by definition,
+              and the answer is filled in for it rather than demanded. */}
+          {brands.length > 1 ? (
           <div className="field field-wide">
-            <span className="field-label">Business</span>
-            {/* Segmented control instead of a dropdown: three options that are
-                always worth seeing at a glance, and a bigger tap target. */}
-            <div className="segmented" role="group" aria-label="Business">
-              {MENU_ITEM_BUSINESS_OPTIONS.map((bt) => (
+            <span className="field-label">Counter</span>
+            {/* Segmented control instead of a dropdown: the options are worth
+                seeing at a glance, and it is a bigger tap target. */}
+            <div className="segmented" role="group" aria-label="Counter">
+              {[...brands.map((b) => ({ id: b.slug, label: b.name })),
+                { id: 'both', label: 'Both' }].map((bt) => (
                 <button
                   key={bt.id}
                   type="button"
@@ -66,11 +71,12 @@ export default function MenuItemFormFields({
                   disabled={disabled}
                   aria-pressed={businessType === bt.id}
                 >
-                  {bt.shortLabel ?? bt.label}
+                  {bt.label}
                 </button>
               ))}
             </div>
           </div>
+          ) : null}
 
           <label className="field field-wide">
             <span className="field-label">Category</span>

@@ -1,19 +1,18 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/api.js'
-import { useRouter } from 'next/navigation'
 import { formatShortDateTime } from '@/utils/formatting.js'
 
 /**
- * One café: what it is, how much it is being used, and the two levers the
- * platform holds over it — its plan and whether it is suspended.
+ * One café: what it is, how much it is being used, and the levers the platform
+ * holds over it — support access, plan, and suspension.
  *
  * Nothing here edits the café's own configuration. Its name, colours, logo,
- * branches, categories and staff belong to its owner, on their settings pages;
- * a console that sets those for each customer is a console that has to be used
- * for every customer.
+ * branches, categories and staff belong to its owner on their settings pages.
+ * What can be done sits on the left and what has been done on the right, since
+ * the trail is reference rather than action.
  */
 export default function TenantDetailPage() {
   const { id } = useParams()
@@ -39,7 +38,8 @@ export default function TenantDetailPage() {
   async function patch(fields, note) {
     setError(''); setMessage(''); setSaving(true)
     try {
-      setTenant(await api.updateTenant(id, fields))
+      const updated = await api.updateTenant(id, fields)
+      setTenant((prev) => ({ ...prev, ...updated }))
       setMessage(note)
     } catch (e) {
       setError(e.message || 'Could not save.')
@@ -48,124 +48,133 @@ export default function TenantDetailPage() {
     }
   }
 
-  if (error && !tenant) return <main className="platform-page"><p className="banner error">{error}</p></main>
-  if (!tenant) return <main className="platform-page"><p className="muted">Loading…</p></main>
-
-  const suspended = tenant.status === 'suspended'
-
   async function openAs(control) {
     setError('')
     try {
       await api.impersonate(id, control)
       router.push('/')
+      router.refresh()
     } catch (e) {
       setError(e.message || 'Could not open this café.')
     }
   }
 
+  if (error && !tenant) {
+    return <main className="platform-page"><p className="banner error">{error}</p></main>
+  }
+  if (!tenant) {
+    return <main className="platform-page"><p className="platform-empty">Loading…</p></main>
+  }
+
+  const suspended = tenant.status === 'suspended'
+  const stats = [
+    { label: 'Branches', value: tenant.locationCount },
+    { label: 'Counters', value: tenant.brandCount },
+    { label: 'Staff', value: tenant.userCount },
+    { label: 'Invoices', value: (tenant.invoiceCount ?? 0).toLocaleString() },
+    { label: 'Last order', value: tenant.lastOrderAt ? formatShortDateTime(tenant.lastOrderAt) : 'never' },
+  ]
+
   return (
     <main className="platform-page">
       <div className="platform-head">
         <div>
+          <Link href="/platform" className="platform-back">← All cafés</Link>
           <h1>{tenant.name}</h1>
           <p className="muted small">
-              {tenant.slug} · created {formatShortDateTime(tenant.createdAt)}
-            </p>
+            {tenant.slug} · {tenant.plan} · created {formatShortDateTime(tenant.createdAt)}
+          </p>
         </div>
-        <Link href="/platform" className="ghost btn-link">All cafés</Link>
+        <span className={`pill pill-${tenant.status}`}>{tenant.status}</span>
       </div>
 
       {error ? <p className="banner error" role="alert">{error}</p> : null}
       {message ? <p className="banner success" role="status">{message}</p> : null}
 
-      <section className="reports-summary-grid">
-        {[
-          { label: 'Branches', value: tenant.locationCount },
-          { label: 'Counters', value: tenant.brandCount },
-          { label: 'Staff accounts', value: tenant.userCount },
-          { label: 'Invoices', value: tenant.invoiceCount },
-        ].map((s) => (
-          <article key={s.label} className="card reports-stat-card">
-            <span className="muted small reports-stat-label">{s.label}</span>
-            <strong className="reports-stat-value">{s.value}</strong>
+      <section className="platform-stats">
+        {stats.map((s) => (
+          <article key={s.label} className="platform-stat">
+            <span className="platform-stat-label">{s.label}</span>
+            <strong className="platform-stat-value">{s.value}</strong>
           </article>
         ))}
-        <article className="card reports-stat-card">
-          <span className="muted small reports-stat-label">Last order</span>
-          <strong className="reports-stat-value">
-            {tenant.lastOrderAt ? formatShortDateTime(tenant.lastOrderAt) : 'never'}
-          </strong>
-        </article>
       </section>
 
-      <div className="card">
-        <h2>Support access</h2>
-        <p className="muted small">
-          Opens the app as this café so you can see what they see. Read-only unless you
-          deliberately take control, limited to 30 minutes, and every session is written to
-          the trail below where the owner can see it.
-        </p>
-        <div className="row gap">
-          <button type="button" className="primary" disabled={saving} onClick={() => void openAs(false)}>
-            Open read-only
-          </button>
-          <button type="button" className="ghost danger" disabled={saving} onClick={() => void openAs(true)}>
-            Open and take control
-          </button>
-        </div>
-      </div>
+      <div className="platform-columns">
+        <div className="platform-columns-left">
+          <div className="pf-card">
+            <h2>Support access</h2>
+            <p>
+              Opens the app as this café so you can see what they see. Read-only unless you
+              deliberately take control, limited to 30 minutes, and written to the trail
+              where the owner can see it.
+            </p>
+            <div className="pf-actions">
+              <button type="button" className="primary" disabled={saving} onClick={() => void openAs(false)}>
+                Open read-only
+              </button>
+              <button type="button" className="ghost danger" disabled={saving} onClick={() => void openAs(true)}>
+                Open and take control
+              </button>
+            </div>
+          </div>
 
-      <div className="card">
-        <h2>Plan</h2>
-        <div className="row gap">
-          {['trial', 'standard', 'multi-branch'].map((p) => (
+          <div className="pf-card">
+            <h2>Plan</h2>
+            <p>What they are billed on. Changing it takes effect immediately.</p>
+            <div className="plan-picker" role="group" aria-label="Plan">
+              {['trial', 'standard', 'multi-branch'].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  aria-pressed={p === tenant.plan}
+                  disabled={saving || p === tenant.plan}
+                  onClick={() => patch({ plan: p }, `Plan changed to ${p}.`)}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={`pf-card ${suspended ? 'pf-card-suspended' : 'pf-card-danger'}`}>
+            <h2>{suspended ? 'Suspended' : 'Access'}</h2>
+            <p>
+              {suspended
+                ? 'Nobody at this café can sign in. Their data is untouched and comes back exactly as it was.'
+                : 'Suspending blocks sign-in for everyone here. Nothing is deleted, and it can be undone at any time.'}
+            </p>
             <button
-              key={p}
               type="button"
-              className={p === tenant.plan ? 'primary' : 'ghost'}
-              disabled={saving || p === tenant.plan}
-              onClick={() => patch({ plan: p }, `Plan changed to ${p}.`)}
+              className={suspended ? 'primary' : 'ghost danger'}
+              disabled={saving}
+              onClick={() => patch(
+                { status: suspended ? 'active' : 'suspended' },
+                suspended ? 'Café reactivated.' : 'Café suspended.',
+              )}
             >
-              {p}
+              {suspended ? 'Reactivate café' : 'Suspend café'}
             </button>
-          ))}
+          </div>
         </div>
-      </div>
 
-      <div className="card">
-        <h2>{suspended ? 'Suspended' : 'Active'}</h2>
-        <p className="muted small">
-          {suspended
-            ? 'Nobody at this café can sign in. Their data is untouched and comes back exactly as it was.'
-            : 'Suspending blocks sign-in for everyone here. Nothing is deleted, and it can be undone at any time.'}
-        </p>
-        <button
-          type="button"
-          className={suspended ? 'primary' : 'ghost danger'}
-          disabled={saving}
-          onClick={() => patch(
-            { status: suspended ? 'active' : 'suspended' },
-            suspended ? 'Café reactivated.' : 'Café suspended.',
+        <div className="pf-card">
+          <h2>Trail</h2>
+          <p>Every time somebody from the platform opened this café.</p>
+          {(tenant.audit ?? []).length === 0 ? (
+            <p className="pf-hint">Nobody has opened it yet.</p>
+          ) : (
+            <ul className="audit-list">
+              {tenant.audit.map((entry) => (
+                <li key={entry.id}>
+                  <span className="audit-what">{entry.detail || entry.action}</span>
+                  <span className="audit-when">{formatShortDateTime(entry.createdAt)}</span>
+                  <span className="audit-who">{entry.actorEmail}</span>
+                </li>
+              ))}
+            </ul>
           )}
-        >
-          {suspended ? 'Reactivate café' : 'Suspend café'}
-        </button>
-      </div>
-      <div className="card">
-        <h2>Trail</h2>
-        {(tenant.audit ?? []).length === 0 ? (
-          <p className="muted small">Nobody from the platform has opened this café.</p>
-        ) : (
-          <ul className="audit-list">
-            {tenant.audit.map((entry) => (
-              <li key={entry.id}>
-                <span className="muted small">{formatShortDateTime(entry.createdAt)}</span>
-                <span>{entry.detail || entry.action}</span>
-                <span className="muted small">{entry.actorEmail}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        </div>
       </div>
     </main>
   )

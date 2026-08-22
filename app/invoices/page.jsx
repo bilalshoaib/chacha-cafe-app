@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
+import { useOrders } from '@/context/OrdersContext.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import Pagination from '@/components/Pagination.jsx'
 
@@ -20,7 +21,7 @@ function OrderTypeBadge({ type }) {
     </span>
   )
 }
-import { BUSINESS_TYPES, invoiceBusinessType } from '@/constants/businessTypes.js'
+import { invoiceBusinessType } from '@/constants/businessTypes.js'
 import {
   INVOICE_PAGE_SIZE,
   INVOICE_PAGE_SIZE_OPTIONS,
@@ -34,6 +35,10 @@ import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 
 export default function InvoicesListPage() {
   const router = useRouter()
+  const { menu } = useOrders()
+  // A café with one counter has nothing to tell apart, so the filter and the
+  // per-row badge that names it both disappear.
+  const hasCounters = (menu.brands?.length ?? 0) > 1
   const [filterType, setFilterType] = useState('all')
   const [presetId, setPresetId] = useState('all')
   const [searchId, setSearchId] = useState('')
@@ -119,7 +124,7 @@ export default function InvoicesListPage() {
       <section className="card invoices-list-card">
         <h2>Invoices</h2>
         <p className="muted small invoices-list-lede">
-          Filter by date and business, or open any row for details.
+          Filter by date, or open any row for details.
         </p>
 
         <div className="invoices-search-row">
@@ -161,13 +166,18 @@ export default function InvoicesListPage() {
         ) : null}
         {rangeSummary ? <p className="muted small invoices-range-line">{rangeSummary}</p> : null}
 
-        <h3 className="sub invoices-business-heading">Business</h3>
-        <div className="invoices-filter-tabs">
-          <button type="button" className={filterType === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType('all')}>All</button>
-          {BUSINESS_TYPES.map((bt) => (
-            <button key={bt.id} type="button" className={filterType === bt.id ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType(bt.id)}>{bt.shortLabel}</button>
-          ))}
-        </div>
+        {/* Heading and all, only where the café has counters to tell apart. */}
+        {hasCounters ? (
+          <>
+            <h3 className="sub invoices-business-heading">Counter</h3>
+            <div className="invoices-filter-tabs">
+              <button type="button" className={filterType === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType('all')}>All</button>
+              {menu.brands.map((b) => (
+                <button key={b.id} type="button" className={filterType === b.slug ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType(b.slug)}>{b.name}</button>
+              ))}
+            </div>
+          </>
+        ) : null}
 
         {error ? (
           <p className="banner error" role="alert">
@@ -193,7 +203,7 @@ export default function InvoicesListPage() {
               <thead>
                   <tr>
                     <th scope="col">Order #</th>
-                    <th scope="col">Business</th>
+                    {hasCounters ? <th scope="col">Counter</th> : null}
                     <th scope="col">Invoice</th>
                     <th scope="col">Type</th>
                     <th scope="col">Date</th>
@@ -219,7 +229,7 @@ export default function InvoicesListPage() {
                     }}
                   >
                     <td className="invoices-table-shift-num">{inv.shiftNumber != null ? `#${inv.shiftNumber}` : <span className="muted">—</span>}</td>
-                    <td><BusinessTypeBadge type={invoiceBusinessType(inv)} /></td>
+                    {hasCounters ? <td><BusinessTypeBadge type={invoiceBusinessType(inv)} /></td> : null}
                     <td className="invoices-table-id">{inv.id}</td>
                     <td><OrderTypeBadge type={inv.orderType} /></td>
                     <td className="muted">{formatShortDateTime(inv.createdAt)}</td>

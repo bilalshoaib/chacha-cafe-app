@@ -5,22 +5,34 @@ import { api } from '@/api.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 
 /**
- * Every café on the platform, and how much each is being used.
+ * Every café on the platform, and how much each one is being used.
  *
- * Sorted by most recent order rather than by name, because with more than a
- * handful of customers the question is never who exists but who has stopped —
- * and a café that has gone quiet is invisible in an alphabetical list.
+ * Ordered by most recent order rather than by name. Past a handful of
+ * customers the question is never who exists but who has stopped, and the café
+ * that has gone quiet is invisible in an alphabetical list.
  */
 const WINDOWS = [
   { id: '7d', label: '7 days' },
   { id: '30d', label: '30 days' },
   { id: '90d', label: '90 days' },
-  { id: '365d', label: 'A year' },
+  { id: '365d', label: 'Year' },
 ]
 
 function daysSince(iso) {
   if (!iso) return null
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+}
+
+function Stat({ label, value, note, warn = false }) {
+  return (
+    <article className={`platform-stat${warn ? ' platform-stat-warn' : ''}`}>
+      <span className="platform-stat-label">{label}</span>
+      {Array.isArray(value)
+        ? value.map((v) => <strong key={v} className="platform-stat-value stacked">{v}</strong>)
+        : <strong className="platform-stat-value">{value}</strong>}
+      {note ? <span className="platform-stat-note">{note}</span> : null}
+    </article>
+  )
 }
 
 export default function PlatformPage() {
@@ -51,6 +63,7 @@ export default function PlatformPage() {
   }, [data, query])
 
   const totals = data?.totals
+  const takings = totals ? Object.entries(totals.revenueByCurrency) : []
 
   return (
     <main className="platform-page">
@@ -58,7 +71,7 @@ export default function PlatformPage() {
         <div>
           <h1>Cafés</h1>
           <p className="muted small">
-            Every business on the platform. Creating one sets up its branch, menu and owner account.
+            Every business on the platform. Creating one sets up its branch, its menu and its owner’s account.
           </p>
         </div>
         <Link href="/platform/tenants/new" className="primary btn-link">New café</Link>
@@ -66,78 +79,89 @@ export default function PlatformPage() {
 
       {error ? <p className="banner error" role="alert">{error}</p> : null}
 
-      <div className="window-picker" role="group" aria-label="Reporting period">
-        {WINDOWS.map((w) => (
-          <button
-            key={w.id}
-            type="button"
-            className={w.id === windowId ? 'primary sm' : 'ghost sm'}
-            onClick={() => setWindowId(w.id)}
-          >
-            {w.label}
-          </button>
-        ))}
+      <div className="platform-toolbar">
+        <div className="window-picker" role="group" aria-label="Reporting period">
+          {WINDOWS.map((w) => (
+            <button
+              key={w.id}
+              type="button"
+              aria-pressed={w.id === windowId}
+              onClick={() => setWindowId(w.id)}
+            >
+              {w.label}
+            </button>
+          ))}
+        </div>
+        <div className="platform-search">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name"
+            aria-label="Search cafés"
+          />
+        </div>
       </div>
 
       {totals ? (
         <section className="platform-stats">
-          <article className="card platform-stat">
-            <span className="muted small">Cafés</span>
-            <strong>{totals.cafeCount}</strong>
-            <span className="muted small">
-              {totals.activeCount} active · {totals.trialCount} trial · {totals.suspendedCount} suspended
-            </span>
-          </article>
-          <article className="card platform-stat">
-            <span className="muted small">Orders taken</span>
-            <strong>{totals.periodInvoices.toLocaleString()}</strong>
-            <span className="muted small">Across all cafés</span>
-          </article>
+          <Stat
+            label="Cafés"
+            value={totals.cafeCount}
+            note={`${totals.activeCount} active · ${totals.trialCount} trial · ${totals.suspendedCount} suspended`}
+          />
+          <Stat
+            label="Orders taken"
+            value={totals.periodInvoices.toLocaleString()}
+            note="Across all cafés"
+          />
           {/* Grouped by currency rather than summed. Adding rupees to pounds
-              gives a number that looks authoritative and means nothing. */}
-          <article className="card platform-stat">
-            <span className="muted small">Their takings</span>
-            {Object.keys(totals.revenueByCurrency).length === 0 ? (
-              <strong>—</strong>
-            ) : (
-              Object.entries(totals.revenueByCurrency).map(([currency, amount]) => (
-                <strong key={currency} className="stacked">
-                  {formatMoney(amount, { currency })}
-                </strong>
-              ))
-            )}
-            <span className="muted small">Excluding returns</span>
-          </article>
-          <article className={`card platform-stat${totals.quietCount > 0 ? ' platform-stat-warn' : ''}`}>
-            <span className="muted small">Gone quiet</span>
-            <strong>{totals.quietCount}</strong>
-            <span className="muted small">No orders in this period</span>
-          </article>
+              gives a figure that looks authoritative and means nothing. */}
+          <Stat
+            label="Their takings"
+            value={takings.length === 0
+              ? '—'
+              : takings.map(([currency, amount]) => formatMoney(amount, { currency }))}
+            note="Excluding returns"
+          />
+          <Stat
+            label="Gone quiet"
+            value={totals.quietCount}
+            note="No orders in this period"
+            warn={totals.quietCount > 0}
+          />
         </section>
       ) : null}
 
-      <div className="card">
-        <label className="field">
-          <span>Search</span>
-          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name or URL name" />
-        </label>
-
+      <div className="platform-table-wrap">
         {data === null ? (
-          <p className="muted">Loading cafés…</p>
+          <p className="platform-empty">Loading cafés…</p>
         ) : visible.length === 0 ? (
-          <p className="muted">{query ? 'No café matches that search.' : 'No cafés yet. Create the first one.'}</p>
+          <div className="platform-empty">
+            {query ? (
+              <>
+                <strong>Nothing matches “{query}”</strong>
+                Try part of the name or the URL name.
+              </>
+            ) : (
+              <>
+                <strong>No cafés yet</strong>
+                Create the first one and it will appear here.
+              </>
+            )}
+          </div>
         ) : (
           <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Café</th>
-                  <th>Status</th>
-                  <th className="num">Orders</th>
-                  <th className="num">Takings</th>
-                  <th className="num">Branches</th>
-                  <th className="num">Staff</th>
-                  <th>Last order</th>
+                  <th scope="col">Café</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" className="num">Orders</th>
+                  <th scope="col" className="num">Takings</th>
+                  <th scope="col" className="num">Branches</th>
+                  <th scope="col" className="num">Staff</th>
+                  <th scope="col">Last order</th>
                 </tr>
               </thead>
               <tbody>
@@ -147,18 +171,23 @@ export default function PlatformPage() {
                   return (
                     <tr key={c.id} className={quiet ? 'row-quiet' : undefined}>
                       <td>
-                        <Link href={`/platform/tenants/${c.id}`}><strong>{c.name}</strong></Link>
-                        <span className="muted small block">{c.slug}</span>
+                        <Link href={`/platform/tenants/${c.id}`} className="cafe-name">{c.name}</Link>
+                        <span className="cafe-slug block">{c.slug}</span>
                       </td>
                       <td><span className={`pill pill-${c.status}`}>{c.status}</span></td>
                       <td className="num">{c.periodInvoices.toLocaleString()}</td>
                       <td className="num">{formatMoney(c.periodRevenue, { currency: c.currency })}</td>
                       <td className="num">{c.locationCount}</td>
                       <td className="num">{c.userCount}</td>
-                      <td className="muted small">
-                        {c.lastOrderAt
-                          ? <>{formatShortDateTime(c.lastOrderAt)}{idle > 2 ? <span className="block">{idle} days ago</span> : null}</>
-                          : 'never'}
+                      <td>
+                        {c.lastOrderAt ? (
+                          <>
+                            <span className="cafe-slug block">{formatShortDateTime(c.lastOrderAt)}</span>
+                            {idle > 2 ? <span className="cell-idle block">{idle} days ago</span> : null}
+                          </>
+                        ) : (
+                          <span className="cell-idle">never</span>
+                        )}
                       </td>
                     </tr>
                   )

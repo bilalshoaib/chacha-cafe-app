@@ -2,12 +2,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/api.js'
+import { useOrders } from '@/context/OrdersContext.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
-import { BUSINESS_TYPES, expenseBusinessType } from '@/constants/businessTypes.js'
+import { expenseBusinessType } from '@/constants/businessTypes.js'
 import { EXPENSE_RANGE_PRESETS, expenseCategoryLabel, startOfMonth, toISOEnd, toISOStart } from '@/utils/expenses.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 
 export default function ExpensesListPage() {
+  const { menu } = useOrders()
+  // A café with one counter has nothing to tell apart, so the filter and the
+  // per-row badge that names it both disappear.
+  const hasCounters = (menu.brands?.length ?? 0) > 1
   const [presetId, setPresetId] = useState('this_month')
   const [filterType, setFilterType] = useState('all')
   const [fromIso, setFromIso] = useState(() => toISOStart(startOfMonth(new Date())))
@@ -57,7 +62,7 @@ export default function ExpensesListPage() {
       <div className="expenses-head">
         <div>
           <h2>Expenses</h2>
-          <p className="muted small">Operating costs by date. Filter by business, or leave it on All.</p>
+          <p className="muted small">Operating costs by date.</p>
         </div>
         <div className="expenses-head-actions row">
           <Link href="/expenses/new" className="primary sm">Add expense</Link>
@@ -73,13 +78,18 @@ export default function ExpensesListPage() {
           ))}
         </div>
         {rangeSummary ? <p className="muted small expenses-range-line">{rangeSummary}</p> : null}
-        <h3 className="sub invoices-business-heading">Business</h3>
-        <div className="invoices-filter-tabs">
-          <button type="button" className={filterType === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType('all')}>All</button>
-          {BUSINESS_TYPES.map((bt) => (
-            <button key={bt.id} type="button" className={filterType === bt.id ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType(bt.id)}>{bt.shortLabel}</button>
-          ))}
-        </div>
+        {/* Heading and all, only where the café has counters to tell apart. */}
+        {hasCounters ? (
+          <>
+            <h3 className="sub invoices-business-heading">Counter</h3>
+            <div className="invoices-filter-tabs">
+              <button type="button" className={filterType === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType('all')}>All</button>
+              {menu.brands.map((b) => (
+                <button key={b.id} type="button" className={filterType === b.slug ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType(b.slug)}>{b.name}</button>
+              ))}
+            </div>
+          </>
+        ) : null}
       </section>
 
       {error ? (
@@ -103,7 +113,7 @@ export default function ExpensesListPage() {
             <table className="invoices-table expenses-table">
               <thead>
                 <tr>
-                  <th scope="col">Business</th>
+                  {hasCounters ? <th scope="col">Counter</th> : null}
                   <th scope="col">Date</th>
                   <th scope="col">Title</th>
                   <th scope="col">Category</th>
@@ -115,7 +125,7 @@ export default function ExpensesListPage() {
               <tbody>
                 {expenses.map((row) => (
                   <tr key={row.id}>
-                    <td><BusinessTypeBadge type={expenseBusinessType(row)} /></td>
+                    {hasCounters ? <td><BusinessTypeBadge type={expenseBusinessType(row)} /></td> : null}
                     <td className="muted">{formatShortDateTime(row.spentAt || row.createdAt)}</td>
                     <td><Link href={`/expenses/${row.id}`} className="team-row-link">{row.title}</Link></td>
                     <td>{expenseCategoryLabel(row.category)}</td>

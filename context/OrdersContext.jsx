@@ -62,7 +62,7 @@ function buildDealLine(deal, qty, discounts = {}) {
 export function OrdersProvider({ children }) {
   const router = useRouter()
   const { authenticated, user } = useAuth()
-  const [menu, setMenu] = useState({ items: [], deals: [], categories: [] })
+  const [menu, setMenu] = useState({ items: [], deals: [], categories: [], brands: [] })
   const [orders, setOrders] = useState([])
   const [activeOrderId, setActiveOrderId] = useState(null)
   const [error, setError] = useState('')

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useBranding } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
-import { BUSINESS_TYPES, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
+import { dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, formatItemExtras, formatMoney, categoryIcon, categoryColor } from '@/utils/formatting.js'
 
 const SHOP_PHONE = '0315-9988295'
@@ -44,6 +44,8 @@ function buildMenuBoardSections(items, business, categories) {
 export default function MenuBoardPage() {
   const branding = useBranding()
   const { menu, loading } = useOrders()
+  // More than one counter is the only reason to show a counter filter at all.
+  const hasCounters = (menu.brands?.length ?? 0) > 1
   const toast = useToast()
   const boardRef = useRef(null)
   const [business, setBusiness] = useState('all')
@@ -107,21 +109,26 @@ export default function MenuBoardPage() {
 
       <main className="menu-board-page">
         <section className="card menu-board-toolbar">
-          <div className="invoices-filter-tabs">
-            <button type="button" className={business === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setBusiness('all')}>
-              All
-            </button>
-            {BUSINESS_TYPES.map((bt) => (
-              <button
-                key={bt.id}
-                type="button"
-                className={business === bt.id ? 'primary sm' : 'ghost sm'}
-                onClick={() => setBusiness(bt.id)}
-              >
-                {bt.shortLabel}
+          {/* The whole strip disappears for a café with one counter: there is
+              nothing to filter between, and "All / <its own name>" would be
+              Chacha's shape showing through somebody else's board. */}
+          {hasCounters ? (
+            <div className="invoices-filter-tabs">
+              <button type="button" className={business === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setBusiness('all')}>
+                All
               </button>
-            ))}
-          </div>
+              {menu.brands.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  className={business === b.slug ? 'primary sm' : 'ghost sm'}
+                  onClick={() => setBusiness(b.slug)}
+                >
+                  {b.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <button
             type="button"
             className="primary sm"

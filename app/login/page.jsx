@@ -31,7 +31,13 @@ export default function LoginPage() {
       const { user } = await login(email, password)
       // Somebody who runs the platform rather than a café lands on the café
       // list; there is no till for them to stand at.
-      router.push(user?.platformOwner && !user?.tenantId ? '/platform' : '/orders')
+      const destination = user?.platformOwner && !user?.tenantId ? '/platform' : '/orders'
+      router.push(destination)
+      // The root layout resolves the café's name and colours on the server, and
+      // a client-side navigation keeps the instance rendered for the sign-in
+      // page — where there was no session and so no café. Without this the
+      // header shows the product's own name until the next full reload.
+      router.refresh()
     } catch (err) {
       setError(err.message || 'Could not sign in')
     } finally {
