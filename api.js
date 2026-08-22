@@ -57,6 +57,7 @@ export const api = {
   listUsers: () => request('/api/auth/users'),
   // Platform console — creating and governing cafés, not configuring them.
   listTenants: () => request('/api/platform/tenants'),
+  platformActivity: (window = '30d') => request(`/api/platform/activity?window=${window}`),
   createTenant: (body) => request('/api/platform/tenants', { method: 'POST', body: JSON.stringify(body) }),
   getTenant: (id) => request(`/api/platform/tenants/${encodeURIComponent(id)}`),
   impersonate: (id, control = false) =>

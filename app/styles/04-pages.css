@@ -1323,3 +1323,31 @@ a.danger-ghost:hover {
   .handover { grid-template-columns: 1fr; gap: 0.15rem 0; }
   .handover dd { margin-bottom: 0.6rem; }
 }
+
+/* Reporting period for the café list. */
+.window-picker { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.platform-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+.platform-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+}
+.platform-stat strong {
+  font-size: 1.45rem;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+/* Several currencies stack rather than sitting on one line, so it stays
+   obvious that they are separate figures and not parts of a total. */
+.platform-stat strong.stacked { font-size: 1.15rem; }
+
+/* A café that has stopped taking orders is the one worth a phone call, so it
+   is marked in the tile and again on its row. */
+.platform-stat-warn { border-left: 3px solid #9a6a05; }
+.row-quiet td:first-child { box-shadow: inset 3px 0 0 #9a6a05; }
