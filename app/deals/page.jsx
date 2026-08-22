@@ -12,7 +12,7 @@ import { dealMatchesQuery } from '@/utils/dealSearch.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
-function buildDealCategorySections(menuItems, business) {
+function buildDealCategorySections(menuItems, business, categories) {
   const byCat = new Map()
   for (const item of menuItems) {
     if (business !== 'combined' && !itemMatchesBusiness(item, business)) continue
@@ -23,7 +23,7 @@ function buildDealCategorySections(menuItems, business) {
   for (const list of byCat.values()) {
     list.sort((a, b) => a.name.localeCompare(b.name))
   }
-  const tabs = buildCategoryTabs([...byCat.values()].flat())
+  const tabs = buildCategoryTabs([...byCat.values()].flat(), categories)
   return tabs
     .map(({ key, label }) => {
       const items = byCat.get(key)
@@ -105,8 +105,8 @@ export default function DealsPage() {
   )
   const searching = search.trim().length > 0
 
-  const createCategorySections = useMemo(() => buildDealCategorySections(menu.items, dealBusiness), [menu.items, dealBusiness])
-  const editCategorySections = useMemo(() => buildDealCategorySections(menu.items, editBusiness), [menu.items, editBusiness])
+  const createCategorySections = useMemo(() => buildDealCategorySections(menu.items, dealBusiness, menu.categories), [menu.items, dealBusiness, menu.categories])
+  const editCategorySections = useMemo(() => buildDealCategorySections(menu.items, editBusiness, menu.categories), [menu.items, editBusiness, menu.categories])
 
   function openAddDialog() {
     setCreateError('')

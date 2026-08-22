@@ -47,7 +47,7 @@ export default function MenuItemsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [businessFilter, setBusinessFilter] = useState('all')
 
-  const categoryTabs = useMemo(() => buildCategoryTabs(menu.items), [menu.items])
+  const categoryTabs = useMemo(() => buildCategoryTabs(menu.items, menu.categories), [menu.items, menu.categories])
 
   useEffect(() => {
     const valid = new Set(menu.items.map((i) => i.id))

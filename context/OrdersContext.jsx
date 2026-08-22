@@ -62,7 +62,7 @@ function buildDealLine(deal, qty, discounts = {}) {
 export function OrdersProvider({ children }) {
   const router = useRouter()
   const { authenticated } = useAuth()
-  const [menu, setMenu] = useState({ items: [], deals: [] })
+  const [menu, setMenu] = useState({ items: [], deals: [], categories: [] })
   const [orders, setOrders] = useState([])
   const [activeOrderId, setActiveOrderId] = useState(null)
   const [error, setError] = useState('')
@@ -92,7 +92,7 @@ export function OrdersProvider({ children }) {
     }
   }, [authenticated, refreshAll])
 
-  const categoryTabs = useMemo(() => buildCategoryTabs(menu.items), [menu.items])
+  const categoryTabs = useMemo(() => buildCategoryTabs(menu.items, menu.categories), [menu.items, menu.categories])
 
   const activeOrder = useMemo(
     () => orders.find((o) => o.id === activeOrderId) || null,
@@ -109,7 +109,7 @@ export function OrdersProvider({ children }) {
     return menu.deals.filter((d) => d.status !== 'archived')
   }, [menu.deals, activeOrderId])
 
-  const orderCategoryTabs = useMemo(() => buildCategoryTabs(orderMenuItems), [orderMenuItems])
+  const orderCategoryTabs = useMemo(() => buildCategoryTabs(orderMenuItems, menu.categories), [orderMenuItems, menu.categories])
 
   const orderTotal = useMemo(() => {
     if (!activeOrder?.lines?.length) return 0

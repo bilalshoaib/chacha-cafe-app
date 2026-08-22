@@ -5,7 +5,7 @@ import { useOrders } from '@/context/OrdersContext.jsx'
 import { useBranding } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { BUSINESS_TYPES, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
-import { buildCategoryTabs, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { buildCategoryTabs, formatItemExtras, formatMoney, categoryIcon, categoryColor } from '@/utils/formatting.js'
 
 const SHOP_PHONE = '0315-9988295'
 
@@ -41,13 +41,9 @@ const DEAL_COLORS = ['#c42626', '#8a1f1f', '#c45c26', '#a01f3a', '#c42626', '#8a
 
 const DEAL_PHOTOS = ['/menu-board/pizza-photo.png', '/menu-board/burger-photo.png', '/menu-board/wings-photo.png', '/menu-board/drinks-photo.png']
 
-function categoryIcon(key) {
-  return CATEGORY_ICONS[key] || '🍽️'
-}
 
-function categoryColor(key) {
-  return CATEGORY_COLORS[key] || CATEGORY_COLORS.other
-}
+
+
 
 function dealPhoto(deal, index) {
   const name = (deal.name || '').toLowerCase()
@@ -58,7 +54,7 @@ function dealPhoto(deal, index) {
   return DEAL_PHOTOS[index % DEAL_PHOTOS.length]
 }
 
-function buildMenuBoardSections(items, business) {
+function buildMenuBoardSections(items, business, categories) {
   const byCat = new Map()
   for (const item of items) {
     if (business !== 'all' && !itemMatchesBusiness(item, business)) continue
@@ -67,7 +63,7 @@ function buildMenuBoardSections(items, business) {
     byCat.get(k).push(item)
   }
   for (const list of byCat.values()) list.sort((a, b) => a.name.localeCompare(b.name))
-  const tabs = buildCategoryTabs([...byCat.values()].flat())
+  const tabs = buildCategoryTabs([...byCat.values()].flat(), categories)
   return tabs
     .map(({ key, label }) => ({ key, label, items: byCat.get(key) || [] }))
     .filter((section) => section.items.length > 0)
@@ -81,7 +77,7 @@ export default function MenuBoardPage() {
   const [business, setBusiness] = useState('all')
   const [downloading, setDownloading] = useState(false)
 
-  const sections = useMemo(() => buildMenuBoardSections(menu.items, business), [menu.items, business])
+  const sections = useMemo(() => buildMenuBoardSections(menu.items, business, menu.categories), [menu.items, business])
   const itemById = useMemo(() => new Map(menu.items.map((i) => [i.id, i])), [menu.items])
 
   const activeDeals = useMemo(() => menu.deals.filter((d) => d.status !== 'archived'), [menu.deals])
@@ -195,8 +191,8 @@ export default function MenuBoardPage() {
                 <div className="menu-board-sections">
                   {sections.map((section) => (
                     <div key={section.key} className="menu-board-section">
-                      <div className="menu-board-section-head" style={{ background: categoryColor(section.key) }}>
-                        <span className="menu-board-section-icon" aria-hidden="true">{categoryIcon(section.key)}</span>
+                      <div className="menu-board-section-head" style={{ background: categoryColor(section.key, menu.categories) }}>
+                        <span className="menu-board-section-icon" aria-hidden="true">{categoryIcon(section.key, menu.categories)}</span>
                         <span className="menu-board-section-title">{section.label}</span>
                       </div>
                       <ul className="menu-board-item-list">

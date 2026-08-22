@@ -51,6 +51,15 @@ test('the original menu is not mutated', () => {
 })
 
 test('empty and missing input do not throw', () => {
-  assert.deepEqual(toPublicMenu({}), { items: [], deals: [] })
-  assert.deepEqual(toPublicMenu(undefined), { items: [], deals: [] })
+  assert.deepEqual(toPublicMenu({}), { categories: [], items: [], deals: [] })
+  assert.deepEqual(toPublicMenu(undefined), { categories: [], items: [], deals: [] })
+})
+
+test('categories travel with the public menu', () => {
+  // A customer-facing menu needs the café's own section names, icons and
+  // colours — they say nothing about what anything costs the business.
+  const withCategories = { ...menu, categories: [{ key: 'pizza', label: 'Pizzas', icon: '🍕', color: '#8a1f1f' }] }
+  assert.deepEqual(toPublicMenu(withCategories).categories, [
+    { key: 'pizza', label: 'Pizzas', icon: '🍕', color: '#8a1f1f' },
+  ])
 })

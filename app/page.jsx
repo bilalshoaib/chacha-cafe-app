@@ -38,7 +38,7 @@ export default function HomePage() {
       byCat.get(k).push(item)
     }
     for (const list of byCat.values()) list.sort((a, b) => a.name.localeCompare(b.name))
-    const tabs = buildCategoryTabs(menu.items)
+    const tabs = buildCategoryTabs(menu.items, menu.categories)
     return tabs.map(({ key, label }) => {
       const items = byCat.get(key)
       return items?.length ? { key, label, items } : null
