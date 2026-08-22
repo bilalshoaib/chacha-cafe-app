@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useBranding } from '@/context/BrandingContext.jsx'
 import { OrdersProvider } from '@/context/OrdersContext.jsx'
+import ImpersonationBanner from '@/components/ImpersonationBanner.jsx'
 import { ADD_MENU_ITEM_HASH } from '@/constants/categories.js'
 
 function NavLink({ href, children, className, onClick, end = false }) {
@@ -147,6 +148,7 @@ export default function AppShell({ children }) {
   return (
     <OrdersProvider>
       <div className="app">
+        <ImpersonationBanner />
         <AppNav user={user} onLogout={() => void handleLogout()} />
         {children}
         {pathname !== '/' ? (

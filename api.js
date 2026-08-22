@@ -59,6 +59,13 @@ export const api = {
   listTenants: () => request('/api/platform/tenants'),
   createTenant: (body) => request('/api/platform/tenants', { method: 'POST', body: JSON.stringify(body) }),
   getTenant: (id) => request(`/api/platform/tenants/${encodeURIComponent(id)}`),
+  impersonate: (id, control = false) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}/impersonate`, {
+      method: 'POST', body: JSON.stringify({ control }),
+    }),
+  stopImpersonating: (id) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}/impersonate`, { method: 'DELETE' }),
+  impersonationStatus: () => request('/api/platform/impersonation'),
   updateTenant: (id, body) =>
     request(`/api/platform/tenants/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   getUser: (userId) => request(`/api/auth/users/${encodeURIComponent(userId)}`),

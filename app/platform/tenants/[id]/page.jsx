@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/api.js'
+import { useRouter } from 'next/navigation'
 import { formatShortDateTime } from '@/utils/formatting.js'
 
 /**
@@ -16,6 +17,7 @@ import { formatShortDateTime } from '@/utils/formatting.js'
  */
 export default function TenantDetailPage() {
   const { id } = useParams()
+  const router = useRouter()
   const [tenant, setTenant] = useState(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -50,6 +52,16 @@ export default function TenantDetailPage() {
   if (!tenant) return <main className="platform-page"><p className="muted">Loading…</p></main>
 
   const suspended = tenant.status === 'suspended'
+
+  async function openAs(control) {
+    setError('')
+    try {
+      await api.impersonate(id, control)
+      router.push('/')
+    } catch (e) {
+      setError(e.message || 'Could not open this café.')
+    }
+  }
 
   return (
     <main className="platform-page">
@@ -90,6 +102,23 @@ export default function TenantDetailPage() {
       </section>
 
       <div className="card">
+        <h2>Support access</h2>
+        <p className="muted small">
+          Opens the app as this café so you can see what they see. Read-only unless you
+          deliberately take control, limited to 30 minutes, and every session is written to
+          the trail below where the owner can see it.
+        </p>
+        <div className="row gap">
+          <button type="button" className="primary" disabled={saving} onClick={() => void openAs(false)}>
+            Open read-only
+          </button>
+          <button type="button" className="ghost danger" disabled={saving} onClick={() => void openAs(true)}>
+            Open and take control
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
         <h2>Plan</h2>
         <div className="row gap">
           {['trial', 'standard', 'multi-branch'].map((p) => (
@@ -124,6 +153,22 @@ export default function TenantDetailPage() {
         >
           {suspended ? 'Reactivate café' : 'Suspend café'}
         </button>
+      </div>
+      <div className="card">
+        <h2>Trail</h2>
+        {(tenant.audit ?? []).length === 0 ? (
+          <p className="muted small">Nobody from the platform has opened this café.</p>
+        ) : (
+          <ul className="audit-list">
+            {tenant.audit.map((entry) => (
+              <li key={entry.id}>
+                <span className="muted small">{formatShortDateTime(entry.createdAt)}</span>
+                <span>{entry.detail || entry.action}</span>
+                <span className="muted small">{entry.actorEmail}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </main>
   )

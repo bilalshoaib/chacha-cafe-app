@@ -2509,3 +2509,58 @@ button.link-add-menu-item {
   justify-content: flex-end;
 }
 
+
+/* ── Impersonation banner ──────────────────────────────────────────────────
+   Deliberately loud and deliberately not dismissible. It marks a session where
+   one person is looking at another business's books, and the risk it guards
+   against is forgetting that. Read-only is the calmer amber; having taken
+   control is the red one. */
+.impersonation-banner {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 1rem;
+  background: #7a5b00;
+  color: #fff;
+  font-size: 0.88rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.25);
+}
+.impersonation-banner.impersonation-control { background: #8a2011; }
+.impersonation-text { flex: 1 1 auto; }
+.impersonation-mode { opacity: 0.85; }
+.impersonation-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.impersonation-exit {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  padding: 0.25rem 0.8rem;
+  font: inherit;
+  cursor: pointer;
+}
+.impersonation-exit:hover { background: rgba(255, 255, 255, 0.28); }
+
+/* The support trail on a café's page. One line per entry: when, what, who —
+   in that order, because the question is almost always "what happened
+   recently" rather than "what has this person done". */
+.audit-list { list-style: none; margin: 0; padding: 0; }
+.audit-list li {
+  display: grid;
+  grid-template-columns: minmax(9rem, auto) 1fr minmax(8rem, auto);
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  align-items: baseline;
+}
+.audit-list li:last-child { border-bottom: 0; }
+@media (max-width: 640px) {
+  .audit-list li { grid-template-columns: 1fr; gap: 0.15rem; }
+}
