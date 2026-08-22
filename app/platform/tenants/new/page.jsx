@@ -78,13 +78,10 @@ export default function NewTenantPage() {
 
   return (
     <main className="platform-page">
-      <div className="page-hero">
-        <div className="page-hero-body">
-          <div className="page-hero-icon">🏢</div>
-          <div>
-            <h1>New café</h1>
-            <p className="muted small">Sets up the business, its first branch, its menu categories and the owner’s account.</p>
-          </div>
+      <div className="platform-head">
+        <div>
+          <h1>New café</h1>
+          <p className="muted small">Sets up the business, its first branch, its menu categories and the owner’s account.</p>
         </div>
       </div>
 

@@ -38,15 +38,12 @@ export default function PlatformPage() {
 
   return (
     <main className="platform-page">
-      <div className="page-hero">
-        <div className="page-hero-body">
-          <div className="page-hero-icon">🏢</div>
-          <div>
-            <h1>Cafés</h1>
-            <p className="muted small">
+      <div className="platform-head">
+        <div>
+          <h1>Cafés</h1>
+          <p className="muted small">
               Every business on the platform. Creating one sets up its branch, menu and owner account.
             </p>
-          </div>
         </div>
         <Link href="/platform/tenants/new" className="primary btn-link">New café</Link>
       </div>

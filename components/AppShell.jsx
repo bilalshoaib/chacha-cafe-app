@@ -24,6 +24,35 @@ function NavLink({ href, children, className, onClick, end = false }) {
   )
 }
 
+/**
+ * The navigation for somebody who runs the platform rather than a café.
+ *
+ * The till's tabs — Take order, Create deal, Menu items — are not merely
+ * useless here, they are unreachable: every one of those screens needs a
+ * tenant, and middleware sends this account back to the café list. Showing
+ * them offered seven links that all bounce.
+ */
+function PlatformNav({ onLogout }) {
+  const branding = useBranding()
+  return (
+    <header className="top">
+      <div className="brand">
+        <span className="brand-mark" aria-hidden="true" />
+        <div>
+          <h1>{branding?.name}</h1>
+          <p className="tagline">Platform administration</p>
+        </div>
+      </div>
+      <div className="top-header-right">
+        <nav className="tabs" aria-label="Main">
+          <NavLink href="/platform" end>Cafés</NavLink>
+        </nav>
+        <button type="button" className="ghost sm header-logout" onClick={onLogout}>Log out</button>
+      </div>
+    </header>
+  )
+}
+
 function AppNav({ user, onLogout }) {
   const branding = useBranding()
   const pathname = usePathname()
@@ -142,6 +171,20 @@ export default function AppShell({ children }) {
       <OrdersProvider>
         {isHome ? children : <div className="app">{children}</div>}
       </OrdersProvider>
+    )
+  }
+
+  // No café of their own and none opened: the platform's own chrome. Opening a
+  // café gives the session a tenant, and everything below renders as usual.
+  const runningPlatform = user?.platformOwner && !user?.effectiveTenantId
+
+  if (runningPlatform) {
+    return (
+      <div className="app">
+        <ImpersonationBanner />
+        <PlatformNav onLogout={() => void handleLogout()} />
+        {children}
+      </div>
     )
   }
 

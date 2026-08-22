@@ -88,7 +88,7 @@ export function OrdersProvider({ children }) {
   // one by opening a support session. Asking for a menu before then would get
   // a 401, which the client reads as a dead session and signs them straight
   // back out — so it does not ask.
-  const hasTenant = Boolean(user?.tenantId)
+  const hasTenant = Boolean(user?.effectiveTenantId ?? user?.tenantId)
 
   useEffect(() => {
     if (authenticated && hasTenant) {

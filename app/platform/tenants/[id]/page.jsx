@@ -65,15 +65,12 @@ export default function TenantDetailPage() {
 
   return (
     <main className="platform-page">
-      <div className="page-hero">
-        <div className="page-hero-body">
-          <div className="page-hero-icon">🏢</div>
-          <div>
-            <h1>{tenant.name}</h1>
-            <p className="muted small">
+      <div className="platform-head">
+        <div>
+          <h1>{tenant.name}</h1>
+          <p className="muted small">
               {tenant.slug} · created {formatShortDateTime(tenant.createdAt)}
             </p>
-          </div>
         </div>
         <Link href="/platform" className="ghost btn-link">All cafés</Link>
       </div>
