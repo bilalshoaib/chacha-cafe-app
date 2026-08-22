@@ -16,6 +16,19 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
   }
 
+  // A suspended café cannot sign in. Checked here rather than in middleware
+  // because it must apply at the moment credentials are accepted, not merely
+  // when a page is requested — and it is the same check for every route.
+  if (user.tenantId) {
+    const { isTenantActive } = await import('@/lib/repositories/tenantsRepository')
+    if (!(await isTenantActive(user.tenantId))) {
+      return NextResponse.json(
+        { error: 'This account is currently suspended. Please contact support.' },
+        { status: 403 },
+      )
+    }
+  }
+
   const session = await getSession()
   session.userId = user.id
   session.email = user.email

@@ -58,6 +58,7 @@ function AppNav({ user, onLogout }) {
             {user?.role === 'super_admin' ? (
               <NavLink href="/settings/reports">Reports</NavLink>
             ) : null}
+            {user?.platformOwner ? <NavLink href="/platform">Cafés</NavLink> : null}
           </nav>
           <button type="button" className="ghost sm header-logout" onClick={onLogout}>
             Log out
@@ -103,6 +104,7 @@ function AppNav({ user, onLogout }) {
           {user?.role === 'super_admin' ? (
             <NavLink href="/settings/reports" onClick={closeNav}>Reports</NavLink>
           ) : null}
+          {user?.platformOwner ? <NavLink href="/platform" onClick={closeNav}>Cafés</NavLink> : null}
         </div>
         <div className="mobile-nav-footer">
           <button type="button" className="mobile-nav-logout" onClick={() => { closeNav(); onLogout() }}>

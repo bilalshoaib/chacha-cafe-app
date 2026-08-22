@@ -12,6 +12,15 @@ const sessionOptions = {
 /** Paths that are accessible without being logged in. */
 const PUBLIC_PATHS = ['/', '/login']
 
+/**
+ * The platform console. Guarded here only to keep the page from rendering for
+ * the wrong person; the real check is requirePlatformOwner() in each route,
+ * which reads the flag from the database rather than the cookie.
+ */
+function isPlatformPath(pathname) {
+  return pathname === '/platform' || pathname.startsWith('/platform/')
+}
+
 /** Paths that require super_admin role. */
 function isSuperAdminPath(pathname) {
   return pathname.startsWith('/settings/team') || pathname.startsWith('/settings/reports')
@@ -43,6 +52,10 @@ export async function middleware(request) {
 
   if (!isPublic && !session.userId) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  if (session.userId && isPlatformPath(pathname) && !session.platformOwner) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   if (session.userId && isSuperAdminPath(pathname) && session.role !== 'super_admin') {

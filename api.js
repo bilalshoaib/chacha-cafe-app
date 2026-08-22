@@ -55,6 +55,12 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
   listUsers: () => request('/api/auth/users'),
+  // Platform console — creating and governing cafés, not configuring them.
+  listTenants: () => request('/api/platform/tenants'),
+  createTenant: (body) => request('/api/platform/tenants', { method: 'POST', body: JSON.stringify(body) }),
+  getTenant: (id) => request(`/api/platform/tenants/${encodeURIComponent(id)}`),
+  updateTenant: (id, body) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   getUser: (userId) => request(`/api/auth/users/${encodeURIComponent(userId)}`),
   createUser: (body) => request('/api/auth/users', { method: 'POST', body: JSON.stringify(body) }),
   updateUser: (userId, body) =>
