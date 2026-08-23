@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import './globals.css'
 import { AuthProvider } from '@/context/AuthContext.jsx'
 import { ToastProvider } from '@/context/ToastContext.jsx'
@@ -34,17 +35,26 @@ export async function generateViewport() {
  * Resolves the café to present. A signed-out visitor has no tenant to read, so
  * they get the product's defaults — which is also what the single-tenant
  * install renders, unchanged.
+ *
+ * Wrapped in cache() because three things need the answer on every request —
+ * the tab title, the theme colour and the page itself — and without it each
+ * one asked the database separately. Over a connection outside Neon's region
+ * that was most of a second spent three times over to render one page.
  */
-async function loadBranding() {
+const loadBranding = cache(async () => {
   try {
     const session = await getSession()
-    return await getTenantBranding(session?.tenantId)
+    // While a support session is open the app is showing that café, so it
+    // should be wearing that café's name and colours rather than the platform
+    // owner's own — which is none.
+    const tenantId = session?.impersonatedTenantId || session?.tenantId
+    return await getTenantBranding(tenantId)
   } catch {
     // A layout that cannot reach the database must still render the login
     // page, so branding failure falls back rather than throwing.
     return DEFAULT_BRANDING
   }
-}
+})
 
 export default async function RootLayout({ children }) {
   const branding = await loadBranding()

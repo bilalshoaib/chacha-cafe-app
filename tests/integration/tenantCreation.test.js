@@ -136,3 +136,27 @@ test('slugify makes a URL name out of anything typed', () => {
   assert.equal(slugify('  Café  Del  Mar  '), 'caf-del-mar')
   assert.equal(slugify('---'), '')
 })
+
+test('a new owner password can be issued, and the old one stops working', async () => {
+  const { tenant, owner } = await makeCafe()
+  const { resetOwnerPassword } = await import('../../lib/repositories/tenantsRepository.js')
+
+  const before = await getUserByEmail(owner.email)
+  assert.ok(await verifyPassword(owner.temporaryPassword, before.passwordHash))
+
+  const reset = await resetOwnerPassword(tenant.id)
+  assert.ok(!reset.error, reset.error)
+  assert.equal(reset.owner.email, owner.email, 'it finds the tenant_owner, not just any account')
+  assert.notEqual(reset.owner.temporaryPassword, owner.temporaryPassword)
+
+  const after = await getUserByEmail(owner.email)
+  assert.ok(await verifyPassword(reset.owner.temporaryPassword, after.passwordHash), 'the new one works')
+  assert.equal(await verifyPassword(owner.temporaryPassword, after.passwordHash), false,
+    'and the one it replaced does not')
+})
+
+test('resetting a café with no owner reports it rather than throwing', async () => {
+  const { resetOwnerPassword } = await import('../../lib/repositories/tenantsRepository.js')
+  const result = await resetOwnerPassword('t-does-not-exist')
+  assert.match(result.error ?? '', /no owner account/)
+})

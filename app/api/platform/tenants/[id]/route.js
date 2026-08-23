@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requirePlatformOwner } from '@/lib/session'
-import { getTenant, updateTenant } from '@/lib/repositories/tenantsRepository'
+import { getTenant, updateTenant, getTenantOwner } from '@/lib/repositories/tenantsRepository'
 import { listAuditForTenant } from '@/lib/audit'
 
 export async function GET(_request, { params }) {
@@ -11,7 +11,11 @@ export async function GET(_request, { params }) {
   if (!tenant) return NextResponse.json({ error: 'Café not found.' }, { status: 404 })
   // The trail travels with the café: what was done to it belongs beside what
   // it is, not on a separate screen nobody thinks to open.
-  return NextResponse.json({ ...tenant, audit: await listAuditForTenant(id) })
+  return NextResponse.json({
+    ...tenant,
+    ownerEmail: await getTenantOwner(id),
+    audit: await listAuditForTenant(id),
+  })
 }
 
 export async function PATCH(request, { params }) {

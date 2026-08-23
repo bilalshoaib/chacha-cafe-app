@@ -57,7 +57,11 @@ export async function GET() {
   return new Response(svg, {
     headers: {
       'Content-Type': 'image/svg+xml',
-      'Cache-Control': 'private, max-age=0, must-revalidate',
+      // Private, because one café's mark must never be served to another from
+      // a shared cache. Held briefly all the same: the browser asks for this
+      // on every navigation, and each miss was a session read and a query for
+      // a mark that changes about never.
+      'Cache-Control': 'private, max-age=300',
     },
   })
 }

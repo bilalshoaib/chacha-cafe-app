@@ -67,6 +67,8 @@ export const api = {
   stopImpersonating: (id) =>
     request(`/api/platform/tenants/${encodeURIComponent(id)}/impersonate`, { method: 'DELETE' }),
   impersonationStatus: () => request('/api/platform/impersonation'),
+  resetOwnerPassword: (id) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}/owner-password`, { method: 'POST' }),
   updateTenant: (id, body) =>
     request(`/api/platform/tenants/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   getUser: (userId) => request(`/api/auth/users/${encodeURIComponent(userId)}`),

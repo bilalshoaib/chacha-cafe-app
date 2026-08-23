@@ -21,6 +21,9 @@ export default function TenantDetailPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
+  // Held in state rather than refetched: it is returned once and never stored
+  // in a readable form, so leaving the page is what loses it.
+  const [issued, setIssued] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -43,6 +46,20 @@ export default function TenantDetailPage() {
       setMessage(note)
     } catch (e) {
       setError(e.message || 'Could not save.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function resetPassword() {
+    setError(''); setMessage(''); setSaving(true)
+    try {
+      const res = await api.resetOwnerPassword(id)
+      setIssued(res.owner)
+      // Refresh so the reset appears in the trail beside it.
+      setTenant(await api.getTenant(id))
+    } catch (e) {
+      setError(e.message || 'Could not issue a password.')
     } finally {
       setSaving(false)
     }
@@ -117,6 +134,30 @@ export default function TenantDetailPage() {
                 Open and take control
               </button>
             </div>
+          </div>
+
+          <div className="pf-card">
+            <h2>Owner sign-in</h2>
+            <p>
+              {tenant.ownerEmail
+                ? <>Their account is <code>{tenant.ownerEmail}</code>. The stored password is a hash and cannot be read back, so the way to get one is to issue a new one — the same thing that happens when a customer forgets theirs. It appears here once and is written to the trail.</>
+                : 'This café has no owner account.'}
+            </p>
+            {issued ? (
+              <dl className="handover">
+                <dt>Sign in with</dt>
+                <dd><code>{issued.email}</code></dd>
+                <dt>New password</dt>
+                <dd><code className="handover-password">{issued.temporaryPassword}</code></dd>
+              </dl>
+            ) : null}
+            {tenant.ownerEmail ? (
+              <div className="pf-actions">
+                <button type="button" className="ghost" disabled={saving} onClick={() => void resetPassword()}>
+                  {issued ? 'Issue another' : 'Issue a new password'}
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div className="pf-card">
