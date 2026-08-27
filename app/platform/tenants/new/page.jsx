@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { PendingLink } from '@/components/NavPending.jsx'
 import { api } from '@/api.js'
 import { STARTER_MENUS } from '@/constants/starterMenus.js'
 import BrandingFields, { DEFAULT_BRANDING_FORM, LogoPicker } from '@/components/BrandingFields.jsx'
@@ -105,7 +105,7 @@ export default function NewTenantPage() {
           ) : null}
           <p>They should change it from Settings once they have signed in.</p>
           <div className="pf-actions">
-            <Link href={`/platform/tenants/${created.tenant.id}`} className="primary btn-link">Open café</Link>
+            <PendingLink href={`/platform/tenants/${created.tenant.id}`} className="primary btn-link">Open café</PendingLink>
             <button type="button" className="ghost" onClick={() => router.push('/platform')}>All cafés</button>
           </div>
         </div>
@@ -117,7 +117,7 @@ export default function NewTenantPage() {
     <main className="platform-page">
       <div className="platform-head">
         <div>
-          <Link href="/platform" className="platform-back">← All cafés</Link>
+          <PendingLink href="/platform" className="platform-back">← All cafés</PendingLink>
           <h1>New café</h1>
           <p className="muted small">
             Sets up the business, its first branch, its menu categories and the owner’s account.
@@ -266,7 +266,7 @@ export default function NewTenantPage() {
           <button type="submit" className="primary" disabled={saving}>
             {saving ? 'Creating…' : 'Create café'}
           </button>
-          <Link href="/platform" className="ghost btn-link">Cancel</Link>
+          <PendingLink href="/platform" className="ghost btn-link">Cancel</PendingLink>
         </div>
       </form>
     </main>

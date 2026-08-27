@@ -8,6 +8,7 @@ import ItemBreakdownPicker from '@/components/ItemBreakdownPicker.jsx'
 import { expenseCategoryLabel } from '@/utils/expenses.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 import {
+import { SkeletonTable } from '@/components/Skeleton.jsx'
   tradingDay,
   tradingDayRange,
   tradingDayShortLabel,
@@ -646,7 +647,23 @@ export default function ReportsWorkbench({
       {tab === 'invoices' ? (
         <section className="card reports-table-card">
           <h3 className="sub">Invoices in range{invoiceData ? ` (${invoiceData.pagination.total})` : ''}</h3>
-          {loading && !invoiceData ? <p className="muted">Loading…</p> : !invoiceData || invoiceData.invoices.length === 0 ? (
+          {loading && !invoiceData ? (
+            <SkeletonTable
+              label="Loading invoices…"
+              rows={5}
+              tableClassName="staff-accounts-table reports-invoice-table"
+              columns={[
+                { key: 'business', label: 'Business' },
+                { key: 'invoice', label: 'Invoice' },
+                { key: 'issued', label: 'Issued' },
+                { key: 'ordertype', label: 'Order type' },
+                { key: 'total', label: 'Total', num: true },
+                { key: 'delivery', label: 'Delivery', num: true },
+                { key: 'status', label: 'Status' },
+                { key: 'payment', label: 'Payment' },
+              ]}
+            />
+          ) : !invoiceData || invoiceData.invoices.length === 0 ? (
             <p className="muted">No invoices match the selected filters.</p>
           ) : (
             <>
@@ -798,7 +815,22 @@ export default function ReportsWorkbench({
             </div>
           ) : null}
 
-          {loading && !sellers ? <p className="muted">Loading…</p> : !sellers || sellers.length === 0 ? (
+          {loading && !sellers ? (
+            <SkeletonTable
+              label="Loading best sellers…"
+              rows={5}
+              tableClassName="staff-accounts-table reports-invoice-table"
+              columns={[
+                { key: 'rank', label: '#', num: true },
+                { key: 'label', label: 'Item / Deal' },
+                { key: 'type', label: 'Type' },
+                { key: 'qty', label: 'Qty sold', num: true },
+                { key: 'revenue', label: 'Revenue', num: true },
+                { key: 'profit', label: 'Profit', num: true },
+                { key: 'orders', label: 'Orders', num: true },
+              ]}
+            />
+          ) : !sellers || sellers.length === 0 ? (
             <p className="muted">No sales in this period.</p>
           ) : (
             <div className="table-scroll">
@@ -830,7 +862,21 @@ export default function ReportsWorkbench({
       {tab === 'expenses' ? (
         <section className="card reports-table-card">
           <h3 className="sub">Expenses in range{expenseData ? ` (${expenseData.expenses.length})` : ''}</h3>
-          {loading && !expenseData ? <p className="muted">Loading…</p> : !expenseData || expenseData.expenses.length === 0 ? (
+          {loading && !expenseData ? (
+            <SkeletonTable
+              label="Loading expenses…"
+              rows={5}
+              tableClassName="staff-accounts-table reports-invoice-table reports-expense-table"
+              columns={[
+                { key: 'spent', label: 'Spent' },
+                { key: 'title', label: 'Title' },
+                { key: 'business', label: 'Business' },
+                { key: 'category', label: 'Category' },
+                { key: 'amount', label: 'Amount', num: true },
+                { key: 'note', label: 'Note' },
+              ]}
+            />
+          ) : !expenseData || expenseData.expenses.length === 0 ? (
             <p className="muted">No expenses with date spent in this period.</p>
           ) : (
             <div className="table-scroll">

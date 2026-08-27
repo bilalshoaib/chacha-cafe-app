@@ -6,6 +6,7 @@ import { api } from '@/api.js'
 import RoleBadge from '@/components/RoleBadge.jsx'
 import RequireSuperAdmin from '@/components/RequireSuperAdmin.jsx'
 import { formatShortDateTime } from '@/utils/formatting.js'
+import { SkeletonDetail } from '@/components/Skeleton.jsx'
 
 export default function TeamUserDetailPage() {
   const { userId } = useParams()
@@ -51,7 +52,7 @@ export default function TeamUserDetailPage() {
           </section>
         ) : null}
 
-        {loading ? <p className="muted">Loading…</p> : u ? (
+        {loading ? <SkeletonDetail rows={4} label="Loading account…" /> : u ? (
           <article className="card team-detail-card">
             <dl className="team-detail-dl">
               <div><dt>Email</dt><dd>{u.email}</dd></div>

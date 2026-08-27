@@ -1,5 +1,5 @@
 'use client'
-import Link from 'next/link'
+import { PendingLink } from '@/components/NavPending.jsx'
 import { useParams } from 'next/navigation'
 import { useTenantConsole } from '@/context/TenantConsoleContext.jsx'
 import { tenantAccess, trialDaysLeft } from '@/lib/tenantAccess.js'
@@ -60,10 +60,10 @@ export default function TenantOverviewPage() {
             <div className="pf-actions">
               {/* Straight to the control, not to a tab it is somewhere on.
                   When a café cannot work this is the link being looked for. */}
-              <Link href={`${base}/access`} className="ghost sm btn-link">
+              <PendingLink href={`${base}/access`} className="ghost sm btn-link">
                 {access.allowed ? 'Trial and access →' : 'Put it right →'}
-              </Link>
-              <Link href={`${base}/billing`} className="ghost sm btn-link">Plan and price →</Link>
+              </PendingLink>
+              <PendingLink href={`${base}/billing`} className="ghost sm btn-link">Plan and price →</PendingLink>
             </div>
           </div>
 
@@ -74,8 +74,8 @@ export default function TenantOverviewPage() {
               take control, and both are written to the trail where the owner can see them.
             </p>
             <div className="pf-actions">
-              <Link href={`${base}/reports`} className="primary btn-link">Open reports</Link>
-              <Link href={`${base}/support`} className="ghost btn-link">Support access →</Link>
+              <PendingLink href={`${base}/reports`} className="primary btn-link">Open reports</PendingLink>
+              <PendingLink href={`${base}/support`} className="ghost btn-link">Support access →</PendingLink>
             </div>
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function TenantOverviewPage() {
                 ))}
               </ul>
               <div className="pf-actions tenant-card-foot">
-                <Link href={`${base}/trail`} className="ghost sm btn-link">The whole trail →</Link>
+                <PendingLink href={`${base}/trail`} className="ghost sm btn-link">The whole trail →</PendingLink>
               </div>
             </>
           )}

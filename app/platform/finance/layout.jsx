@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import NavPending from '@/components/NavPending.jsx'
 import { usePathname } from 'next/navigation'
 import { PlatformBooksProvider, usePlatformBooks } from '@/context/PlatformBooksContext.jsx'
 
@@ -64,6 +65,7 @@ function BooksChrome({ children }) {
           return (
             <Link key={label} href={href} className="tenant-tab" aria-current={active ? 'page' : undefined}>
               {label}
+              <NavPending />
             </Link>
           )
         })}

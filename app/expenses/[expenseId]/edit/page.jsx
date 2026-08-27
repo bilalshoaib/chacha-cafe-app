@@ -7,6 +7,7 @@ import ExpenseFormFields from '@/components/ExpenseFormFields.jsx'
 import { expenseBusinessType } from '@/constants/businessTypes.js'
 import { expenseDateInputValue } from '@/utils/expenses.js'
 import { useToast } from '@/context/ToastContext.jsx'
+import { SkeletonFields } from '@/components/Skeleton.jsx'
 
 export default function ExpenseEditPage() {
   const { expenseId } = useParams()
@@ -90,7 +91,7 @@ export default function ExpenseEditPage() {
         </section>
       ) : null}
 
-      {loading ? <p className="muted">Loading…</p> : null}
+      {loading ? <SkeletonFields fields={5} label="Loading expense…" /> : null}
     </main>
   )
 }

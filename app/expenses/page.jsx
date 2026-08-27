@@ -7,6 +7,7 @@ import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import { expenseBusinessType } from '@/constants/businessTypes.js'
 import { EXPENSE_RANGE_PRESETS, expenseCategoryLabel, startOfMonth, toISOEnd, toISOStart } from '@/utils/expenses.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+import { SkeletonTable } from '@/components/Skeleton.jsx'
 
 export default function ExpensesListPage() {
   const { menu } = useOrders()
@@ -108,7 +109,22 @@ export default function ExpensesListPage() {
 
       <section className="card expenses-table-card">
         <h3 className="sub">Recorded expenses</h3>
-        {loading ? <p className="muted">Loading…</p> : expenses.length === 0 ? <p className="muted">No expenses in this range.</p> : (
+        {loading ? (
+          <SkeletonTable
+            label="Loading expenses…"
+            rows={5}
+            tableClassName="invoices-table expenses-table"
+            columns={[
+              ...(hasCounters ? [{ key: 'counter', label: 'Counter' }] : []),
+              { key: 'date', label: 'Date' },
+              { key: 'title', label: 'Title' },
+              { key: 'category', label: 'Category' },
+              { key: 'amount', label: 'Amount', num: true },
+              { key: 'note', label: 'Note' },
+              { key: 'actions', label: ' ' },
+            ]}
+          />
+        ) : expenses.length === 0 ? <p className="muted">No expenses in this range.</p> : (
           <div className="table-scroll">
             <table className="invoices-table expenses-table">
               <thead>

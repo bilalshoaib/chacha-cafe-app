@@ -7,12 +7,27 @@ import { useBranding } from '@/context/BrandingContext.jsx'
 import { OrdersProvider } from '@/context/OrdersContext.jsx'
 import ImpersonationBanner from '@/components/ImpersonationBanner.jsx'
 import BrandMark from '@/components/BrandMark.jsx'
+import NavPending from '@/components/NavPending.jsx'
+import Skeleton from '@/components/Skeleton.jsx'
+import RouteSkeleton from '@/components/RouteSkeleton.jsx'
 import { ADD_MENU_ITEM_HASH } from '@/constants/categories.js'
 
-function NavLink({ href, children, className, onClick, end = false }) {
+/**
+ * A tab in the header.
+ *
+ * NavPending is what makes a press visible before the screen it names arrives;
+ * see the note on it for why that was needed at all.
+ *
+ * `active` overrides the path match for tabs whose section covers more than
+ * their own href — Settings is current on /settings/team but not on
+ * /settings/reports, which has a tab of its own.
+ */
+function NavLink({ href, children, className, onClick, end = false, active }) {
   const pathname = usePathname()
   let isActive
-  if (end) {
+  if (active !== undefined) {
+    isActive = active
+  } else if (end) {
     isActive = pathname === href
   } else {
     isActive = pathname === href || pathname.startsWith(href + '/')
@@ -21,6 +36,7 @@ function NavLink({ href, children, className, onClick, end = false }) {
   return (
     <Link href={href} className={cls} onClick={onClick}>
       {children}
+      <NavPending />
     </Link>
   )
 }
@@ -82,11 +98,11 @@ function AppNav({ user, onLogout }) {
             <NavLink href="/orders" end>Take order</NavLink>
             <NavLink href="/deals">Create deal</NavLink>
             <NavLink href="/menu">Menu items</NavLink>
-            <Link href="/invoices" className={invoicesActive ? 'active' : undefined}>Invoices</Link>
+            <NavLink href="/invoices" active={invoicesActive}>Invoices</NavLink>
             {user?.role !== 'counter_cashier' ? (
-              <Link href="/expenses" className={expensesActive ? 'active' : undefined}>Expenses</Link>
+              <NavLink href="/expenses" active={expensesActive}>Expenses</NavLink>
             ) : null}
-            <Link href="/settings" className={settingsActive ? 'active' : undefined}>Settings</Link>
+            <NavLink href="/settings" active={settingsActive}>Settings</NavLink>
             {user?.role === 'super_admin' ? (
               <NavLink href="/settings/reports">Reports</NavLink>
             ) : null}
@@ -128,11 +144,11 @@ function AppNav({ user, onLogout }) {
           <NavLink href="/orders" end onClick={closeNav}>Take order</NavLink>
           <NavLink href="/deals" onClick={closeNav}>Create deal</NavLink>
           <NavLink href="/menu" onClick={closeNav}>Menu items</NavLink>
-          <Link href="/invoices" className={invoicesActive ? 'active' : undefined} onClick={closeNav}>Invoices</Link>
+          <NavLink href="/invoices" active={invoicesActive} onClick={closeNav}>Invoices</NavLink>
           {user?.role !== 'counter_cashier' ? (
-            <Link href="/expenses" className={expensesActive ? 'active' : undefined} onClick={closeNav}>Expenses</Link>
+            <NavLink href="/expenses" active={expensesActive} onClick={closeNav}>Expenses</NavLink>
           ) : null}
-          <Link href="/settings" className={settingsActive ? 'active' : undefined} onClick={closeNav}>Settings</Link>
+          <NavLink href="/settings" active={settingsActive} onClick={closeNav}>Settings</NavLink>
           {user?.role === 'super_admin' ? (
             <NavLink href="/settings/reports" onClick={closeNav}>Reports</NavLink>
           ) : null}
@@ -171,9 +187,30 @@ export default function AppShell({ children }) {
   const tenantKey = user?.effectiveTenantId ?? user?.tenantId ?? 'signed-out'
 
   if (authLoading) {
+    // The login screen is the one place this must not draw a header: it has no
+    // café to name yet, and sketching one above the sign-in form would promise
+    // an app the visitor is not in. There it waits blank rather than lying
+    // about what is coming.
+    if (pathname === '/login') return <div className="app" />
     return (
       <div className="app shell">
-        <p className="muted">Loading…</p>
+        <header className="top" aria-hidden="true">
+          <div className="brand">
+            <Skeleton width="2.6rem" height="2.6rem" className="skeleton-brand-mark" />
+            <div className="skeleton-brand-lines">
+              <Skeleton width="9rem" height="1.15rem" />
+              <Skeleton width="6rem" height="0.7rem" />
+            </div>
+          </div>
+          <div className="top-header-right top-header-desktop">
+            <div className="tabs">
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton key={i} width={`${3.5 + ((i * 3) % 3)}rem`} height="0.95rem" />
+              ))}
+            </div>
+          </div>
+        </header>
+        <RouteSkeleton />
       </div>
     )
   }

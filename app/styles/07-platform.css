@@ -196,6 +196,31 @@
 .block { display: block; }
 .cafe-name { text-decoration: none; font-weight: 600; }
 .cafe-name:hover { text-decoration: underline; }
+
+/* Pressed, and waiting — the same acknowledgement the tabs give, on the links
+   that are not tabs. A café's name in this list opens a whole console, which
+   is one of the slower moves in the app and was also the one with nothing to
+   show for itself.
+
+   `position: relative` is what the bar hangs from; `.nav-pending` is already
+   taken out of the flow, so none of this moves a row or resizes a button. */
+.cafe-name,
+.btn-link,
+.platform-back {
+  position: relative;
+}
+
+.cafe-name:has(.nav-pending) {
+  text-decoration: underline;
+}
+
+/* Inside a filled button the bar is drawn in the label's own colour, which is
+   the one thing on it guaranteed to be readable against the fill. */
+.btn-link .nav-pending {
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.4rem;
+}
 .cafe-slug { font-size: 0.76rem; color: var(--pf-ink-soft); }
 
 /* A café that has taken no orders in the period is the one worth a call, so
@@ -679,6 +704,21 @@
   background: color-mix(in srgb, var(--brand-primary) 5%, transparent);
 }
 
+/* Pressed, and waiting on the screen it names — the same acknowledgement the
+   header tabs give, in this row's own colours. The bar sits on the underline
+   the active tab uses rather than above it, so a pressed tab and the tab that
+   is already current read as the same kind of mark. */
+.tenant-tab:has(.nav-pending) {
+  color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 5%, transparent);
+}
+
+.tenant-tab .nav-pending {
+  left: 0;
+  right: 0;
+  bottom: -2px;
+}
+
 .tenant-tab-body { padding-top: 0.25rem; }
 /* The action tabs are a single column of cards. Left at the full 74rem of
    the console they gave a two-word reason field the width of a table, so the
@@ -826,3 +866,11 @@
 /* Delete asks first, in place. A row of books is not something to lose to a
    mis-click, and a modal for one line is heavier than the decision. */
 .books-confirm { display: inline-flex; gap: 0.15rem; white-space: nowrap; }
+
+/* The console's tab row before the café it belongs to has loaded. Matches the
+   real row's spacing so the hero, the tabs and the body below them do not
+   shuffle when the data arrives. */
+.tenant-tabs-skeleton {
+  gap: 1.25rem;
+  padding-bottom: 0.85rem;
+}
