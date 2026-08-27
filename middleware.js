@@ -1,5 +1,6 @@
 import { getIronSession } from 'iron-session'
 import { NextResponse } from 'next/server'
+import { activeImpersonation } from './lib/impersonation.js'
 
 const secret = process.env.SESSION_SECRET || 'cafe-dev-session-secret-change-me-at-least-32'
 
@@ -11,6 +12,15 @@ const sessionOptions = {
 
 /** Paths that are accessible without being logged in. */
 const PUBLIC_PATHS = ['/', '/login']
+
+/**
+ * The platform console. Guarded here only to keep the page from rendering for
+ * the wrong person; the real check is requirePlatformOwner() in each route,
+ * which reads the flag from the database rather than the cookie.
+ */
+function isPlatformPath(pathname) {
+  return pathname === '/platform' || pathname.startsWith('/platform/')
+}
 
 /** Paths that require super_admin role. */
 function isSuperAdminPath(pathname) {
@@ -31,7 +41,14 @@ export async function middleware(request) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
-    pathname.startsWith('/icon')
+    pathname.startsWith('/icon') ||
+    // Anything with a file extension is a file in public/ — the hero
+    // photograph, the menu board's artwork. The matcher below does not exclude
+    // them, so a signed-out visitor asking for /hero-bg.png was answered with
+    // a 307 to /login and the public menu page rendered its hero over nothing.
+    // No page route in this app has a dot in its path, so this cannot swallow
+    // one.
+    /\.[a-z0-9]+$/i.test(pathname)
   ) {
     return NextResponse.next()
   }
@@ -43,6 +60,32 @@ export async function middleware(request) {
 
   if (!isPublic && !session.userId) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  if (session.userId && isPlatformPath(pathname) && !session.platformOwner) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  // A platform owner with no café open has nothing to see on a café's screens:
+  // every query there needs a tenant, and without one they would get a string
+  // of 401s that the client reads as a dead session. Send them to the café
+  // list, where the way in is to open one. Opening a café sets
+  // impersonatedTenantId, and from then on every page works normally.
+  //
+  // activeImpersonation() rather than a bare check for impersonatedTenantId:
+  // the id stays on the cookie after the support session times out, so testing
+  // only for its presence let an expired owner through to café screens that
+  // requireTenant() then refused to give a tenant. AppShell renders that state
+  // outside OrdersProvider, so the till threw rather than redirecting.
+  if (
+    session.userId &&
+    session.platformOwner &&
+    !session.tenantId &&
+    !activeImpersonation(session) &&
+    !isPlatformPath(pathname) &&
+    !PUBLIC_PATHS.includes(pathname)
+  ) {
+    return NextResponse.redirect(new URL('/platform', request.url))
   }
 
   if (session.userId && isSuperAdminPath(pathname) && session.role !== 'super_admin') {

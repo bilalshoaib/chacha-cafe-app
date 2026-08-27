@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
-import { requireSuperAdmin } from '@/lib/session'
+import { requireReportReader } from '@/lib/session'
 import { getInvoicesInRange } from '@/lib/repositories/invoicesRepository'
 import { findExpenses } from '@/lib/repositories/expensesRepository'
+import { listBrands } from '@/lib/repositories/menuRepository'
+import { recordReportAccess } from '@/lib/audit'
 import {
   calcInvoiceSplits,
   invoiceBusinessType,
@@ -14,8 +16,20 @@ import {
 
 /** Headline totals for the reports Summary tab. Reads no invoice line detail. */
 export async function GET(request) {
-  const session = await requireSuperAdmin()
-  if (!session) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
+  const ctx = await requireReportReader(request)
+  if (!ctx) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
+
+  // Only this route records the visit, of the four the reports screen calls.
+  // It is the tab that opens first, so a sitting always passes through it, and
+  // logging in all four would write the same entry four times for one look.
+  if (ctx.fromConsole) {
+    await recordReportAccess({
+      actorId: ctx.userId,
+      actorEmail: ctx.actorEmail,
+      tenantId: ctx.tenantId,
+      detail: 'Viewed this café’s sales and expense reports from the platform console',
+    })
+  }
 
   const { searchParams } = new URL(request.url)
   const range = parseReportRange(searchParams)
@@ -23,11 +37,17 @@ export async function GET(request) {
   const { from, to } = range
   const { business, payment } = parseReportFilters(searchParams)
 
-  const inRange = await getInvoicesInRange(from.toISOString(), to.toISOString())
+  const inRange = await getInvoicesInRange(ctx, from.toISOString(), to.toISOString())
+
+  // A column per brand the café actually has, rather than the two Chacha's
+  // schema used to name. A single-brand café gets one, and the reports page
+  // hides it because there is nothing to compare it against.
+  const brands = await listBrands(ctx)
+  const netByBrand = new Map(brands.map((b) => [b.slug, 0]))
+  const countByBrand = new Map(brands.map((b) => [b.slug, 0]))
 
   let grossTotal = 0, returnedCount = 0, returnedTotal = 0
-  let paidCount = 0, unpaidCount = 0, cafeNetSales = 0, burgerNetSales = 0
-  let cafeInvoiceCount = 0, burgerInvoiceCount = 0
+  let paidCount = 0, unpaidCount = 0
   let deliveryChargesTotal = 0, deliveryOrderCount = 0
   let invoiceCount = 0
 
@@ -46,24 +66,31 @@ export async function GET(request) {
       returnedCount += 1; returnedTotal += total
       continue
     }
-    const { cafePortion, burgerPortion } = calcInvoiceSplits(inv, businessType)
-    cafeNetSales += cafePortion; burgerNetSales += burgerPortion
-    if (businessType === 'burger') burgerInvoiceCount += 1
-    else if (businessType === 'cafe') cafeInvoiceCount += 1
-    else { cafeInvoiceCount += 1; burgerInvoiceCount += 1 } // combined: counted in both
+    const portions = calcInvoiceSplits(inv, brands)
+    for (const [slug, amount] of portions) {
+      netByBrand.set(slug, roundMoney((netByBrand.get(slug) ?? 0) + amount))
+      // An invoice counts towards a brand when it actually sold something for
+      // it, which is what the old rule did by hand: a combined invoice was
+      // counted under both, a single-business one under its own.
+      if (amount > 0) countByBrand.set(slug, (countByBrand.get(slug) ?? 0) + 1)
+    }
     if (inv.paid) paidCount += 1; else unpaidCount += 1
     if (deliveryCharge > 0) { deliveryChargesTotal += deliveryCharge; deliveryOrderCount += 1 }
   }
 
-  cafeNetSales = roundMoney(cafeNetSales); burgerNetSales = roundMoney(burgerNetSales)
-  const netSalesTotal = business === 'cafe' ? cafeNetSales
-    : business === 'burger' ? burgerNetSales
-    : roundMoney(cafeNetSales + burgerNetSales)
+  const brandSummary = brands.map((b) => ({
+    id: b.id, slug: b.slug, name: b.name,
+    netSales: roundMoney(netByBrand.get(b.slug) ?? 0),
+    invoiceCount: countByBrand.get(b.slug) ?? 0,
+  }))
+
+  const filtered = business ? brandSummary.filter((b) => b.slug === business) : brandSummary
+  const netSalesTotal = roundMoney(filtered.reduce((sum, b) => sum + b.netSales, 0))
   // Net sales is built from per-business item portions, which never include the
   // delivery charge — so it already excludes delivery.
   const netSalesExclDelivery = netSalesTotal
 
-  const matchingExpenses = await findExpenses({
+  const matchingExpenses = await findExpenses(ctx, {
     from: from.toISOString(),
     to: to.toISOString(),
     businessType: business,
@@ -80,7 +107,7 @@ export async function GET(request) {
       grossTotal: roundMoney(grossTotal),
       returnedCount, returnedTotal: roundMoney(returnedTotal),
       netSalesTotal, netSalesExclDelivery,
-      cafeNetSales, burgerNetSales, cafeInvoiceCount, burgerInvoiceCount,
+      brands: brandSummary,
       paidCount, unpaidCount,
       deliveryChargesTotal: roundMoney(deliveryChargesTotal), deliveryOrderCount,
       expenseCount, expensesTotal,

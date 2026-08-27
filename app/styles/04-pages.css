@@ -1026,6 +1026,15 @@ a.danger-ghost:hover {
     min-width: 0;
   }
 
+  /* …except inside the order table, which scrolls sideways by design. There,
+     min-width:0 let the Item column collapse to a few characters wide, so the
+     one field the whole screen exists for was the smallest thing on it. The
+     table is already horizontally scrollable, so a real minimum here costs a
+     little more scrolling and buys a usable input. */
+  .order-lines-table .item-autocomplete {
+    min-width: 11rem;
+  }
+
   /* Card head: stack actions below title */
   .card-head {
     flex-direction: column;
@@ -1076,6 +1085,8 @@ a.danger-ghost:hover {
   .invoice-sheet .invoice-header .text-right {
     text-align: left;
   }
+
+  .invoice-skeleton-stack.text-right .skeleton { margin-left: 0; }
 
   /* Invoice payment actions: stack on phones */
   .invoice-payment-actions {
@@ -1200,4 +1211,3 @@ a.danger-ghost:hover {
     grid-template-columns: 1fr;
   }
 }
-

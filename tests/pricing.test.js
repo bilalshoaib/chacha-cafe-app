@@ -79,3 +79,12 @@ test('money rounds to two decimals', () => {
   assert.equal(roundMoney(10.005), 10.01)
   assert.equal(roundMoney(0.1 + 0.2), 0.3)
 })
+
+test('money is formatted in the location\'s own currency', async () => {
+  const { formatMoney } = await import('../utils/formatting.js')
+  // Non-breaking spaces vary by ICU build, so match on the parts that matter.
+  assert.match(formatMoney(1500), /1,500/)
+  assert.ok(formatMoney(1500).includes('Rs') || formatMoney(1500).includes('PKR'))
+  assert.match(formatMoney(1500, { locale: 'en-US', currency: 'USD' }), /\$1,500\.00/)
+  assert.match(formatMoney(1500, { locale: 'en-GB', currency: 'GBP' }), /£1,500\.00/)
+})

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import { getExpenseById, saveExpenses, deleteExpenseById } from '@/lib/repositories/expensesRepository'
 import { normalizeBusinessType } from '@/lib/businessTypes'
 
@@ -14,23 +14,23 @@ function forbidCashier(session) {
 }
 
 export async function GET(_request, { params }) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const denied = forbidCashier(session)
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(ctx)
   if (denied) return denied
   const { id } = await params
-  const row = await getExpenseById(id)
+  const row = await getExpenseById(ctx, id)
   if (!row) return NextResponse.json({ error: 'Expense not found.' }, { status: 404 })
   return NextResponse.json(row)
 }
 
 export async function PATCH(request, { params }) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const denied = forbidCashier(session)
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(ctx)
   if (denied) return denied
   const { id } = await params
-  const existing = await getExpenseById(id)
+  const existing = await getExpenseById(ctx, id)
   if (!existing) return NextResponse.json({ error: 'Expense not found.' }, { status: 404 })
 
   const body = await request.json().catch(() => ({}))
@@ -59,17 +59,17 @@ export async function PATCH(request, { params }) {
     next.businessType = bt
   }
 
-  await saveExpenses([next])
+  await saveExpenses(ctx, [next])
   return NextResponse.json(next)
 }
 
 export async function DELETE(_request, { params }) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const denied = forbidCashier(session)
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(ctx)
   if (denied) return denied
   const { id } = await params
-  const deleted = await deleteExpenseById(id)
+  const deleted = await deleteExpenseById(ctx, id)
   if (!deleted) return NextResponse.json({ error: 'Expense not found.' }, { status: 404 })
   return new Response(null, { status: 204 })
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import { findExpenses, saveExpenses } from '@/lib/repositories/expensesRepository'
 import { normalizeBusinessType } from '@/lib/businessTypes'
 import { randomUUID } from 'crypto'
@@ -15,9 +15,9 @@ function forbidCashier(session) {
 }
 
 export async function GET(request) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const denied = forbidCashier(session)
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(ctx)
   if (denied) return denied
 
   const { searchParams } = new URL(request.url)
@@ -29,7 +29,7 @@ export async function GET(request) {
   if (fromRaw && Number.isNaN(from.getTime())) return NextResponse.json({ error: 'Invalid from date.' }, { status: 400 })
   if (toRaw && Number.isNaN(to.getTime())) return NextResponse.json({ error: 'Invalid to date.' }, { status: 400 })
 
-  const list = await findExpenses({
+  const list = await findExpenses(ctx, {
     from: from ? from.toISOString() : null,
     to: to ? to.toISOString() : null,
     businessType: normalizeBusinessType(searchParams.get('businessType')),
@@ -40,9 +40,9 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const denied = forbidCashier(session)
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const denied = forbidCashier(ctx)
   if (denied) return denied
 
   const body = await request.json().catch(() => ({}))
@@ -69,6 +69,6 @@ export async function POST(request) {
     createdAt: new Date().toISOString(),
   }
 
-  await saveExpenses([expense])
+  await saveExpenses(ctx, [expense])
   return NextResponse.json(expense, { status: 201 })
 }

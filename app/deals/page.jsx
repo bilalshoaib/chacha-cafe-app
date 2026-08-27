@@ -6,13 +6,13 @@ import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import DealFormFields from '@/components/DealFormFields.jsx'
 import Modal, { FormActions } from '@/components/Modal.jsx'
 import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
-import { BUSINESS_TYPES, DEAL_BUSINESS_TYPE_OPTIONS, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
+import { dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { dealMatchesQuery } from '@/utils/dealSearch.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
-function buildDealCategorySections(menuItems, business) {
+function buildDealCategorySections(menuItems, business, categories) {
   const byCat = new Map()
   for (const item of menuItems) {
     if (business !== 'combined' && !itemMatchesBusiness(item, business)) continue
@@ -23,7 +23,7 @@ function buildDealCategorySections(menuItems, business) {
   for (const list of byCat.values()) {
     list.sort((a, b) => a.name.localeCompare(b.name))
   }
-  const tabs = buildCategoryTabs([...byCat.values()].flat())
+  const tabs = buildCategoryTabs([...byCat.values()].flat(), categories)
   return tabs
     .map(({ key, label }) => {
       const items = byCat.get(key)
@@ -40,6 +40,8 @@ function includesFromQtyMap(qtyById, unitPriceById = {}) {
 
 export default function DealsPage() {
   const { menu, loading, refreshAll, setError } = useOrders()
+  // More than one counter is the only reason to show a counter filter at all.
+  const hasCounters = (menu.brands?.length ?? 0) > 1
   const toast = useToast()
   const [listFilter, setListFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -105,8 +107,8 @@ export default function DealsPage() {
   )
   const searching = search.trim().length > 0
 
-  const createCategorySections = useMemo(() => buildDealCategorySections(menu.items, dealBusiness), [menu.items, dealBusiness])
-  const editCategorySections = useMemo(() => buildDealCategorySections(menu.items, editBusiness), [menu.items, editBusiness])
+  const createCategorySections = useMemo(() => buildDealCategorySections(menu.items, dealBusiness, menu.categories), [menu.items, dealBusiness, menu.categories])
+  const editCategorySections = useMemo(() => buildDealCategorySections(menu.items, editBusiness, menu.categories), [menu.items, editBusiness, menu.categories])
 
   function openAddDialog() {
     setCreateError('')
@@ -287,10 +289,16 @@ export default function DealsPage() {
           <div className="deals-filter-bar">
             <div className="invoices-filter-tabs">
               <button type="button" className={listFilter === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('all')}>All</button>
-              {BUSINESS_TYPES.map((bt) => (
-                <button key={bt.id} type="button" className={listFilter === bt.id ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter(bt.id)}>{bt.shortLabel}</button>
-              ))}
-              <button type="button" className={listFilter === 'combined' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('combined')}>Combined</button>
+              {/* Per-counter filters, and the combined one, only exist for a
+                  café that has more than one counter to combine. */}
+              {hasCounters ? (
+                <>
+                  {menu.brands.map((b) => (
+                    <button key={b.id} type="button" className={listFilter === b.slug ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter(b.slug)}>{b.name}</button>
+                  ))}
+                  <button type="button" className={listFilter === 'combined' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('combined')}>Combined</button>
+                </>
+              ) : null}
               <button type="button" className={listFilter === 'archived' ? 'primary sm' : 'ghost sm'} onClick={() => setListFilter('archived')}>
                 Archived {archivedDeals.length > 0 && `(${archivedDeals.length})`}
               </button>
@@ -414,6 +422,7 @@ export default function DealsPage() {
       >
         <DealFormFields
           business={dealBusiness} setBusiness={setDealBusiness}
+          brands={menu.brands ?? []}
           onBusinessChange={() => { setQtyById({}); setUnitPriceById({}) }}
           name={name} setName={setName}
           price={price} setPrice={setPrice}
@@ -444,6 +453,7 @@ export default function DealsPage() {
           <>
             <DealFormFields
               business={editBusiness} setBusiness={setEditBusiness}
+              brands={menu.brands ?? []}
               onBusinessChange={() => { setEditQtyById({}); setEditUnitPriceById({}) }}
               name={editName} setName={setEditName}
               price={editPrice} setPrice={setEditPrice}

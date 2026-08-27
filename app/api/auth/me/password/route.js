@@ -8,7 +8,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const { currentPassword, newPassword } = await request.json().catch(() => ({}))
-  const result = await usersRepo.changeMyPassword(session.userId, currentPassword, newPassword)
+  const result = await usersRepo.changeMyOwnPassword(session.userId, currentPassword, newPassword)
   if (result.error) {
     return NextResponse.json({ error: result.error }, { status: 400 })
   }

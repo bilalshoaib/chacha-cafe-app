@@ -88,52 +88,50 @@
 }
 
 /* ── Logo typography ── */
-.hp-hero-kicker {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--brand-gold);
-  margin-bottom: 0.75rem;
+/* The café's uploaded logo, above its name. Sized in the same proportion at
+   both scales so the staff hero is the public one shrunk, not redrawn. */
+.hp-hero-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
 }
 
-.hp-logo-chacha {
+.hp-hero-logo img {
+  height: clamp(4rem, 12vw, 7rem);
+  width: auto;
+  max-width: min(100%, 22rem);
+  object-fit: contain;
+  filter: drop-shadow(0 6px 20px color-mix(in srgb, var(--brand-deep) 65%, transparent));
+}
+
+.hp-hero-logo--sm {
+  margin-bottom: 0.6rem;
+}
+
+.hp-hero-logo--sm img {
+  height: clamp(2.5rem, 7vw, 4rem);
+}
+
+/* Sized from the name's own length — see HeroMark in app/page.jsx, which sets
+   --name-chars. A fixed clamp was tuned for a six-letter name and left every
+   longer one either overflowing the hero or wrapping mid-word. */
+.hp-logo-name {
   font-family: 'Anton', system-ui, sans-serif;
-  font-size: clamp(3.5rem, 10vw, 7rem);
+  font-size: clamp(2rem, min(13vw, calc(72rem / var(--name-chars, 8))), 7rem);
   font-weight: 400;
   letter-spacing: 0.01em;
-  line-height: 1;
-  margin: 0;
+  line-height: 1.05;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  overflow-wrap: break-word;
   color: var(--brand-gold);
   -webkit-text-stroke: 2px var(--brand-deep);
   text-shadow: 0 4px 18px color-mix(in srgb, var(--brand-deep) 55%, transparent);
 }
 
-.hp-logo-chacha--sm {
-  font-size: clamp(2.2rem, 6vw, 4rem);
-}
-
-.hp-logo-sub {
-  font-size: clamp(1rem, 3.5vw, 1.75rem);
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #ffffff;
-  margin: 0.25rem 0 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-}
-
-.hp-logo-sub--sm {
-  font-size: clamp(0.75rem, 2.5vw, 1.15rem);
-  margin: 0.15rem 0 0.5rem;
-}
-
-.hp-logo-star {
-  color: var(--brand-gold);
-  font-size: 0.75em;
+.hp-logo-name--sm {
+  font-size: clamp(1.6rem, min(8vw, calc(40rem / var(--name-chars, 8))), 4rem);
+  -webkit-text-stroke-width: 1.5px;
 }
 
 .hp-logo-tagline {
@@ -141,10 +139,14 @@
   color: var(--brand-gold-pale);
   font-style: italic;
   letter-spacing: 0.06em;
-  margin: 0 0 2rem;
+  /* The gap before the buttons belongs to the buttons, not to this: a tagline
+     is optional, and a café that has not set one used to get its two hero
+     buttons pushed up against its name. */
+  margin: 0;
 }
 
 .hp-hero-actions {
+  margin-top: 2rem;
   display: flex;
   gap: 0.85rem;
   justify-content: center;
@@ -525,20 +527,13 @@
   margin-bottom: 0.35rem;
 }
 
-.hp-footer-chacha {
+.hp-footer-name {
   font-family: 'Anton', system-ui, sans-serif;
   font-size: 1.6rem;
   font-weight: 400;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--brand-gold);
-}
-
-.hp-footer-cafe {
-  font-family: 'Anton', system-ui, sans-serif;
-  font-size: 1.1rem;
-  font-weight: 400;
-  color: #ffffff;
-  letter-spacing: 0.1em;
 }
 
 .hp-footer-tagline {
@@ -614,6 +609,10 @@
   font-weight: 600;
   font-size: 0.85rem;
   white-space: nowrap;
+  /* These are links, and a link inside a card is underlined by the base
+     stylesheet. This one is drawn as a pill button, so the underline read as
+     an artefact — most visibly under the emoji that starts each label. */
+  text-decoration: none;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 

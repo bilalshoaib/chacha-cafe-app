@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import ItemAutocomplete from '@/components/ItemAutocomplete.jsx'
 import DealPicker from '@/components/DealPicker.jsx'
+import { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { discountPartsOf, priceLine } from '@/lib/pricing.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
@@ -25,6 +26,7 @@ export default function OrdersPage() {
     deliveryCharge,
     setDeliveryCharge,
     checkingOut,
+    openingInvoiceId,
     setError,
     refreshAll,
     startNewOrder,
@@ -260,6 +262,22 @@ export default function OrdersPage() {
     return m
   }, [menuItems])
 
+  // Between "Create invoice" succeeding and the invoice page taking over, the
+  // cart is already gone — so hold this screen on a loader rather than let the
+  // empty "start a new order" state flash past on the way out.
+  if (openingInvoiceId) {
+    return (
+      <main className="order-flow theme-chacha">
+        <section className="card order-card order-handoff">
+          <SkeletonStatus label="Opening invoice…" />
+          <div className="order-handoff-spinner" aria-hidden="true" />
+          <h2>Invoice created</h2>
+          <p className="muted">Opening invoice {openingInvoiceId}…</p>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className="order-flow theme-chacha">
       <section className="card order-card">
@@ -289,7 +307,7 @@ export default function OrdersPage() {
 
         {!activeOrder ? (
           <div className="business-type-picker">
-            <p className="muted">Start a new order to add items from both Chacha Cafe and Chacha Burger.</p>
+            <p className="muted">Start a new order to add items from the whole menu.</p>
             <button
               type="button"
               className="primary"

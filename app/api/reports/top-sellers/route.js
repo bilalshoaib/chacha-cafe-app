@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireSuperAdmin } from '@/lib/session'
+import { requireReportReader } from '@/lib/session'
 import { getInvoicesInRange } from '@/lib/repositories/invoicesRepository'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import {
@@ -15,8 +15,8 @@ import {
 /** Ranks items and deals by units sold or revenue. Aggregation happens here so
  *  the response carries one row per product instead of every invoice's lines. */
 export async function GET(request) {
-  const session = await requireSuperAdmin()
-  if (!session) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
+  const ctx = await requireReportReader(request)
+  if (!ctx) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const range = parseReportRange(searchParams)
@@ -28,8 +28,8 @@ export async function GET(request) {
   const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(200, limitRaw) : 50
 
   const [inRange, menu] = await Promise.all([
-    getInvoicesInRange(from.toISOString(), to.toISOString()),
-    loadMenu(),
+    getInvoicesInRange(ctx, from.toISOString(), to.toISOString()),
+    loadMenu(ctx),
   ])
 
   // Deal lines only store item ids, so resolve display names from the menu.

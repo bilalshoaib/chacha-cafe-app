@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import { loadMenu, saveMenu, newDealId, parseDealIncludes } from '@/lib/repositories/menuRepository'
 import { dealBusinessType, normalizeBusinessType } from '@/lib/businessTypes'
 
 export async function POST(request) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json().catch(() => ({}))
   const { name, price, includes } = body
   if (!name || typeof price !== 'number' || !Array.isArray(includes) || includes.length === 0) {
     return NextResponse.json({ error: 'name, price (number), and non-empty includes[] required' }, { status: 400 })
   }
-  const menu = await loadMenu()
+  const menu = await loadMenu(ctx)
   const parsedIncludes = parseDealIncludes(includes, new Set(menu.items.map((i) => i.id)))
   if (parsedIncludes.error) return NextResponse.json({ error: parsedIncludes.error }, { status: 400 })
   const cleanIncludes = parsedIncludes.includes
@@ -40,7 +40,7 @@ export async function POST(request) {
       includes: cleanIncludes,
     }
     menu.deals.push(deal)
-    await saveMenu(menu)
+    await saveMenu(ctx, menu)
     return NextResponse.json(deal, { status: 201 })
   }
 
@@ -53,6 +53,6 @@ export async function POST(request) {
     includes: cleanIncludes,
   }
   menu.deals.push(deal)
-  await saveMenu(menu)
+  await saveMenu(ctx, menu)
   return NextResponse.json(deal, { status: 201 })
 }

@@ -30,9 +30,25 @@ async function request(path, options = {}) {
   return data
 }
 
-/** Builds the shared report query string (range + filters), omitting empty values. */
-function reportQuery({ from, to, businessType, paymentMethod, page, pageSize, sort } = {}) {
+/**
+ * Builds the shared report query string (range + filters), omitting empty values.
+ *
+ * `tenantId` is set only when the platform console is reading a café's reports;
+ * the café's own owner never sends it and the server then scopes to their
+ * session. One query builder for both, so the two screens cannot drift.
+ */
+/** Range and filter for the platform's own finance endpoints. */
+function financeQuery({ from, to, tenantId } = {}) {
   const q = new URLSearchParams()
+  if (from) q.set('from', from)
+  if (to) q.set('to', to)
+  if (tenantId) q.set('tenantId', tenantId)
+  return q.toString()
+}
+
+function reportQuery({ from, to, businessType, paymentMethod, page, pageSize, sort, tenantId } = {}) {
+  const q = new URLSearchParams()
+  if (tenantId) q.set('tenantId', tenantId)
   if (from) q.set('from', from)
   if (to) q.set('to', to)
   if (businessType && businessType !== 'all') q.set('businessType', businessType)
@@ -55,6 +71,46 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
   listUsers: () => request('/api/auth/users'),
+  // Platform console — creating and governing cafés, not configuring them.
+  listTenants: () => request('/api/platform/tenants'),
+  platformActivity: (window = '30d') => request(`/api/platform/activity?window=${window}`),
+  createTenant: (body) => request('/api/platform/tenants', { method: 'POST', body: JSON.stringify(body) }),
+  getTenant: (id) => request(`/api/platform/tenants/${encodeURIComponent(id)}`),
+  impersonate: (id, control = false) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}/impersonate`, {
+      method: 'POST', body: JSON.stringify({ control }),
+    }),
+  stopImpersonating: (id) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}/impersonate`, { method: 'DELETE' }),
+  impersonationStatus: () => request('/api/platform/impersonation'),
+  resetOwnerPassword: (id) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}/owner-password`, { method: 'POST' }),
+  updateTenant: (id, body) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  uploadTenantLogo: (id, { mime, data }) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}/logo`, {
+      method: 'POST',
+      body: JSON.stringify({ mime, data }),
+    }),
+  removeTenantLogo: (id) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}/logo`, { method: 'DELETE' }),
+
+  // The platform's own books — what the cafés pay it, and what it spends.
+  // Nothing here is scoped to a tenant, and nothing here is reachable by one.
+  platformFinance: (params = {}) => request(`/api/platform/finance/report?${financeQuery(params)}`),
+  platformPayments: (params = {}) => request(`/api/platform/finance/payments?${financeQuery(params)}`),
+  recordPlatformPayment: (body) =>
+    request('/api/platform/finance/payments', { method: 'POST', body: JSON.stringify(body) }),
+  deletePlatformPayment: (id) =>
+    request(`/api/platform/finance/payments/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  platformExpenses: (params = {}) => request(`/api/platform/finance/expenses?${financeQuery(params)}`),
+  recordPlatformExpense: (body) =>
+    request('/api/platform/finance/expenses', { method: 'POST', body: JSON.stringify(body) }),
+  deletePlatformExpense: (id) =>
+    request(`/api/platform/finance/expenses/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  planPrices: () => request('/api/platform/finance/prices'),
+  setPlanPrice: (plan, price) =>
+    request('/api/platform/finance/prices', { method: 'PATCH', body: JSON.stringify({ plan, price }) }),
   getUser: (userId) => request(`/api/auth/users/${encodeURIComponent(userId)}`),
   createUser: (body) => request('/api/auth/users', { method: 'POST', body: JSON.stringify(body) }),
   updateUser: (userId, body) =>
@@ -66,7 +122,9 @@ export const api = {
   getReportExpenses: (params) => request(`/api/reports/expenses?${reportQuery(params)}`),
   getMenu: () => request('/api/menu'),
   // The home page is public, so it reads the menu that carries no cost prices.
-  getPublicMenu: () => request('/api/menu-public'),
+  // The slug names which café to show; without one the route falls back to the
+  // caller's own session, then to the single-café install.
+  getPublicMenu: (slug) => request(`/api/menu-public${slug ? `?tenant=${encodeURIComponent(slug)}` : ''}`),
   createMenuItem: (body) => request('/api/menu/items', { method: 'POST', body: JSON.stringify(body) }),
   updateMenuItem: (id, body) =>
     request(`/api/menu/items/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),

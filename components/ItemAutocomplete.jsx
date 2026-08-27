@@ -70,7 +70,34 @@ export default function ItemAutocomplete({
       const input = inputRef?.current
       if (!input) return
       const r = input.getBoundingClientRect()
-      setListPos({ top: r.bottom + 4, left: r.left, width: r.width })
+      const margin = 8
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+
+      // The list used to be exactly as wide as the input, which is fine on a
+      // desktop and useless on a phone: the input sits in the Item column of a
+      // table that scrolls sideways, so at 414px it is squeezed to a couple of
+      // characters and every result wrapped to one word per line. The list is
+      // its own element on top of the page, so it can be wider than the thing
+      // it belongs to — never narrower than is readable, never wider than the
+      // screen.
+      const width = Math.max(r.width, Math.min(280, vw - margin * 2))
+      const left = Math.min(Math.max(margin, r.left), Math.max(margin, vw - margin - width))
+
+      // Flip above the input when there is no room below it. On a phone the
+      // keyboard takes the bottom half of the screen the moment this opens,
+      // which is exactly when the results would otherwise be off-screen.
+      const below = vh - r.bottom - margin
+      const above = r.top - margin
+      const flip = below < 160 && above > below
+      const maxHeight = Math.max(120, Math.min(240, flip ? above - 4 : below))
+
+      setListPos({
+        left,
+        width,
+        maxHeight,
+        ...(flip ? { bottom: vh - r.top + 4 } : { top: r.bottom + 4 }),
+      })
     }
     updatePosition()
     window.addEventListener('scroll', updatePosition, true)
@@ -154,9 +181,12 @@ export default function ItemAutocomplete({
               role="listbox"
               style={{
                 position: 'fixed',
-                top: listPos.top,
+                // One of the two, never both — which it is depends on whether
+                // the list opens downwards or flips above the input.
+                ...(listPos.top != null ? { top: listPos.top } : { bottom: listPos.bottom }),
                 left: listPos.left,
                 width: listPos.width,
+                maxHeight: listPos.maxHeight,
                 zIndex: 2000,
               }}
             >

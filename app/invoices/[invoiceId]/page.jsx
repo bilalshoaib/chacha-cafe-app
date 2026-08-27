@@ -5,10 +5,12 @@ import { useParams } from 'next/navigation'
 import { api } from '@/api.js'
 import Modal, { ConfirmActions } from '@/components/Modal.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
+import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { businessTypeLabel, invoiceBusinessType } from '@/constants/businessTypes.js'
 import { categoryLabel, formatItemExtras, formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
+import { useBranding } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
 const ORDER_TYPE_META = {
@@ -35,8 +37,30 @@ const orderTypeBanner = (invoice) => {
   return line ? `<div class="order-type-banner">${line}</div>` : '<div class="dashed"></div>'
 }
 
-function buildReceiptHtml(invoice, itemLabelById) {
-  const businessName = invoiceBusinessType(invoice) === 'burger' ? 'Chacha Burger' : 'Chacha Cafe'
+/**
+ * The printed receipt. Everything naming the café comes from `branding` — the
+ * shop name, the line under it and the footer — so a white-labelled install
+ * prints its own identity rather than the first customer's.
+ *
+ * `businessLabel` names the counter the order came from, which for a café with
+ * a single brand is the café's own name and so reads as no distinction at all.
+ */
+/**
+ * Which counter an order came from. Still keyed to the cafe/burger pair while
+ * the app reads business_type; once it reads brands this becomes the brand's
+ * own name, and a single-brand café stops seeing a distinction at all.
+ */
+function businessLabel(invoice, branding) {
+  const type = invoiceBusinessType(invoice)
+  if (type === 'burger') return 'Burger'
+  if (type === 'cafe') return 'Cafe'
+  return branding?.name ?? ''
+}
+
+function buildReceiptHtml(invoice, itemLabelById, branding) {
+  const tenantName = branding?.name ?? ''
+  const receiptFooter = branding?.receiptFooter || tenantName
+  const businessName = businessLabel(invoice, branding)
   const paymentLine = invoice.paymentMethod === 'cash' ? 'Payment: Cash' : invoice.paymentMethod === 'online' ? 'Payment: Online / Card' : ''
   const lineRows = invoice.lines.map((line) => {
     const extras = formatItemExtras(line)
@@ -58,11 +82,12 @@ function buildReceiptHtml(invoice, itemLabelById) {
     ? `<div class="total-row" style="font-size:10px;"><span>Subtotal</span><span>${formatMoney(invoice.subtotal ?? (invoice.total - deliveryCharge))}</span></div><div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${formatMoney(deliveryCharge)}</span></div>`
     : ''
   const orderNumBanner = invoice.shiftNumber != null ? '<div class="order-num-banner">ORDER #' + invoice.shiftNumber + '</div>' : ''
-  const body = orderNumBanner + `<div class="shop-name">${businessName}</div><div class="shop-sub">Chacha Burger Cafe</div><div class="dashed"></div><div class="meta-row"><span>Invoice:</span><span>${invoice.id}</span></div><div class="meta-row"><span>Date:</span><span>${new Date(invoice.createdAt).toLocaleString()}</span></div>${invoice.orderId ? `<div class="meta-row"><span>Order:</span><span>${invoice.orderId}</span></div>` : ''}${orderTypeBanner(invoice)}<table><thead><tr><th class="item-col">Item</th><th class="amt-col">Amt</th></tr></thead><tbody>${lineRows}</tbody></table><div class="solid"></div>${discountSummary}${!discountSummary ? deliveryChargeLine : (deliveryCharge > 0 ? `<div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${formatMoney(deliveryCharge)}</span></div>` : '')}<div class="total-row"><span>${invoice.paid || invoice.returned ? 'TOTAL' : 'TOTAL DUE'}</span><span>${formatMoney(invoice.total)}</span></div><div class="dashed"></div>${paymentLine ? `<div class="status-row">${paymentLine}</div>` : ''}<div class="status-row">${invoice.returned ? '** RETURNED **' : invoice.paid ? 'PAID' : 'UNPAID'}</div>${invoice.returned ? `<div class="returned-notice">** REFUNDED / RETURNED **</div>` : ''}${invoice.returnNote ? `<div class="note-box">Return note: ${invoice.returnNote}</div>` : ''}${invoice.customerNote ? `<div class="note-box">Note: ${invoice.customerNote}</div>` : ''}<div class="dashed"></div><div class="footer">Thank you for visiting!</div><div class="footer">Chacha Burger Cafe</div>`
+  const body = orderNumBanner + `<div class="shop-name">${businessName}</div><div class="shop-sub">${tenantName}</div><div class="dashed"></div><div class="meta-row"><span>Invoice:</span><span>${invoice.id}</span></div><div class="meta-row"><span>Date:</span><span>${new Date(invoice.createdAt).toLocaleString()}</span></div>${invoice.orderId ? `<div class="meta-row"><span>Order:</span><span>${invoice.orderId}</span></div>` : ''}${orderTypeBanner(invoice)}<table><thead><tr><th class="item-col">Item</th><th class="amt-col">Amt</th></tr></thead><tbody>${lineRows}</tbody></table><div class="solid"></div>${discountSummary}${!discountSummary ? deliveryChargeLine : (deliveryCharge > 0 ? `<div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${formatMoney(deliveryCharge)}</span></div>` : '')}<div class="total-row"><span>${invoice.paid || invoice.returned ? 'TOTAL' : 'TOTAL DUE'}</span><span>${formatMoney(invoice.total)}</span></div><div class="dashed"></div>${paymentLine ? `<div class="status-row">${paymentLine}</div>` : ''}<div class="status-row">${invoice.returned ? '** RETURNED **' : invoice.paid ? 'PAID' : 'UNPAID'}</div>${invoice.returned ? `<div class="returned-notice">** REFUNDED / RETURNED **</div>` : ''}${invoice.returnNote ? `<div class="note-box">Return note: ${invoice.returnNote}</div>` : ''}${invoice.customerNote ? `<div class="note-box">Note: ${invoice.customerNote}</div>` : ''}<div class="dashed"></div><div class="footer">Thank you for visiting!</div><div class="footer">${receiptFooter}</div>`
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Receipt ${invoice.id}</title><style>${RECEIPT_STYLES}</style></head><body>${body}</body></html>`
 }
 
 export default function InvoiceDetailPage() {
+  const branding = useBranding()
   const { invoiceId } = useParams()
   const { menu } = useOrders()
   const { user } = useAuth()
@@ -157,15 +182,51 @@ export default function InvoiceDetailPage() {
 
   function printReceipt() {
     if (!invoice) return
-    const html = buildReceiptHtml(invoice, itemLabelById)
+    const html = buildReceiptHtml(invoice, itemLabelById, branding)
     const win = window.open('', '_blank', 'width=340,height=600,toolbar=0,menubar=0,location=0')
     if (!win) return
     win.document.write(html); win.document.close(); win.focus()
     setTimeout(() => { win.print() }, 300)
   }
 
+  // Shaped like the sheet below it, so arriving here straight from checkout
+  // shows the invoice settling into place rather than a bare line of text.
   if (invoiceLoading) {
-    return <main className="invoice-detail-page invoice-detail-view"><p className="muted">Loading invoice…</p></main>
+    return (
+      <main className="invoice-detail-page invoice-detail-view">
+        <SkeletonStatus label="Loading invoice…" />
+        <header className="invoice-view-toolbar">
+          <Skeleton width="8rem" height="1.6rem" />
+          <Skeleton width="11rem" height="1.6rem" />
+        </header>
+        <article className="card invoice-sheet invoice-view-document">
+          <div className="invoice-header invoice-view-header">
+            <div className="invoice-skeleton-stack">
+              <Skeleton width="3.5rem" height="0.7rem" />
+              <Skeleton width="12rem" height="1.5rem" />
+              <Skeleton width="7rem" height="1.1rem" />
+            </div>
+            <div className="invoice-skeleton-stack text-right">
+              <Skeleton width="3rem" height="0.7rem" />
+              <Skeleton width="9rem" height="1rem" />
+            </div>
+          </div>
+          <h2 className="sub invoice-lines-heading"><Skeleton width="6rem" height="1rem" /></h2>
+          <div className="invoice-skeleton-lines">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="invoice-skeleton-line">
+                <Skeleton width={`${40 + ((i * 11) % 30)}%`} height="0.95rem" />
+                <Skeleton width="3.5rem" height="0.95rem" />
+              </div>
+            ))}
+          </div>
+          <div className="invoice-skeleton-total">
+            <Skeleton width="5rem" height="1.15rem" />
+            <Skeleton width="6rem" height="1.15rem" />
+          </div>
+        </article>
+      </main>
+    )
   }
 
   if (!invoice) {

@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
-import { requireSuperAdmin } from '@/lib/session'
+import { requireReportReader } from '@/lib/session'
 import { getInvoicesInRange } from '@/lib/repositories/invoicesRepository'
 import {
-  calcInvoiceSplits,
   invoiceBusinessType,
   matchesBusiness,
   matchesPayment,
@@ -25,8 +24,8 @@ function parsePageSizeParam(raw, fallback = 25) {
 /** Invoice rows for the reports Invoices tab. Line detail is omitted — the
  *  top-sellers endpoint owns that, so this response stays small. */
 export async function GET(request) {
-  const session = await requireSuperAdmin()
-  if (!session) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
+  const ctx = await requireReportReader(request)
+  if (!ctx) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const range = parseReportRange(searchParams)
@@ -34,14 +33,13 @@ export async function GET(request) {
   const { from, to } = range
   const { business, payment } = parseReportFilters(searchParams)
 
-  const inRange = await getInvoicesInRange(from.toISOString(), to.toISOString())
+  const inRange = await getInvoicesInRange(ctx, from.toISOString(), to.toISOString())
 
   const rows = []
   for (const inv of inRange) {
     const businessType = invoiceBusinessType(inv)
     if (!matchesBusiness(businessType, business)) continue
     if (!matchesPayment(inv.paymentMethod ?? null, payment)) continue
-    const { cafePortion, burgerPortion } = calcInvoiceSplits(inv, businessType)
     rows.push({
       id: inv.id,
       orderId: inv.orderId,
@@ -50,8 +48,6 @@ export async function GET(request) {
       createdAt: inv.createdAt,
       total: roundMoney(inv.total ?? 0),
       deliveryCharge: roundMoney(inv.deliveryCharge ?? 0),
-      cafePortion,
-      burgerPortion,
       paid: Boolean(inv.paid),
       returned: Boolean(inv.returned),
       paymentMethod: inv.paymentMethod ?? null,

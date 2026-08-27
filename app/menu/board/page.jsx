@@ -2,51 +2,20 @@
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useOrders } from '@/context/OrdersContext.jsx'
+import { useBranding } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
-import { BUSINESS_TYPES, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
-import { buildCategoryTabs, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
+import { buildCategoryTabs, formatItemExtras, formatMoney, categoryIcon, categoryColor } from '@/utils/formatting.js'
 
 const SHOP_PHONE = '0315-9988295'
-
-const CATEGORY_ICONS = {
-  pizza: '🍕',
-  burger: '🍔',
-  fries: '🍟',
-  wings: '🍗',
-  shawarma: '🌯',
-  roll: '🌯',
-  drinks: '🥤',
-  other: '🍽️',
-}
-
-/**
- * Deliberately NOT derived from the brand theme (see the THEME SOURCE block in
- * app/styles/01-base.css). The poster wants each food category to read as its
- * own band at a glance, so these stay categorical — re-skinning the app does
- * not, and should not, recolour them. Same for DEAL_COLORS below.
- */
-const CATEGORY_COLORS = {
-  pizza: '#8a1f1f',
-  burger: '#c45c26',
-  fries: '#b8860b',
-  wings: '#6b3fa0',
-  shawarma: '#1f7a5c',
-  roll: '#1f7a5c',
-  drinks: '#1f7a3c',
-  other: '#55483c',
-}
 
 const DEAL_COLORS = ['#c42626', '#8a1f1f', '#c45c26', '#a01f3a', '#c42626', '#8a1f1f']
 
 const DEAL_PHOTOS = ['/menu-board/pizza-photo.png', '/menu-board/burger-photo.png', '/menu-board/wings-photo.png', '/menu-board/drinks-photo.png']
 
-function categoryIcon(key) {
-  return CATEGORY_ICONS[key] || '🍽️'
-}
 
-function categoryColor(key) {
-  return CATEGORY_COLORS[key] || CATEGORY_COLORS.other
-}
+
+
 
 function dealPhoto(deal, index) {
   const name = (deal.name || '').toLowerCase()
@@ -57,7 +26,7 @@ function dealPhoto(deal, index) {
   return DEAL_PHOTOS[index % DEAL_PHOTOS.length]
 }
 
-function buildMenuBoardSections(items, business) {
+function buildMenuBoardSections(items, business, categories) {
   const byCat = new Map()
   for (const item of items) {
     if (business !== 'all' && !itemMatchesBusiness(item, business)) continue
@@ -66,20 +35,23 @@ function buildMenuBoardSections(items, business) {
     byCat.get(k).push(item)
   }
   for (const list of byCat.values()) list.sort((a, b) => a.name.localeCompare(b.name))
-  const tabs = buildCategoryTabs([...byCat.values()].flat())
+  const tabs = buildCategoryTabs([...byCat.values()].flat(), categories)
   return tabs
     .map(({ key, label }) => ({ key, label, items: byCat.get(key) || [] }))
     .filter((section) => section.items.length > 0)
 }
 
 export default function MenuBoardPage() {
+  const branding = useBranding()
   const { menu, loading } = useOrders()
+  // More than one counter is the only reason to show a counter filter at all.
+  const hasCounters = (menu.brands?.length ?? 0) > 1
   const toast = useToast()
   const boardRef = useRef(null)
   const [business, setBusiness] = useState('all')
   const [downloading, setDownloading] = useState(false)
 
-  const sections = useMemo(() => buildMenuBoardSections(menu.items, business), [menu.items, business])
+  const sections = useMemo(() => buildMenuBoardSections(menu.items, business, menu.categories), [menu.items, business])
   const itemById = useMemo(() => new Map(menu.items.map((i) => [i.id, i])), [menu.items])
 
   const activeDeals = useMemo(() => menu.deals.filter((d) => d.status !== 'archived'), [menu.deals])
@@ -137,21 +109,26 @@ export default function MenuBoardPage() {
 
       <main className="menu-board-page">
         <section className="card menu-board-toolbar">
-          <div className="invoices-filter-tabs">
-            <button type="button" className={business === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setBusiness('all')}>
-              All
-            </button>
-            {BUSINESS_TYPES.map((bt) => (
-              <button
-                key={bt.id}
-                type="button"
-                className={business === bt.id ? 'primary sm' : 'ghost sm'}
-                onClick={() => setBusiness(bt.id)}
-              >
-                {bt.shortLabel}
+          {/* The whole strip disappears for a café with one counter: there is
+              nothing to filter between, and "All / <its own name>" would be
+              Chacha's shape showing through somebody else's board. */}
+          {hasCounters ? (
+            <div className="invoices-filter-tabs">
+              <button type="button" className={business === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setBusiness('all')}>
+                All
               </button>
-            ))}
-          </div>
+              {menu.brands.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  className={business === b.slug ? 'primary sm' : 'ghost sm'}
+                  onClick={() => setBusiness(b.slug)}
+                >
+                  {b.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <button
             type="button"
             className="primary sm"
@@ -182,7 +159,7 @@ export default function MenuBoardPage() {
                 <img src="/menu-board/pizza-photo.png" alt="" className="menu-board-photo menu-board-photo-right" aria-hidden="true" />
                 <div className="menu-board-brand-row">
                   <img src="/menu-board/logo-emblem.png" alt="" className="menu-board-logo-emblem" aria-hidden="true" />
-                  <h2 className="menu-board-brand-name">Chacha</h2>
+                  <h2 className="menu-board-brand-name">{branding?.name}</h2>
                 </div>
                 <div className="menu-board-ribbon"><span>• {ribbonLabel.toUpperCase()} •</span></div>
                 <p className="menu-board-brand-tag">Good Food • Good Mood</p>
@@ -193,8 +170,8 @@ export default function MenuBoardPage() {
                 <div className="menu-board-sections">
                   {sections.map((section) => (
                     <div key={section.key} className="menu-board-section">
-                      <div className="menu-board-section-head" style={{ background: categoryColor(section.key) }}>
-                        <span className="menu-board-section-icon" aria-hidden="true">{categoryIcon(section.key)}</span>
+                      <div className="menu-board-section-head" style={{ background: categoryColor(section.key, menu.categories) }}>
+                        <span className="menu-board-section-icon" aria-hidden="true">{categoryIcon(section.key, menu.categories)}</span>
                         <span className="menu-board-section-title">{section.label}</span>
                       </div>
                       <ul className="menu-board-item-list">

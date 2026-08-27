@@ -3,3 +3,9 @@
 /.next
 .env.local
 .env*.local
+# Local secrets copied aside by hand — .env*.local does not catch a .bak
+.env*.bak
+
+# Throwaway script that mints a signed session cookie from SESSION_SECRET.
+# A dev backdoor, and never something to publish.
+.claude-seal-tmp.mjs

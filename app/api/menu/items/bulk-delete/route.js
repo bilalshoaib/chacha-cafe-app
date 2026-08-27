@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import { loadMenu, saveMenu } from '@/lib/repositories/menuRepository'
 
 export async function POST(request) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { ids } = await request.json().catch(() => ({}))
   if (!Array.isArray(ids) || ids.length === 0) {
     return NextResponse.json({ error: 'ids must be a non-empty array' }, { status: 400 })
   }
   const uniq = [...new Set(ids.map(String))]
-  const menu = await loadMenu()
+  const menu = await loadMenu(ctx)
   const itemMap = new Map(menu.items.map((i) => [i.id, i]))
   const notFound = uniq.filter((id) => !itemMap.has(id))
   if (notFound.length) {
@@ -33,6 +33,6 @@ export async function POST(request) {
   }
   const removeSet = new Set(uniq)
   menu.items = menu.items.filter((i) => !removeSet.has(i.id))
-  await saveMenu(menu)
+  await saveMenu(ctx, menu)
   return NextResponse.json({ ok: true, removed: uniq.length })
 }

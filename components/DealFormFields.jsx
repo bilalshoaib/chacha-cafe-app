@@ -2,13 +2,13 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ADD_MENU_ITEM_HASH } from '@/constants/categories.js'
-import { BUSINESS_TYPES, DEAL_BUSINESS_TYPE_OPTIONS } from '@/constants/businessTypes.js'
 import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 
 export default function DealFormFields({
   business,
   setBusiness,
   onBusinessChange,
+  brands = [],
   name,
   setName,
   price,
@@ -26,6 +26,21 @@ export default function DealFormFields({
   showMenuHint = true,
 }) {
   const isCombined = business === 'combined'
+
+  // The counters this café actually has, not the product's founding two.
+  // Chacha's brand slugs are 'cafe' and 'burger', which is why its deals keep
+  // reading and writing exactly the values they always have.
+  const businessOptions = useMemo(() => {
+    const opts = brands.map((b) => ({ id: b.slug, label: b.name }))
+    // Splitting a deal across counters needs two counters to split it between.
+    if (opts.length > 1) opts.push({ id: 'combined', label: 'Combined' })
+    return opts
+  }, [brands])
+
+  const currentBusinessLabel =
+    businessOptions.length > 1
+      ? businessOptions.find((b) => b.id === business)?.label
+      : null
   const [itemSearch, setItemSearch] = useState('')
 
   // Everything the user has picked so far, flattened out of the category
@@ -92,12 +107,18 @@ export default function DealFormFields({
 
   return (
     <>
+      {/* Only asked where there is something to choose between. A café with
+          one counter puts every deal on that counter by definition, and
+          "Combined" is meaningless without a second counter to combine with —
+          so a single-counter café was being shown Chacha's own two businesses
+          and asked to pick between them. */}
+      {businessOptions.length > 1 ? (
       <div className="field">
-        <span className="field-label">Business</span>
-        {/* Segmented control, matching the menu-item form: three options worth
-            seeing at once, and switching business resets the item picker. */}
-        <div className="segmented" role="group" aria-label="Business">
-          {DEAL_BUSINESS_TYPE_OPTIONS.map((bt) => (
+        <span className="field-label">Counter</span>
+        {/* Segmented control, matching the menu-item form: the options are
+            worth seeing at once, and switching counter resets the item picker. */}
+        <div className="segmented" role="group" aria-label="Counter">
+          {businessOptions.map((bt) => (
             <button
               key={bt.id}
               type="button"
@@ -110,11 +131,12 @@ export default function DealFormFields({
               disabled={disabled}
               aria-pressed={business === bt.id}
             >
-              {bt.shortLabel ?? bt.label}
+              {bt.label}
             </button>
           ))}
         </div>
       </div>
+      ) : null}
 
       <label className="field">
         <span className="field-label">Deal name</span>
@@ -316,9 +338,9 @@ export default function DealFormFields({
       <div className="deal-grid">
         {categorySections.length === 0 ? (
           <p className="muted small deal-empty-cats">
-            {isCombined
+            {isCombined || !currentBusinessLabel
               ? 'Add menu items first, then bundle them here.'
-              : `Add menu items for ${BUSINESS_TYPES.find((b) => b.id === business)?.label} first, then bundle them here.`}
+              : `Add menu items for ${currentBusinessLabel} first, then bundle them here.`}
           </p>
         ) : visibleSections.length === 0 ? (
           <p className="muted small deal-empty-cats">No items match “{itemSearch.trim()}”.</p>

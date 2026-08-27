@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/session'
+import { requireTenant } from '@/lib/session'
 import {
   loadMenu,
   saveMenu,
@@ -11,8 +11,8 @@ import {
 import { parseMenuItemBusinessType } from '@/lib/businessTypes'
 
 export async function POST(request) {
-  const session = await requireAuth()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ctx = await requireTenant()
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json().catch(() => ({}))
   const { name, category, price } = body
@@ -36,7 +36,7 @@ export async function POST(request) {
   const cost = parseCostPrice(body.costPrice)
   if (cost.error) return NextResponse.json({ error: cost.error }, { status: 400 })
 
-  const menu = await loadMenu()
+  const menu = await loadMenu(ctx)
   const item = {
     id: newItemId(),
     name: String(name).trim().slice(0, 120),
@@ -48,6 +48,6 @@ export async function POST(request) {
     ...(flavour ? { flavour } : {}),
   }
   menu.items.push(item)
-  await saveMenu(menu)
+  await saveMenu(ctx, menu)
   return NextResponse.json(item, { status: 201 })
 }

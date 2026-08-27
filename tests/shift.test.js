@@ -39,3 +39,26 @@ test('a shift spanning a year boundary rolls back correctly', () => {
   // 02:00 Karachi on 1 Jan 2027 belongs to the shift opened 31 Dec 2026
   assert.equal(shiftDateForInstant(new Date('2026-12-31T21:00:00Z')), '2026-12-31')
 })
+
+test('a location with a different timezone rolls over at its own 6 PM', () => {
+  // 20:00 UTC is 01:00 next day in Karachi (still the old shift, since the
+  // boundary is 18:00 local) but 15:00 the same day in New York, which has
+  // not reached its boundary either — same instant, different calendar dates.
+  const instant = new Date('2026-08-03T20:00:00Z')
+  assert.equal(shiftDateForInstant(instant, { timezone: 'Asia/Karachi' }), '2026-08-03')
+  assert.equal(shiftDateForInstant(instant, { timezone: 'America/New_York' }), '2026-08-02')
+})
+
+test('a location can start its trading day at an hour other than six', () => {
+  // 09:00 in Karachi. A café whose day starts at 06:00 is already into the
+  // new shift; one that starts at noon is still in yesterday's.
+  const morning = new Date('2026-08-03T04:00:00Z')
+  assert.equal(shiftDateForInstant(morning, { shiftStartHour: 6 }), '2026-08-03')
+  assert.equal(shiftDateForInstant(morning, { shiftStartHour: 12 }), '2026-08-02')
+})
+
+test('omitting the options keeps the original Karachi behaviour', () => {
+  const instant = new Date('2026-08-03T20:00:00Z')
+  assert.equal(shiftDateForInstant(instant), shiftDateForInstant(instant, {}))
+  assert.equal(shiftDateForInstant(instant), '2026-08-03')
+})
