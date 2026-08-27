@@ -8,7 +8,6 @@ import ItemBreakdownPicker from '@/components/ItemBreakdownPicker.jsx'
 import { expenseCategoryLabel } from '@/utils/expenses.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 import {
-import { SkeletonTable } from '@/components/Skeleton.jsx'
   tradingDay,
   tradingDayRange,
   tradingDayShortLabel,
@@ -16,6 +15,7 @@ import { SkeletonTable } from '@/components/Skeleton.jsx'
   DEFAULT_DAY_START_HOUR,
   DEFAULT_DAY_END_HOUR,
 } from '@/lib/tradingDay.js'
+import { SkeletonTable } from '@/components/Skeleton.jsx'
 
 function toISOStart(d) {
   const x = new Date(d)
