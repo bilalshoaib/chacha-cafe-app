@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { api } from '@/api.js'
 import Modal, { ConfirmActions } from '@/components/Modal.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
+import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { businessTypeLabel, invoiceBusinessType } from '@/constants/businessTypes.js'
 import { categoryLabel, formatItemExtras, formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
@@ -188,8 +189,44 @@ export default function InvoiceDetailPage() {
     setTimeout(() => { win.print() }, 300)
   }
 
+  // Shaped like the sheet below it, so arriving here straight from checkout
+  // shows the invoice settling into place rather than a bare line of text.
   if (invoiceLoading) {
-    return <main className="invoice-detail-page invoice-detail-view"><p className="muted">Loading invoice…</p></main>
+    return (
+      <main className="invoice-detail-page invoice-detail-view">
+        <SkeletonStatus label="Loading invoice…" />
+        <header className="invoice-view-toolbar">
+          <Skeleton width="8rem" height="1.6rem" />
+          <Skeleton width="11rem" height="1.6rem" />
+        </header>
+        <article className="card invoice-sheet invoice-view-document">
+          <div className="invoice-header invoice-view-header">
+            <div className="invoice-skeleton-stack">
+              <Skeleton width="3.5rem" height="0.7rem" />
+              <Skeleton width="12rem" height="1.5rem" />
+              <Skeleton width="7rem" height="1.1rem" />
+            </div>
+            <div className="invoice-skeleton-stack text-right">
+              <Skeleton width="3rem" height="0.7rem" />
+              <Skeleton width="9rem" height="1rem" />
+            </div>
+          </div>
+          <h2 className="sub invoice-lines-heading"><Skeleton width="6rem" height="1rem" /></h2>
+          <div className="invoice-skeleton-lines">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="invoice-skeleton-line">
+                <Skeleton width={`${40 + ((i * 11) % 30)}%`} height="0.95rem" />
+                <Skeleton width="3.5rem" height="0.95rem" />
+              </div>
+            ))}
+          </div>
+          <div className="invoice-skeleton-total">
+            <Skeleton width="5rem" height="1.15rem" />
+            <Skeleton width="6rem" height="1.15rem" />
+          </div>
+        </article>
+      </main>
+    )
   }
 
   if (!invoice) {

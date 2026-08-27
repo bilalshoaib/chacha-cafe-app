@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/api.js'
 import { STARTER_MENUS } from '@/constants/starterMenus.js'
+import BrandingFields, { DEFAULT_BRANDING_FORM, LogoPicker } from '@/components/BrandingFields.jsx'
+import { useToast } from '@/context/ToastContext.jsx'
+import { TRIAL_DAYS_DEFAULT, TRIAL_DAYS_MAX } from '@/lib/tenantAccess.js'
 
 /**
  * Creating a café.
@@ -18,21 +21,32 @@ import { STARTER_MENUS } from '@/constants/starterMenus.js'
  * every menu item and every expense.
  *
  * Everything else is a starting point the owner edits from their own settings.
- * This screen sets no branding at all: a console that configures each customer
- * is a console that has to be used for every customer.
+ *
+ * Appearance is offered here but never required. The argument against it — a
+ * console that configures each customer is a console that has to be used for
+ * every customer — holds only if it is compulsory. Left blank, the café gets
+ * the product's own palette and looks deliberate; filled in, the owner signs
+ * in to something already wearing their colours, which is the difference
+ * between a handover and a to-do list.
  */
 export default function NewTenantPage() {
   const router = useRouter()
+  const toast = useToast()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [ownerEmail, setOwnerEmail] = useState('')
   const [ownerName, setOwnerName] = useState('')
   const [plan, setPlan] = useState('trial')
+  const [trialDays, setTrialDays] = useState(String(TRIAL_DAYS_DEFAULT))
   const [separateCounters, setSeparateCounters] = useState(false)
   const [counterNames, setCounterNames] = useState(['', ''])
   const [starter, setStarter] = useState('cafe')
   const [currency, setCurrency] = useState('PKR')
   const [timezone, setTimezone] = useState('Asia/Karachi')
+  const [branding, setBranding] = useState(DEFAULT_BRANDING_FORM)
+  // Held in memory until the café exists to attach it to, then sent with the
+  // rest of the form. There is nothing to upload against before that.
+  const [logo, setLogo] = useState(null)
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -47,11 +61,16 @@ export default function NewTenantPage() {
     try {
       setCreated(await api.createTenant({
         name, slug: autoSlug, ownerEmail, ownerName, plan,
+        ...(plan === 'trial' ? { trialDays: Number(trialDays) } : {}),
         brandNames: separateCounters ? counterNames.filter((c) => c.trim()) : [],
         starterMenu: starter, currency, timezone,
+        ...branding,
+        logo: logo ? { mime: logo.mime, data: logo.data } : null,
       }))
+      toast.success(`${name} created.`)
     } catch (err) {
       setError(err.message || 'Could not create the café.')
+      toast.error(err.message || 'Could not create the café.')
     } finally {
       setSaving(false)
     }
@@ -79,6 +98,11 @@ export default function NewTenantPage() {
             <dt>Password</dt>
             <dd><code className="handover-password">{created.owner.temporaryPassword}</code></dd>
           </dl>
+          {created.logoError ? (
+            <p className="banner error" role="alert">
+              The café was created, but the logo was not stored: {created.logoError} Upload it again from the café’s page.
+            </p>
+          ) : null}
           <p>They should change it from Settings once they have signed in.</p>
           <div className="pf-actions">
             <Link href={`/platform/tenants/${created.tenant.id}`} className="primary btn-link">Open café</Link>
@@ -152,6 +176,39 @@ export default function NewTenantPage() {
               <option value="multi-branch">Multi-branch</option>
             </select>
           </label>
+
+          {/* Only a trial has a clock, so only a trial asks for one. */}
+          {plan === 'trial' ? (
+            <label className="pf-field">
+              <span>Trial length</span>
+              <input
+                type="number"
+                min={1}
+                max={TRIAL_DAYS_MAX}
+                value={trialDays}
+                onChange={(e) => setTrialDays(e.target.value)}
+              />
+              <span className="pf-hint">
+                Days from today. When it runs out they are signed out and cannot sign back in until
+                you extend it or move them onto a paid plan. You can change it at any time.
+              </span>
+            </label>
+          ) : null}
+        </fieldset>
+
+        <fieldset className="pf-fieldset">
+          <legend>How it looks</legend>
+          <p className="pf-hint">
+            Optional. Left alone, the café gets the product’s own colours and can be re-skinned at any time.
+          </p>
+
+          <BrandingFields value={branding} onChange={setBranding}>
+            <LogoPicker
+              previewUrl={logo?.previewUrl ?? null}
+              onPick={(picked) => setLogo(picked)}
+              onRemove={() => setLogo(null)}
+            />
+          </BrandingFields>
         </fieldset>
 
         <fieldset className="pf-fieldset">

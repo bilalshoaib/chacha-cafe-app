@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
-import { requireTenantSuperAdmin } from '@/lib/session'
+import { requireReportReader } from '@/lib/session'
 import { getInvoicesInRange } from '@/lib/repositories/invoicesRepository'
 import { findExpenses } from '@/lib/repositories/expensesRepository'
 import { listBrands } from '@/lib/repositories/menuRepository'
+import { recordReportAccess } from '@/lib/audit'
 import {
   calcInvoiceSplits,
   invoiceBusinessType,
@@ -15,8 +16,20 @@ import {
 
 /** Headline totals for the reports Summary tab. Reads no invoice line detail. */
 export async function GET(request) {
-  const ctx = await requireTenantSuperAdmin()
+  const ctx = await requireReportReader(request)
   if (!ctx) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
+
+  // Only this route records the visit, of the four the reports screen calls.
+  // It is the tab that opens first, so a sitting always passes through it, and
+  // logging in all four would write the same entry four times for one look.
+  if (ctx.fromConsole) {
+    await recordReportAccess({
+      actorId: ctx.userId,
+      actorEmail: ctx.actorEmail,
+      tenantId: ctx.tenantId,
+      detail: 'Viewed this café’s sales and expense reports from the platform console',
+    })
+  }
 
   const { searchParams } = new URL(request.url)
   const range = parseReportRange(searchParams)

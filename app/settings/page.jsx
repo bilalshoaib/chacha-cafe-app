@@ -58,12 +58,16 @@ export default function SettingsPage() {
         <div className="page-hero-deco" aria-hidden="true">🔒 👤 ⚙️</div>
         <div className="page-hero-body">
           <div className="page-hero-icon">⚙️</div>
-          <div style={{ flex: 1 }}>
+          <div>
             <h1 className="page-hero-title">Settings</h1>
             <p className="page-hero-sub">Manage your profile, password, and team accounts.</p>
           </div>
-          <Link href="/orders" className="ghost sm" style={{ flexShrink: 0, alignSelf: 'flex-start' }}>← Back</Link>
         </div>
+        {/* A sibling of the body, not a child of it — which is how the Menu and
+            Deals heroes place theirs. .page-hero spaces its children apart, so
+            an action nested inside the body instead stopped wherever the
+            subtitle ended and sat stranded against the title, mid-banner. */}
+        <Link href="/orders" className="page-hero-action">← Back</Link>
       </div>
 
       {user.role === 'super_admin' ? (

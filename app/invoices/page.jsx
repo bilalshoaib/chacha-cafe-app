@@ -186,9 +186,15 @@ export default function InvoicesListPage() {
           </p>
         ) : null}
 
-        <div className="invoices-list-meta">
-          <p className="muted small">{loading ? 'Loading…' : pageSummary}</p>
-        </div>
+        {/* Only when there is something to count. With no invoices this line
+            said "No invoices yet" directly above a second paragraph saying the
+            same thing — the empty state below is the one that stays, because
+            it also names the filter that is hiding everything. */}
+        {loading || invoices.length ? (
+          <div className="invoices-list-meta">
+            <p className="muted small">{loading ? 'Loading…' : pageSummary}</p>
+          </div>
+        ) : null}
 
         {!loading && invoices.length === 0 ? (
           <p className="muted">
@@ -257,7 +263,8 @@ export default function InvoicesListPage() {
           </div>
         )}
 
-        {!loading ? (
+        {/* Nothing to page through, so no "rows per page" over an empty table. */}
+        {!loading && invoices.length ? (
           <Pagination
             page={pagination.page}
             totalPages={pagination.totalPages}

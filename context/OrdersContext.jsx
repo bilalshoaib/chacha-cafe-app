@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { buildCategoryTabs } from '@/utils/formatting.js'
@@ -61,6 +61,7 @@ function buildDealLine(deal, qty, discounts = {}) {
 
 export function OrdersProvider({ children }) {
   const router = useRouter()
+  const pathname = usePathname()
   const { authenticated, user } = useAuth()
   const [menu, setMenu] = useState({ items: [], deals: [], categories: [], brands: [] })
   const [orders, setOrders] = useState([])
@@ -71,6 +72,25 @@ export function OrdersProvider({ children }) {
   const [orderType, setOrderType] = useState('dine_in')
   const [deliveryCharge, setDeliveryCharge] = useState('')
   const [checkingOut, setCheckingOut] = useState(false)
+  // Set the moment checkout succeeds and held until the invoice page is on
+  // screen. Without it the order screen would briefly re-render its empty
+  // "start a new order" state — the cart having just been cleared — before
+  // the router got round to the invoice, which read as a stray flash.
+  const [openingInvoiceId, setOpeningInvoiceId] = useState(null)
+
+  // The provider outlives the navigation, so the flag has to be dropped once
+  // the invoice route has actually taken over. The timeout is the backstop for
+  // a push that never lands — better to fall back to the order screen than to
+  // leave the till spinning.
+  useEffect(() => {
+    if (!openingInvoiceId) return undefined
+    if (pathname !== '/orders') {
+      setOpeningInvoiceId(null)
+      return undefined
+    }
+    const t = setTimeout(() => setOpeningInvoiceId(null), 10000)
+    return () => clearTimeout(t)
+  }, [openingInvoiceId, pathname])
 
   const refreshAll = useCallback(async () => {
     setError('')
@@ -264,6 +284,7 @@ export function OrdersProvider({ children }) {
         orderType,
         deliveryCharge: dc,
       })
+      setOpeningInvoiceId(invoice.id)
       setOrders((prev) => prev.filter((o) => o.id !== activeOrderId))
       setActiveOrderId(null)
       setCustomerNote('')
@@ -271,6 +292,7 @@ export function OrdersProvider({ children }) {
       setDeliveryCharge('')
       router.push(`/invoices/${invoice.id}`)
     } catch (e) {
+      setOpeningInvoiceId(null)
       setError(e.message)
     } finally {
       setCheckingOut(false)
@@ -298,6 +320,7 @@ export function OrdersProvider({ children }) {
     setError,
     loading,
     checkingOut,
+    openingInvoiceId,
     refreshAll,
     startNewOrder,
     addItemToOrder,
@@ -310,7 +333,7 @@ export function OrdersProvider({ children }) {
   }), [
     menu, orders, activeOrderId, activeOrder,
     orderMenuItems, orderDeals, orderCategoryTabs, orderTotal,
-    categoryTabs, customerNote, orderType, deliveryCharge, error, loading, checkingOut, refreshAll,
+    categoryTabs, customerNote, orderType, deliveryCharge, error, loading, checkingOut, openingInvoiceId, refreshAll,
   ])
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>

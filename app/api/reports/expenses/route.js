@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { requireTenantSuperAdmin } from '@/lib/session'
+import { requireReportReader } from '@/lib/session'
 import { findExpenses } from '@/lib/repositories/expensesRepository'
 import { parseReportFilters, parseReportRange, roundMoney } from '@/lib/reports'
 
 /** Expense rows for the reports Expenses tab, filtered by date spent. */
 export async function GET(request) {
-  const ctx = await requireTenantSuperAdmin()
+  const ctx = await requireReportReader(request)
   if (!ctx) return NextResponse.json({ error: 'Super admin only' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)

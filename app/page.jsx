@@ -3,7 +3,29 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
+import { useBranding } from '@/context/BrandingContext.jsx'
 import { buildCategoryTabs, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+
+/**
+ * A sentence about the café built from what it actually sells.
+ *
+ * This page used to carry a paragraph about pizzas, burgers, fries, wings,
+ * shawarmas and rolls, written for the one café the app was built for. Every
+ * café that has joined since has been describing that café's menu to its own
+ * customers. A coffee house cannot advertise wings, so the copy is assembled
+ * from the categories on the menu being shown and is right by construction.
+ */
+function aboutLine(name, sections) {
+  const labels = sections.map((s) => s.label.toLowerCase())
+  if (!labels.length) {
+    return `Come in and order at the counter — everything on the menu is made to order.`
+  }
+  const shown = labels.slice(0, 4)
+  const list = shown.length > 1
+    ? `${shown.slice(0, -1).join(', ')} and ${shown[shown.length - 1]}`
+    : shown[0]
+  return `${name} serves ${list}${labels.length > shown.length ? ' and more' : ''} — made to order for counter service and takeaway.`
+}
 
 export default function HomePage() {
   const { authenticated } = useAuth()
@@ -16,7 +38,12 @@ export default function HomePage() {
     setLoading(true)
     ;(async () => {
       try {
-        const m = await api.getPublicMenu()
+        // Read off window rather than useSearchParams(), which would put this
+        // whole page behind a Suspense boundary for the sake of one optional
+        // parameter. ?tenant= names a café for a visitor with no session; staff
+        // and single-café installs need none.
+        const slug = new URLSearchParams(window.location.search).get('tenant')
+        const m = await api.getPublicMenu(slug)
         if (!cancelled) { setMenu(m); setError('') }
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load menu.')
@@ -25,7 +52,44 @@ export default function HomePage() {
       }
     })()
     return () => { cancelled = true }
-  }, [])
+    // Re-resolved when the session changes: which café this is depends on who
+    // is signed in, so signing in or out changes the answer.
+  }, [authenticated])
+
+  // The signed-in café comes from the layout, which resolved it on the server.
+  // A signed-out visitor reading ?tenant= has no session, so the café travels
+  // with the menu instead — without it this page greeted every café's
+  // customers with the name of the café the app was first built for.
+  const sessionBranding = useBranding()
+  const branding = menu?.branding ?? sessionBranding
+
+  // The colours are normally written into a :root block by the server-rendered
+  // layout, which cannot know which café a signed-out ?tenant= visitor is
+  // asking about. Setting the two custom properties here re-skins the whole
+  // page — every other colour in the stylesheets is mixed from these — and is
+  // a no-op when the layout already got it right.
+  useEffect(() => {
+    const b = menu?.branding
+    if (!b?.primary || !b?.secondary) return undefined
+    const root = document.documentElement
+    const previous = [root.style.getPropertyValue('--brand-primary'), root.style.getPropertyValue('--brand-secondary')]
+    root.style.setProperty('--brand-primary', b.primary)
+    root.style.setProperty('--brand-secondary', b.secondary)
+    return () => {
+      root.style.setProperty('--brand-primary', previous[0])
+      root.style.setProperty('--brand-secondary', previous[1])
+    }
+  }, [menu?.branding])
+
+  // And the tab, for the same reason. generateMetadata() runs on the server
+  // from the session, which a customer following a ?tenant= link does not
+  // have, so their browser tab read the product's own name above the café's
+  // own menu.
+  useEffect(() => {
+    if (menu?.branding?.name) document.title = menu.branding.name
+  }, [menu?.branding?.name])
+
+  const cafeName = branding?.name ?? ''
 
   const itemById = useMemo(() => new Map((menu?.items ?? []).map((i) => [i.id, i])), [menu?.items])
 
@@ -49,6 +113,21 @@ export default function HomePage() {
     () => (menu?.deals ?? []).filter((d) => d.status !== 'archived'),
     [menu?.deals],
   )
+
+  /**
+   * The chips under the hero, from the café's own categories.
+   *
+   * These were five fixed chips — Burgers, Pizzas, Shawarma, Wings, Drinks —
+   * so a café selling none of them advertised all five and then showed a menu
+   * with none on it. Categories carry their own icon, which is what the café
+   * chose when it made them, so the strip needs nothing new stored.
+   */
+  const categoryChips = useMemo(() => {
+    const iconOf = new Map((menu?.categories ?? []).map((c) => [c.key, c.icon]))
+    return categorySections.slice(0, 6).map(({ key, label }) => ({
+      key, label, icon: iconOf.get(key) || null,
+    }))
+  }, [categorySections, menu?.categories])
 
   const menuBody = (
     <>
@@ -126,11 +205,8 @@ export default function HomePage() {
 
       <section className="hp-about">
         <div className="hp-about-inner">
-          <h2 className="hp-about-title">Always Fresh &amp; Delicious</h2>
-          <p className="hp-about-text">
-            We are a neighbourhood cafe focused on pizzas, burgers, fries, wings, shawarmas, and rolls —
-            made with quality ingredients for quick counter service and takeaway. Visit us to place an order.
-          </p>
+          <h2 className="hp-about-title">{branding?.tagline || cafeName}</h2>
+          <p className="hp-about-text">{aboutLine(cafeName, categorySections)}</p>
           <div className="hp-about-badges">
             <span className="hp-badge">🌿 Fresh Ingredients</span>
             <span className="hp-badge">⭐ Quality Food</span>
@@ -148,14 +224,7 @@ export default function HomePage() {
         <div className="hp-hero" style={{ backgroundImage: 'url(/hero-bg.png)' }}>
           <div className="hp-hero-overlay" />
           <div className="hp-hero-content">
-            <div className="hp-hero-kicker">★ Always Fresh &amp; Delicious ★</div>
-            <h1 className="hp-logo-chacha">CHACHA</h1>
-            <div className="hp-logo-sub">
-              <span className="hp-logo-star">★</span>
-              BURGER &amp; CAFE
-              <span className="hp-logo-star">★</span>
-            </div>
-            <p className="hp-logo-tagline">Good Food ★ Good Mood</p>
+            <HeroMark branding={branding} />
             <div className="hp-hero-actions">
               <a href="#deals" className="hp-hero-btn-primary">View Deals</a>
               <a href="#menu" className="hp-hero-btn-ghost">Full Menu</a>
@@ -164,20 +233,16 @@ export default function HomePage() {
         </div>
 
         {/* ── Category strip ── */}
-        <div className="hp-cat-strip">
-          {[
-            { icon: '🍔', label: 'Burgers' },
-            { icon: '🍕', label: 'Pizzas' },
-            { icon: '🌯', label: 'Shawarma' },
-            { icon: '🍗', label: 'Wings' },
-            { icon: '🥤', label: 'Drinks' },
-          ].map(({ icon, label }) => (
-            <div key={label} className="hp-cat-chip">
-              <span className="hp-cat-chip-icon">{icon}</span>
-              <span className="hp-cat-chip-label">{label}</span>
-            </div>
-          ))}
-        </div>
+        {categoryChips.length ? (
+          <div className="hp-cat-strip">
+            {categoryChips.map(({ key, label, icon }) => (
+              <div key={key} className="hp-cat-chip">
+                {icon ? <span className="hp-cat-chip-icon">{icon}</span> : null}
+                <span className="hp-cat-chip-label">{label}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         {/* ── Menu content ── */}
         <main className="hp-main">{menuBody}</main>
@@ -189,10 +254,9 @@ export default function HomePage() {
 
         <footer className="hp-footer">
           <div className="hp-footer-logo">
-            <span className="hp-footer-chacha">CHACHA</span>
-            <span className="hp-footer-cafe"> BURGER &amp; CAFE</span>
+            <span className="hp-footer-name">{cafeName}</span>
           </div>
-          <p className="hp-footer-tagline">Good Food ★ Good Mood</p>
+          {branding?.tagline ? <p className="hp-footer-tagline">{branding.tagline}</p> : null}
           <p className="hp-footer-copy muted small">Visit us at the cafe for counter service &amp; takeaway.</p>
         </footer>
       </div>
@@ -204,14 +268,45 @@ export default function HomePage() {
       <div className="hp-staff-hero" style={{ backgroundImage: 'url(/hero-bg.png)' }}>
         <div className="hp-hero-overlay hp-hero-overlay--shallow" />
         <div className="hp-hero-content hp-hero-content--staff">
-          <h1 className="hp-logo-chacha hp-logo-chacha--sm">CHACHA</h1>
-          <div className="hp-logo-sub hp-logo-sub--sm">
-            <span className="hp-logo-star">★</span> BURGER &amp; CAFE <span className="hp-logo-star">★</span>
-          </div>
-          <p className="hp-logo-tagline">Good Food ★ Good Mood</p>
+          <HeroMark branding={branding} small />
         </div>
       </div>
       <main className="hp-main hp-main--staff">{menuBody}</main>
     </div>
+  )
+}
+
+/**
+ * The name over the door: the café's logo when it has uploaded one, its name
+ * in the display face either way, and its tagline underneath.
+ *
+ * All three used to be the words CHACHA / BURGER & CAFE / Good Food ★ Good
+ * Mood, typed into the markup. The colours around them were already the
+ * café's own — every shade on this page is mixed from its two brand
+ * properties — which made the mismatch worse rather than better: a coffee
+ * house got its own palette wrapped around somebody else's name.
+ *
+ * The name is sized from its own length rather than by a fixed clamp, so a
+ * short one still fills the hero and a long one stays inside it instead of
+ * running off the side.
+ */
+function HeroMark({ branding, small = false }) {
+  const name = branding?.name ?? ''
+  return (
+    <>
+      {branding?.logoUrl ? (
+        <div className={`hp-hero-logo${small ? ' hp-hero-logo--sm' : ''}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={branding.logoUrl} alt={`${name} logo`} />
+        </div>
+      ) : null}
+      <h1
+        className={`hp-logo-name${small ? ' hp-logo-name--sm' : ''}`}
+        style={{ '--name-chars': Math.max(name.length, 5) }}
+      >
+        {name}
+      </h1>
+      {branding?.tagline ? <p className="hp-logo-tagline">{branding.tagline}</p> : null}
+    </>
   )
 }

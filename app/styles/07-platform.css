@@ -217,6 +217,7 @@
 .pill-active    { color: var(--pf-good); }
 .pill-trial     { color: var(--pf-warn); }
 .pill-suspended { color: var(--pf-danger); }
+.pill-restricted { color: var(--pf-danger); }
 
 .platform-empty {
   padding: 2.5rem 1rem;
@@ -253,6 +254,22 @@
 }
 
 .pf-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* A number field and the button that acts on it, sitting on one line. */
+.pf-actions-inline { align-items: flex-end; }
+.pf-field-inline { margin: 0; flex: 0 0 auto; }
+.pf-field-inline input { width: 7rem; }
+
+/* The exact words a blocked café is shown, quoted back to the platform owner
+   so they can see what they are about to make somebody read. */
+.pf-quoted {
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--pf-warn);
+  background: color-mix(in srgb, var(--pf-warn) 7%, transparent);
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+}
 
 /* The left column stacks its cards; the trail on the right is a single tall
    one, so it needs no wrapper of its own. */
@@ -418,9 +435,394 @@
   font-weight: 700;
 }
 
+/* ── A café's appearance ────────────────────────────────────────────────────
+   The console can set a customer's two brand colours and their logo. Those
+   colours are the whole palette of their app, so the fields are grouped with a
+   preview of the one place both meet — the header — rather than left as two
+   hex boxes whose effect can only be discovered by saving.
+
+   The preview paints from its own custom properties, not from --brand-primary,
+   because the console must keep looking like the console while showing what
+   somebody else's app will look like.                                        */
+.pf-colour-field { flex: 1 1 14rem; }
+.pf-colour-row { display: flex; align-items: center; gap: 0.5rem; }
+
+/* The native picker, stripped of the chrome browsers wrap it in so it reads as
+   a swatch rather than a form control. */
+.pf-swatch {
+  flex: none;
+  width: 2.6rem;
+  height: 2.3rem;
+  padding: 0;
+  border: 1px solid var(--pf-line-strong);
+  border-radius: 7px;
+  background: none;
+  cursor: pointer;
+}
+.pf-swatch::-webkit-color-swatch-wrapper { padding: 3px; }
+.pf-swatch::-webkit-color-swatch { border: 0; border-radius: 4px; }
+.pf-swatch::-moz-color-swatch { border: 0; border-radius: 4px; }
+
+.pf-hex {
+  flex: 1 1 6rem;
+  min-width: 5.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-transform: lowercase;
+}
+
+.pf-brand-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 0.9rem;
+  border-radius: 9px;
+  background: var(--preview-primary);
+  color: #fff;
+}
+.pf-preview-mark {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--preview-secondary);
+}
+.pf-preview-text { display: flex; flex-direction: column; line-height: 1.25; margin-right: auto; }
+.pf-preview-text strong { font-size: 0.95rem; }
+.pf-preview-text span { font-size: 0.76rem; opacity: 0.8; }
+.pf-preview-btn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  background: var(--preview-secondary);
+  color: #1b1b1b;
+}
+.pf-preview-price { font-size: 0.95rem; font-weight: 700; color: var(--preview-secondary); }
+
+/* ── The logo ───────────────────────────────────────────────────────────── */
+.pf-logo-row { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+.pf-logo-preview {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 9px;
+  border: 1px solid var(--pf-line-strong);
+  /* Chequerboard, so a transparent PNG reads as transparent rather than as a
+     white square that will look wrong on the café's coloured header. */
+  background-image:
+    linear-gradient(45deg, var(--pf-line) 25%, transparent 25%, transparent 75%, var(--pf-line) 75%),
+    linear-gradient(45deg, var(--pf-line) 25%, transparent 25%, transparent 75%, var(--pf-line) 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 7px 7px;
+  overflow: hidden;
+}
+.pf-logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.pf-logo-preview.is-empty {
+  background-image: none;
+  color: var(--pf-ink-soft);
+  font-size: 0.74rem;
+}
+.pf-logo-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+.pf-file { font-size: 0.82rem; max-width: 100%; }
+
+.pf-hint-error { color: var(--pf-danger); font-weight: 600; }
+
+/* Reports and the status pill share the top-right corner of a café's page. */
+.platform-head-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
 @media (max-width: 640px) {
   .handover { grid-template-columns: 1fr; gap: 0.15rem 0; }
   .handover dd { margin-bottom: 0.7rem; }
   .platform-toolbar { align-items: stretch; }
   .window-picker { overflow-x: auto; }
+  .pf-colour-row { flex-wrap: wrap; }
+  .pf-logo-actions { align-items: stretch; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ONE CAFÉ
+
+   Six tabs behind a single header. The screen this replaced held every
+   action a café has at once — two forms, a plan picker, a trial, two ways to
+   shut them off and the audit trail — in one column, which meant the button
+   that locks a business out of its till sat a scroll below a colour picker.
+
+   The header wears the café's own colour rather than the console's. It is the
+   one place in this application where somebody else's brand is the subject,
+   and carrying it here means you can tell at a glance which café you are
+   about to change something for.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.tenant-console { gap: 1rem; }
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+.tenant-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 1.1rem;
+  padding: 1.15rem 1.35rem;
+  border: 1px solid var(--pf-line);
+  border-radius: 11px;
+  background:
+    linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--hero-tint) 13%, #fff) 0%,
+      color-mix(in srgb, var(--hero-tint) 4%, #fff) 42%,
+      #fff 78%
+    );
+  /* The café's colour as a rule down the edge — enough to identify them
+     without turning an operator's tool into their app. */
+  box-shadow: inset 4px 0 0 var(--hero-tint);
+}
+
+.tenant-hero-main { min-width: 0; }
+.tenant-hero h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.tenant-hero-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.84rem;
+  color: var(--pf-ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+.tenant-hero-meta code {
+  background: color-mix(in srgb, var(--hero-tint) 10%, transparent);
+  padding: 0.05em 0.4em;
+  border-radius: 4px;
+  font-size: 0.92em;
+}
+.tenant-hero-plan { text-transform: capitalize; }
+.tenant-hero-dot { opacity: 0.45; }
+.tenant-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+.tenant-hero-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ── The café's mark ────────────────────────────────────────────────────── */
+.tenant-mark {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 10px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--mark-a), var(--mark-b));
+  color: #fff;
+  font-family: var(--font-display, inherit);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+}
+.tenant-mark-logo { background: #fff; border: 1px solid var(--pf-line); }
+.tenant-mark-logo img { width: 100%; height: 100%; object-fit: contain; padding: 0.25rem; }
+.tenant-mark-ghost { background: var(--pf-line); box-shadow: none; }
+
+.tenant-hero-skeleton { box-shadow: none; background: #fff; }
+.tenant-hero-lines { display: flex; flex-direction: column; gap: 0.5rem; }
+
+/* ── The strip that says they cannot work ───────────────────────────────── */
+.tenant-blocked-strip {
+  margin: 0;
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--pf-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--pf-danger) 7%, #fff);
+  color: var(--pf-danger);
+  font-size: 0.88rem;
+}
+.tenant-blocked-strip a { color: inherit; font-weight: 600; }
+
+/* ── Tabs ───────────────────────────────────────────────────────────────── */
+.tenant-tabs {
+  display: flex;
+  gap: 0.15rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--pf-line-strong);
+}
+.tenant-tabs::-webkit-scrollbar { display: none; }
+
+.tenant-tab {
+  position: relative;
+  padding: 0.6rem 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--pf-ink-soft);
+  border-radius: 7px 7px 0 0;
+  /* Reserves the weight the active tab will take, so selecting one does not
+     shove its neighbours sideways. */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tenant-tab:hover { background: color-mix(in srgb, var(--brand-primary) 6%, transparent); color: var(--brand-primary); }
+.tenant-tab[aria-current='page'] {
+  color: var(--brand-primary);
+  font-weight: 650;
+  border-bottom-color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 5%, transparent);
+}
+
+.tenant-tab-body { padding-top: 0.25rem; }
+/* The action tabs are a single column of cards. Left at the full 74rem of
+   the console they gave a two-word reason field the width of a table, so the
+   column is capped at a comfortable reading measure and the stats grid on the
+   Overview keeps the whole width to itself. */
+.tenant-tab-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 46rem;
+}
+/* A tab holding one form does not need the full width of a two-column
+   screen — a name field 70 characters wide is harder to read, not easier. */
+.tenant-tab-single { max-width: 42rem; }
+
+/* The buttons that stop a café read as plain red text with the ghost styling
+   the rest of the console uses — which is the wrong weight for the two
+   controls that lock a business out of its own till. Outlined, so they look
+   like something you press on purpose, without the solid red of a delete
+   these are not: both are reversible. */
+.pf-card-danger .pf-actions .ghost.danger,
+.pf-card-suspended .pf-actions .ghost.danger {
+  border: 1px solid color-mix(in srgb, var(--pf-danger) 45%, transparent);
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+}
+.pf-card-danger .pf-actions .ghost.danger:hover:not(:disabled),
+.pf-card-suspended .pf-actions .ghost.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pf-danger) 8%, transparent);
+  border-color: var(--pf-danger);
+}
+
+.tenant-overview { display: flex; flex-direction: column; gap: 1rem; }
+.tenant-card-foot { margin-top: 0.85rem; }
+
+@media (max-width: 640px) {
+  .tenant-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 0.85rem;
+  }
+  .tenant-hero-actions { grid-column: 1 / -1; }
+  .tenant-hero-actions .btn-link { flex: 1; text-align: center; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE PLATFORM'S BOOKS
+
+   Money in, money out, and what is left. Entry on the left, what has been
+   entered on the right — costs arrive in batches, so the form stays put and
+   the list beside it grows as you work rather than replacing the form.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.books-split {
+  display: grid;
+  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .books-split { grid-template-columns: 1fr; }
+}
+/* Sticks while the list beside it is scrolled, so entering the tenth receipt
+   does not mean scrolling back up to the form. */
+@media (min-width: 901px) {
+  .books-entry { position: sticky; top: 1rem; }
+}
+
+.books-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.books-check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.5rem;
+  align-items: center;
+  margin: 0.35rem 0 0.9rem;
+  font-size: 0.88rem;
+}
+.books-check input { margin: 0; }
+.books-check .pf-hint { grid-column: 2; }
+
+/* In and out get an edge each. Colour rather than an arrow, because the two
+   figures are read together and the eye should separate them at a glance. */
+.books-stat-in  { border-left: 3px solid var(--pf-good); }
+.books-stat-in .platform-stat-value { color: var(--pf-good); }
+.books-stat-out { border-left: 3px solid var(--pf-danger); }
+.books-stat-out .platform-stat-value { color: var(--pf-danger); }
+
+/* A share-of-the-largest bar under a figure. Sized against its neighbours
+   rather than against a total, so one big café does not flatten the rest. */
+.books-bar {
+  display: block;
+  height: 3px;
+  margin-top: 0.3rem;
+  border-radius: 2px;
+  background: var(--pf-line);
+  overflow: hidden;
+}
+.books-bar > span { display: block; height: 100%; border-radius: 2px; }
+.books-bar-good > span { background: var(--pf-good); }
+.books-bar-out > span  { background: var(--pf-danger); }
+
+.books-cat-list { list-style: none; margin: 0; padding: 0; }
+.books-cat-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.1rem 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--pf-line);
+}
+.books-cat-list li:last-child { border-bottom: 0; }
+.books-cat-name { text-transform: capitalize; font-size: 0.9rem; }
+.books-cat-amount { font-variant-numeric: tabular-nums; font-weight: 600; }
+.books-cat-list .books-bar { grid-column: 1 / -1; }
+
+.books-price-list { list-style: none; margin: 0; padding: 0; }
+.books-price-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--pf-line);
+}
+.books-price-list li:last-child { border-bottom: 0; }
+.books-price-plan {
+  flex: 1 1 8rem;
+  text-transform: capitalize;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.books-price-list input { width: 8rem; }
+.books-price-amount { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.books-pill-repeat {
+  margin-left: 0.4rem;
+  color: var(--pf-ink-soft);
+  font-size: 0.68rem;
+  text-transform: none;
+}
+
+/* Delete asks first, in place. A row of books is not something to lose to a
+   mis-click, and a modal for one line is heavier than the decision. */
+.books-confirm { display: inline-flex; gap: 0.15rem; white-space: nowrap; }

@@ -3,6 +3,7 @@ import { pool } from '@/lib/db'
 import { requireTenant } from '@/lib/session'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import { saveInvoice, nextInvoiceNumber, nextShiftNumber } from '@/lib/repositories/invoicesRepository'
+import { getTenantDayHours } from '@/lib/repositories/tenantsRepository'
 import { buildOrderLine } from '@/lib/orderLines'
 import { invoiceBusinessTypeForLines } from '@/lib/businessTypes'
 import { shiftDateForInstant } from '@/lib/shift'
@@ -109,8 +110,16 @@ async function handleCheckout(request, marks, stats) {
 
   const invoiceNum = await timed(marks, 'nextInvoiceNumber', () => nextInvoiceNumber(INVOICE_SEQUENCE))
   const createdAt = new Date()
-  const shiftDate = shiftDateForInstant(createdAt)
-  const shiftNumber = await timed(marks, 'nextShiftNumber', () => nextShiftNumber(shiftDate))
+  // Which day this sale belongs to, by this café's clock rather than by
+  // Chacha's. A breakfast place opening at seven had every morning's takings
+  // counted against the day before, and its order numbers resetting mid
+  // service, because the hour was a constant in lib/shift.js.
+  //
+  // Free of a round trip: requireTenant() read and cached this row on the way
+  // into this same request.
+  const { startHour } = await timed(marks, 'tenantDayHours', () => getTenantDayHours(ctx.tenantId))
+  const shiftDate = shiftDateForInstant(createdAt, { shiftStartHour: startHour })
+  const shiftNumber = await timed(marks, 'nextShiftNumber', () => nextShiftNumber(ctx, shiftDate))
 
   const invoice = {
     id: `inv-${invoiceNum}`,

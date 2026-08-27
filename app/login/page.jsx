@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useBranding } from '@/context/BrandingContext.jsx'
+import BrandMark from '@/components/BrandMark.jsx'
+import { takeSignedOutNotice } from '@/utils/signedOutNotice.js'
 
 export default function LoginPage() {
   const branding = useBranding()
@@ -15,32 +17,60 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  // Why they are looking at this screen, when they did not ask to be.
+  // Written by AuthContext at the moment the session ended and read once here.
+  // In state rather than read during render, because sessionStorage does not
+  // exist on the server and the two renders would otherwise disagree.
+  const [notice, setNotice] = useState('')
   useEffect(() => {
-    if (authenticated) {
+    setNotice(takeSignedOutNotice())
+  }, [])
+
+  // Set the moment a sign-in succeeds, so the effect below leaves the handover
+  // alone: the two would otherwise navigate at once, and a client-side replace
+  // landing first is exactly the stale render this is here to avoid.
+  const [handingOff, setHandingOff] = useState(false)
+
+  useEffect(() => {
+    if (authenticated && !handingOff) {
       router.replace('/orders')
     }
-  }, [authenticated, router])
+  }, [authenticated, handingOff, router])
 
   if (authenticated) return null
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    setNotice('')
     setSubmitting(true)
     try {
       const { user } = await login(email, password)
       // Somebody who runs the platform rather than a café lands on the café
       // list; there is no till for them to stand at.
       const destination = user?.platformOwner && !user?.tenantId ? '/platform' : '/orders'
-      router.push(destination)
-      // The root layout resolves the café's name and colours on the server, and
-      // a client-side navigation keeps the instance rendered for the sign-in
-      // page — where there was no session and so no café. Without this the
-      // header shows the product's own name until the next full reload.
-      router.refresh()
+
+      // A full document load rather than router.push() + router.refresh().
+      //
+      // The café's name, colours, tagline and logo are resolved on the server
+      // in app/layout.jsx, from the session — which this request has only just
+      // created. A client-side navigation re-runs the page but leaves the root
+      // layout's already-rendered body in place, so the header kept the
+      // product's own name and palette until something forced a reload; a
+      // refresh() alongside it updated the tab title and nothing else, which
+      // made the bug look intermittent rather than total.
+      //
+      // Signing in is the one moment in the app where a full load costs
+      // nothing and settles everything: the layout, the CSS custom properties,
+      // the favicon and every cached client context are rebuilt for the café
+      // that just signed in.
+      setHandingOff(true)
+      window.location.assign(destination)
+      // Deliberately no setSubmitting(false) after this: the page is on its way
+      // out, and re-enabling the button would invite a second sign-in.
+      return
     } catch (err) {
       setError(err.message || 'Could not sign in')
-    } finally {
       setSubmitting(false)
     }
   }
@@ -48,7 +78,7 @@ export default function LoginPage() {
   return (
     <main className="login-page">
       <div className="brand login-brand">
-        <span className="brand-mark" aria-hidden="true" />
+        <BrandMark />
         <div>
           <h1>{branding?.name}</h1>
           <p className="tagline">Sign in to continue</p>
@@ -63,9 +93,24 @@ export default function LoginPage() {
 
       <section className="card login-card">
         <h2 className="login-heading">Sign in</h2>
+        {/* Above the form, not beside the button: whoever is reading it was
+            working a second ago and has just been stopped, and the first
+            question is what happened rather than what to type. It is dropped
+            as soon as they try to sign in, where the server answers with the
+            same reason and that answer is the fresher one. */}
+        {notice && !error ? (
+          <p className="banner error login-error" role="alert">
+            {notice}
+          </p>
+        ) : null}
+        {/* This used to explain how the very first super admin gets bootstrapped
+            from an environment variable — a note written for whoever was
+            deploying the app, left on the screen a café's cashier sees at the
+            start of every shift. They have been handed a login by their owner;
+            what they need is where to ask when it does not work. */}
         <p className="muted small login-lede">
-          Super admin and staff use email and password. The first super admin is created automatically when the user list
-          is empty (see server logs / env).
+          Use the email and password your café gave you. Forgotten it? Whoever manages your café can set a new one
+          from Settings → Team &amp; admins.
         </p>
         <form onSubmit={(e) => void handleSubmit(e)} className="login-form">
           <label className="field">

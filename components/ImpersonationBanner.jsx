@@ -1,6 +1,5 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 
 /**
@@ -18,7 +17,6 @@ function minutesLeft(expiresAt) {
 }
 
 export default function ImpersonationBanner() {
-  const router = useRouter()
   const [state, setState] = useState(null)
   const [, forceTick] = useState(0)
 
@@ -49,8 +47,11 @@ export default function ImpersonationBanner() {
   async function exit() {
     await api.stopImpersonating('current')
     setState(null)
-    router.push('/platform')
-    router.refresh()
+    // Full load rather than push + refresh: closing a support session changes
+    // which café the server-rendered layout is wearing, and a client-side
+    // navigation would leave the customer's name and colours on the platform's
+    // own screens.
+    window.location.assign('/platform')
   }
 
   return (

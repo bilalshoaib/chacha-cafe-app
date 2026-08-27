@@ -16,16 +16,19 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
   }
 
-  // A suspended café cannot sign in. Checked here rather than in middleware
-  // because it must apply at the moment credentials are accepted, not merely
-  // when a page is requested — and it is the same check for every route.
+  // A café that is suspended, restricted for payment, or out of trial cannot
+  // sign in. Checked after the password rather than before it, so the reason is
+  // only ever told to somebody who has proved they belong to the café — the
+  // state of a business's account is not something to leak to a stranger
+  // guessing email addresses.
+  //
+  // requireTenant() runs the same rule on every request, which is what signs
+  // out a session that is already open. This is the half that explains why.
   if (user.tenantId) {
-    const { isTenantActive } = await import('@/lib/repositories/tenantsRepository')
-    if (!(await isTenantActive(user.tenantId))) {
-      return NextResponse.json(
-        { error: 'This account is currently suspended. Please contact support.' },
-        { status: 403 },
-      )
+    const { getTenantAccess } = await import('@/lib/repositories/tenantsRepository')
+    const access = await getTenantAccess(user.tenantId)
+    if (!access.allowed) {
+      return NextResponse.json({ error: access.message, blocked: access.reason }, { status: 403 })
     }
   }
 

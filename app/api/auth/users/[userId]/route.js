@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireSuperAdmin, getSession } from '@/lib/session'
+import { requireTenantSuperAdmin } from '@/lib/session'
 import * as usersRepo from '@/lib/repositories/usersRepository'
 
 export async function GET(_request, { params }) {

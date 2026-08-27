@@ -37,7 +37,11 @@ export async function GET() {
   let branding
   try {
     const session = await getSession()
-    branding = await getTenantBranding(session?.tenantId)
+    // The impersonated café first, matching app/layout.jsx: while a support
+    // session is open the app is wearing that café's name and colours, and a
+    // tab icon still showing the platform owner's own is the one part of the
+    // page that disagrees about whose account is on screen.
+    branding = await getTenantBranding(session?.impersonatedTenantId || session?.tenantId)
   } catch {
     const { DEFAULT_BRANDING } = await import('@/lib/tenantBranding')
     branding = DEFAULT_BRANDING

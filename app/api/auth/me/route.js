@@ -29,6 +29,31 @@ export async function GET() {
   // the platform's own navigation over a café's data.
   const impersonation = activeImpersonation(session)
 
+  // Checked here as well as in requireTenant(), because this is the first call
+  // the app makes on every load — and, every fifteen seconds after it, the
+  // only call an idle till makes at all. Without it a café stopped for late
+  // payment would render its whole shell before the first data request signed
+  // them out, and a till nobody was touching would stay open until somebody
+  // pressed something.
+  // Skipped while impersonating: that session belongs to the platform owner.
+  if (!impersonation && row.tenantId) {
+    const { getTenantAccess } = await import('@/lib/repositories/tenantsRepository')
+    const access = await getTenantAccess(row.tenantId)
+    if (!access.allowed) {
+      await session.destroy()
+      // The message travels with the refusal so the browser can carry it to
+      // the login screen. Being stopped mid-shift is the one sign-out that
+      // needs explaining, and "suspended" alone does not tell a café that an
+      // invoice is three weeks overdue.
+      return NextResponse.json({
+        authenticated: false,
+        user: null,
+        blocked: access.reason,
+        blockedMessage: access.message,
+      })
+    }
+  }
+
   return NextResponse.json({
     authenticated: true,
     user: {

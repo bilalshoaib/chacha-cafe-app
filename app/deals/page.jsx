@@ -6,7 +6,7 @@ import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import DealFormFields from '@/components/DealFormFields.jsx'
 import Modal, { FormActions } from '@/components/Modal.jsx'
 import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
-import { DEAL_BUSINESS_TYPE_OPTIONS, dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
+import { dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
 import { dealMatchesQuery } from '@/utils/dealSearch.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
@@ -422,6 +422,7 @@ export default function DealsPage() {
       >
         <DealFormFields
           business={dealBusiness} setBusiness={setDealBusiness}
+          brands={menu.brands ?? []}
           onBusinessChange={() => { setQtyById({}); setUnitPriceById({}) }}
           name={name} setName={setName}
           price={price} setPrice={setPrice}
@@ -452,6 +453,7 @@ export default function DealsPage() {
           <>
             <DealFormFields
               business={editBusiness} setBusiness={setEditBusiness}
+              brands={menu.brands ?? []}
               onBusinessChange={() => { setEditQtyById({}); setEditUnitPriceById({}) }}
               name={editName} setName={setEditName}
               price={editPrice} setPrice={setEditPrice}

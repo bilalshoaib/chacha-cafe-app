@@ -249,13 +249,21 @@ button.inline-link-button:hover {
   min-width: 9rem;
 }
 
-/* Steps both ends of the custom range a month at a time. Built as one
+/* The two steppers — a day and a month — sit on their own row under the range,
+   whether or not the custom date boxes are showing. */
+.reports-range-steppers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+}
+
+/* Steps both ends of the range a day or a month at a time. Built as one
    segmented pill rather than two loose buttons so it reads as a single
-   control, and centred against the taller labelled date boxes beside it. */
+   control. */
 .reports-month-step {
   display: flex;
   align-items: stretch;
-  align-self: center;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
@@ -429,6 +437,65 @@ button.inline-link-button:hover {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+/* Skeleton for the invoice sheet, shown while an invoice loads — most often
+   right after checkout hands over from the order screen. */
+.invoice-skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.invoice-skeleton-stack.text-right .skeleton { margin-left: auto; }
+.invoice-skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.invoice-skeleton-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.2rem;
+  border-bottom: 1px solid var(--border);
+}
+.invoice-skeleton-line:last-child { border-bottom: none; }
+.invoice-skeleton-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+/* The order screen while it waits for the invoice page to take over. */
+.order-handoff {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 3rem 1.25rem;
+}
+.order-handoff h2 { margin: 0; }
+.order-handoff p { margin: 0; }
+.order-handoff-spinner {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent, var(--text-h));
+  animation: order-handoff-spin 0.8s linear infinite;
+}
+@keyframes order-handoff-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .order-handoff-spinner { animation: none; }
 }
 
 .reports-table-card {
@@ -833,6 +900,22 @@ button.inline-link-button:hover {
   box-shadow: var(--shadow);
 }
 
+/* The same tile, holding a café's own logo instead of the brand gradient.
+   Neutral behind it and contained rather than cropped, because a logo arrives
+   at whatever shape its designer drew it and must not be cut into a square. */
+.brand-mark-logo {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  background: #fff;
+  overflow: hidden;
+}
+.brand-mark-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 .tabs {
   display: flex;
   gap: 0.35rem;
@@ -853,13 +936,18 @@ button.inline-link-button:hover {
   color: var(--text-muted);
   text-decoration: none;
   font: inherit;
+  /* Every tab carries the active weight, active or not. The active one used
+     to be the only bold one, so it was also the only wide one: each
+     navigation re-measured the whole bar and every tab slid a few pixels
+     sideways under the pointer. The pill and the colour say which is
+     current without moving anything. */
+  font-weight: 600;
 }
 
 .tabs button.active,
 .tabs a.active {
   background: var(--accent-soft);
   color: var(--accent);
-  font-weight: 700;
 }
 
 .banner.error {
@@ -1909,6 +1997,17 @@ a.invoice-edit-link:hover {
   align-items: center;
   max-width: 26rem;
 }
+/* `.input` had no rule at all, so the invoices search box — the only field
+   using it — fell back to the browser's own control chrome: square, grey and
+   nothing like the rounded, warm fields on every other screen. */
+.input {
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+
 .invoices-search-input {
   flex: 1;
   min-width: 0;
