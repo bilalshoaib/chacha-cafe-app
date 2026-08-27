@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { usePlatformBooks } from '@/context/PlatformBooksContext.jsx'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+import { SkeletonLines } from '@/components/Skeleton.jsx'
 
 const METHODS = ['bank', 'cash', 'card', 'online', 'other']
 
@@ -112,7 +113,7 @@ export default function PlatformPaymentsPage() {
       <div className="pf-card">
         <h2>Received in this period</h2>
         <p>{payments.length} payment{payments.length === 1 ? '' : 's'} · {formatMoney(total)}</p>
-        {loading && payments.length === 0 ? <p className="pf-hint">Loading…</p> : null}
+        {loading && payments.length === 0 ? <SkeletonLines rows={3} label="Loading payments…" /> : null}
         {!loading && payments.length === 0 ? <p className="pf-hint">Nothing received in this period.</p> : null}
         {payments.length > 0 ? (
           <div className="table-scroll">

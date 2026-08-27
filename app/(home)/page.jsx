@@ -5,6 +5,7 @@ import { api } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useBranding } from '@/context/BrandingContext.jsx'
 import { buildCategoryTabs, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 
 /**
  * A sentence about the café built from what it actually sells.
@@ -134,7 +135,26 @@ export default function HomePage() {
       {error ? <p className="banner error home-banner" role="alert">{error}</p> : null}
 
       {loading ? (
-        <p className="muted home-loading hp-loading-text">Loading menu…</p>
+        // The menu's own shape — a couple of category blocks of priced rows —
+        // so a customer opening this sees a menu arriving rather than a word.
+        <section className="hp-section" aria-busy="true">
+          <SkeletonStatus label="Loading menu…" />
+          <div className="hp-menu-grid">
+            {Array.from({ length: 2 }, (_, c) => (
+              <div key={c} className="hp-menu-cat">
+                <Skeleton width="8rem" height="1.1rem" />
+                <ul className="hp-menu-list">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <li key={i} className="hp-menu-row">
+                      <Skeleton width={`${45 + ((i * 13) % 30)}%`} height="0.95rem" />
+                      <Skeleton width="3.5rem" height="0.95rem" />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
       ) : (
         <>
           {deals.length > 0 ? (

@@ -8,6 +8,7 @@ import { expenseBusinessType } from '@/constants/businessTypes.js'
 import { expenseCategoryLabel } from '@/utils/expenses.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 import { useToast } from '@/context/ToastContext.jsx'
+import { SkeletonDetail } from '@/components/Skeleton.jsx'
 
 export default function ExpenseDetailPage() {
   const { expenseId } = useParams()
@@ -74,7 +75,7 @@ export default function ExpenseDetailPage() {
         </section>
       ) : null}
 
-      {loading ? <p className="muted">Loading…</p> : row ? (
+      {loading ? <SkeletonDetail rows={6} label="Loading expense…" className="expense-detail-card" /> : row ? (
         <article className="card team-detail-card expense-detail-card">
           <dl className="team-detail-dl">
             <div><dt>Amount</dt><dd>{formatMoney(row.amount)}</dd></div>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import RequireSuperAdmin from '@/components/RequireSuperAdmin.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
+import { SkeletonFields } from '@/components/Skeleton.jsx'
 
 export default function TeamUserEditPage() {
   const { userId } = useParams()
@@ -106,7 +107,7 @@ export default function TeamUserEditPage() {
           </section>
         ) : null}
 
-        {loading ? <p className="muted">Loading…</p> : null}
+        {loading ? <SkeletonFields fields={4} label="Loading account…" /> : null}
       </main>
     </RequireSuperAdmin>
   )

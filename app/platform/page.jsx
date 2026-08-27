@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import { PendingLink } from '@/components/NavPending.jsx'
+import { SkeletonTable } from '@/components/Skeleton.jsx'
 import { api } from '@/api.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
 
@@ -74,7 +75,7 @@ export default function PlatformPage() {
             Every business on the platform. Creating one sets up its branch, its menu and its owner’s account.
           </p>
         </div>
-        <Link href="/platform/tenants/new" className="primary btn-link">New café</Link>
+        <PendingLink href="/platform/tenants/new" className="primary btn-link">New café</PendingLink>
       </div>
 
       {error ? <p className="banner error" role="alert">{error}</p> : null}
@@ -135,7 +136,21 @@ export default function PlatformPage() {
 
       <div className="platform-table-wrap">
         {data === null ? (
-          <p className="platform-empty">Loading cafés…</p>
+          // The real headers, so the columns are already where the cafés will
+          // land and the page does not shift when they do.
+          <SkeletonTable
+            label="Loading cafés…"
+            rows={4}
+            columns={[
+              { key: 'cafe', label: 'Café' },
+              { key: 'status', label: 'Status' },
+              { key: 'orders', label: 'Orders', num: true },
+              { key: 'takings', label: 'Takings', num: true },
+              { key: 'branches', label: 'Branches', num: true },
+              { key: 'staff', label: 'Staff', num: true },
+              { key: 'last', label: 'Last order' },
+            ]}
+          />
         ) : visible.length === 0 ? (
           <div className="platform-empty">
             {query ? (
@@ -171,7 +186,7 @@ export default function PlatformPage() {
                   return (
                     <tr key={c.id} className={quiet ? 'row-quiet' : undefined}>
                       <td>
-                        <Link href={`/platform/tenants/${c.id}`} className="cafe-name">{c.name}</Link>
+                        <PendingLink href={`/platform/tenants/${c.id}`} className="cafe-name">{c.name}</PendingLink>
                         <span className="cafe-slug block">{c.slug}</span>
                       </td>
                       <td><span className={`pill pill-${c.status}`}>{c.status}</span></td>

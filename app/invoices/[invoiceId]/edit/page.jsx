@@ -10,6 +10,7 @@ import { cloneInvoiceLines, lineFromDeal, lineFromMenuItem, removeLineById, upda
 import { discountPartsOf, priceLine } from '@/lib/pricing.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
+import { SkeletonFields } from '@/components/Skeleton.jsx'
 
 export default function InvoiceEditPage() {
   const { invoiceId } = useParams()
@@ -136,7 +137,13 @@ export default function InvoiceEditPage() {
     finally { setSaving(false) }
   }
 
-  if (invoiceLoading) return <main className="invoice-detail-page invoice-edit-page"><p className="muted">Loading invoice…</p></main>
+  if (invoiceLoading) {
+    return (
+      <main className="invoice-detail-page invoice-edit-page">
+        <SkeletonFields fields={4} label="Loading invoice…" />
+      </main>
+    )
+  }
 
   if (!invoice) {
     return (

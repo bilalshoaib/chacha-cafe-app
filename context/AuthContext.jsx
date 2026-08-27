@@ -22,6 +22,19 @@ const AuthContext = createContext(null)
  */
 const HEARTBEAT_MS = 15_000
 
+/**
+ * Whether this tab is showing a café's menu to a customer rather than to
+ * staff. The `?tenant=` on the address is what tells them apart: a customer
+ * follows a link that names the café, and has no session to lose.
+ */
+function onPublicMenu() {
+  if (typeof window === 'undefined') return false
+  return (
+    window.location.pathname === '/' &&
+    new URLSearchParams(window.location.search).has('tenant')
+  )
+}
+
 export function AuthProvider({ children }) {
   const [authenticated, setAuthenticated] = useState(false)
   const [user, setUser] = useState(null)
@@ -59,10 +72,10 @@ export function AuthProvider({ children }) {
    *
    * A café that has been stopped is sent to the login screen and told why,
    * wherever they were. A session that has merely run out is only sent there
-   * if they are on a screen that needs one — the home page is the café's own
-   * menu board, public and readable by anyone, and yanking somebody off it
-   * because a week-old cookie expired would be a worse bug than the one this
-   * is here to fix.
+   * if they are on a screen that needs one — a customer reading `/?tenant=` is
+   * reading a public menu, and yanking them off it because some staff member's
+   * week-old cookie expired would be a worse bug than the one this is here to
+   * fix.
    */
   const applySession = useCallback((r) => {
     const ok = Boolean(r?.authenticated)
@@ -109,7 +122,13 @@ export function AuthProvider({ children }) {
         // Not blocked, merely no longer signed in — an expired cookie, or an
         // account that has been removed. Off a public screen that still needs
         // a session, they go to the login page with nothing to explain.
-        if (!r?.blocked && !r?.blockedMessage && window.location.pathname !== '/' && window.location.pathname !== '/login') {
+        //
+        // `/` is exempt only when it is being read as a café's public menu,
+        // which is the link that names one. The bare address signed out is the
+        // login screen's job — middleware turns it away — so a session that
+        // runs out while a tab sits there is sent along like anywhere else,
+        // rather than dropping the till onto a menu board.
+        if (!r?.blocked && !r?.blockedMessage && !onPublicMenu() && window.location.pathname !== '/login') {
           signOutTo('')
         }
       } catch {

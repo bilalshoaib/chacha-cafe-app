@@ -10,7 +10,13 @@ const sessionOptions = {
   cookieOptions: { secure: process.env.NODE_ENV === 'production' },
 }
 
-/** Paths that are accessible without being logged in. */
+/**
+ * Paths that are accessible without being logged in.
+ *
+ * `/` is here for the café's public menu, but only half of it: a signed-out
+ * visit to the bare address is turned away below. See the check in middleware()
+ * for why the two cases differ.
+ */
 const PUBLIC_PATHS = ['/', '/login']
 
 /**
@@ -59,6 +65,22 @@ export async function middleware(request) {
   const isPublic = PUBLIC_PATHS.includes(pathname)
 
   if (!isPublic && !session.userId) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // The bare address, signed out.
+  //
+  // `/` is public because it is the café's own menu, and the customer who
+  // reads it arrives on a link that names the café — `/?tenant=solo-coffee`.
+  // Somebody typing just the host is not that customer; they are staff opening
+  // the app, and a menu board is not what they came for. So the menu stays
+  // public on the link that asks for it, and the address on its own goes to
+  // the login screen.
+  if (
+    pathname === '/' &&
+    !session.userId &&
+    !request.nextUrl.searchParams.has('tenant')
+  ) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

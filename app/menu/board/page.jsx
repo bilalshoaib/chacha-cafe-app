@@ -6,6 +6,7 @@ import { useBranding } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
 import { buildCategoryTabs, formatItemExtras, formatMoney, categoryIcon, categoryColor } from '@/utils/formatting.js'
+import { SkeletonLines } from '@/components/Skeleton.jsx'
 
 const SHOP_PHONE = '0315-9988295'
 
@@ -140,7 +141,7 @@ export default function MenuBoardPage() {
         </section>
 
         {loading ? (
-          <p className="muted">Loading menu…</p>
+          <SkeletonLines rows={6} label="Loading menu…" />
         ) : !hasContent ? (
           <p className="muted">
             Nothing to show for this filter yet — add items from{' '}

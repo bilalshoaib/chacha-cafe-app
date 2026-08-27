@@ -5,6 +5,7 @@ import { api } from '@/api.js'
 import RoleBadge from '@/components/RoleBadge.jsx'
 import RequireSuperAdmin from '@/components/RequireSuperAdmin.jsx'
 import { formatShortDateTime } from '@/utils/formatting.js'
+import { SkeletonTable } from '@/components/Skeleton.jsx'
 
 export default function TeamListPage() {
   const [list, setList] = useState([])
@@ -45,7 +46,20 @@ export default function TeamListPage() {
         ) : null}
 
         <section className="card team-list-card">
-          {loading ? <p className="muted">Loading…</p> : (
+          {loading ? (
+            <SkeletonTable
+              label="Loading team…"
+              rows={4}
+              tableClassName="staff-accounts-table team-list-table"
+              columns={[
+                { key: 'email', label: 'Email' },
+                { key: 'name', label: 'Name' },
+                { key: 'role', label: 'Role' },
+                { key: 'created', label: 'Created' },
+                { key: 'action', label: ' ' },
+              ]}
+            />
+          ) : (
             <div className="table-scroll">
               <table className="staff-accounts-table team-list-table">
                 <thead>

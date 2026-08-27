@@ -1,5 +1,7 @@
 'use client'
 import Link from 'next/link'
+import NavPending, { PendingLink } from '@/components/NavPending.jsx'
+import Skeleton, { SkeletonLines } from '@/components/Skeleton.jsx'
 import { useParams, usePathname } from 'next/navigation'
 import { TenantConsoleProvider, useTenantConsole } from '@/context/TenantConsoleContext.jsx'
 import { tenantAccess, trialDaysLeft } from '@/lib/tenantAccess.js'
@@ -65,11 +67,18 @@ function ConsoleChrome({ children }) {
         <div className="tenant-hero tenant-hero-skeleton" aria-hidden="true">
           <span className="tenant-mark tenant-mark-ghost" />
           <div className="tenant-hero-lines">
-            <span className="skeleton" style={{ width: '13rem', height: '1.6rem' }} />
-            <span className="skeleton" style={{ width: '20rem', height: '0.85rem' }} />
+            <Skeleton width="13rem" height="1.6rem" />
+            <Skeleton width="20rem" height="0.85rem" />
           </div>
         </div>
-        <p className="platform-empty" role="status">Loading this café…</p>
+        {/* The tab row and a card, so the console's shape is on screen before
+            its contents are and the tabs do not drop in underneath the hero. */}
+        <div className="tenant-tabs tenant-tabs-skeleton" aria-hidden="true">
+          {Array.from({ length: 8 }, (_, i) => (
+            <Skeleton key={i} width={`${4 + ((i * 3) % 4)}rem`} height="0.9rem" />
+          ))}
+        </div>
+        <SkeletonLines rows={4} label="Loading this café…" />
       </main>
     )
   }
@@ -86,7 +95,7 @@ function ConsoleChrome({ children }) {
 
   return (
     <main className="platform-page tenant-console">
-      <Link href="/platform" className="platform-back">← All cafés</Link>
+      <PendingLink href="/platform" className="platform-back">← All cafés</PendingLink>
 
       <header className="tenant-hero" style={{ '--hero-tint': tenant.brandPrimary || 'var(--brand-primary)' }}>
         <TenantMark tenant={tenant} />
@@ -108,7 +117,7 @@ function ConsoleChrome({ children }) {
           </div>
         </div>
         <div className="tenant-hero-actions">
-          <Link href={`${base}/reports`} className="primary btn-link">Open reports</Link>
+          <PendingLink href={`${base}/reports`} className="primary btn-link">Open reports</PendingLink>
         </div>
       </header>
 
@@ -117,7 +126,7 @@ function ConsoleChrome({ children }) {
       {!access.allowed ? (
         <p className="tenant-blocked-strip" role="status">
           <strong>They cannot sign in.</strong> {access.message}{' '}
-          <Link href={`${base}/access`}>Put it right →</Link>
+          <PendingLink href={`${base}/access`}>Put it right →</PendingLink>
         </p>
       ) : null}
 
@@ -128,6 +137,7 @@ function ConsoleChrome({ children }) {
           return (
             <Link key={label} href={href} className="tenant-tab" aria-current={active ? 'page' : undefined} title={hint}>
               {label}
+              <NavPending />
             </Link>
           )
         })}

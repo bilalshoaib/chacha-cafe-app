@@ -386,6 +386,110 @@ button.inline-link-button:hover {
   width: 85%;
   height: 0.75rem;
 }
+/* ── The stand-in for a screen that has been asked for ───────────────────────
+   Rendered by app/loading.jsx while the router fetches the page. It fades in
+   rather than appearing, because most screens arrive quickly enough that a
+   hard cut to skeletons and straight out again reads as a flash of breakage.
+   Under about a fifth of a second nothing is drawn at all and the change of
+   screen looks instant, which is the common case. */
+.route-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: route-loading-in 0.5s ease both;
+}
+
+@keyframes route-loading-in {
+  0%, 40% { opacity: 0; }
+  100%    { opacity: 1; }
+}
+
+.route-loading-title { width: min(18rem, 60%); height: 1.6rem; }
+.route-loading-sub   { width: min(26rem, 80%); height: 0.85rem; margin-bottom: 0.6rem; }
+
+.route-loading-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.15rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.route-loading-row { height: 1.05rem; }
+.route-loading-row:nth-child(2) { width: 85%; }
+.route-loading-row:nth-child(3) { width: 62%; }
+
+/* The screen it stands in for is spared the motion; the layout still changes,
+   which is what says the press was heard. */
+@media (prefers-reduced-motion: reduce) {
+  .route-loading { animation: none; }
+  .route-loading .skeleton { animation: none; }
+}
+
+/* ── The reusable placeholder shapes ─────────────────────────────────────────
+   SkeletonTable / SkeletonLines / SkeletonFields in components/Skeleton.jsx.
+   Each keeps the real container's geometry so the placeholder occupies the
+   space its content is about to, and the page does not jump when it lands. */
+
+/* A number is read against the right edge of its column, so its placeholder
+   has to sit there too — otherwise the columns visibly re-align on arrival. */
+.skeleton-num { margin-left: auto; }
+
+.skeleton-table-row td { vertical-align: middle; }
+
+.skeleton-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-line-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 0.2rem;
+  border-bottom: 1px solid var(--border);
+}
+.skeleton-line-row:last-child { border-bottom: none; }
+
+.skeleton-line-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The header while the app is still working out who is signed in. Mirrors the
+   real header's geometry so the page does not jump when the café's name and
+   its tabs replace it. */
+.skeleton-brand-mark { border-radius: var(--radius); flex-shrink: 0; }
+
+.skeleton-brand-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.skeleton-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-width: 30rem;
+}
+
+.skeleton-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.skeleton-field-input { border-radius: var(--radius); }
+.skeleton-field-button { border-radius: var(--radius); margin-top: 0.25rem; }
+
 @keyframes skeleton-shimmer {
   0% { background-position: 100% 0; }
   100% { background-position: -100% 0; }
@@ -948,6 +1052,55 @@ button.inline-link-button:hover {
 .tabs a.active {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+/* ── A tab that has been pressed, before its screen has arrived ──────────────
+   Every screen in this app renders dynamically, so pressing a tab waits on a
+   round trip to the server with nothing on screen to show for it. That read as
+   a dead button: people pressed again, and the presses queued up behind each
+   other. These rules are the missing answer — the tab takes the pressed colour
+   the instant it is pressed, and runs a bar underneath itself until the screen
+   it names is on the page.
+
+   Neither of them changes a tab's size. The bar is taken out of the flow on
+   purpose: the tabs must not move under the pointer while somebody is already
+   aiming at the next one, which is the same reason every tab carries the active
+   font weight above. */
+.tabs a:has(.nav-pending),
+.mobile-nav-links a:has(.nav-pending) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tabs a,
+.mobile-nav-links a {
+  position: relative;
+}
+
+.nav-pending {
+  position: absolute;
+  left: 0.55rem;
+  right: 0.55rem;
+  bottom: 0.28rem;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  animation: nav-pending-pulse 0.85s ease-in-out infinite;
+}
+
+@keyframes nav-pending-pulse {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 1; }
+}
+
+/* The bar is the only thing moving on a screen that is otherwise waiting, so
+   it is exactly the kind of motion this asks to be spared. The tab still
+   changes colour, which is the part that answers the press. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-pending {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 .banner.error {

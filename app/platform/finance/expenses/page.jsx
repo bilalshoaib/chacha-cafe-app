@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { usePlatformBooks } from '@/context/PlatformBooksContext.jsx'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+import { SkeletonLines } from '@/components/Skeleton.jsx'
 
 const CATEGORIES = ['hosting', 'domains', 'software', 'salaries', 'marketing', 'equipment', 'fees', 'other']
 
@@ -96,7 +97,7 @@ export default function PlatformExpensesPage() {
       <div className="pf-card">
         <h2>Spent in this period</h2>
         <p>{expenses.length} item{expenses.length === 1 ? '' : 's'} · {formatMoney(total)}</p>
-        {loading && expenses.length === 0 ? <p className="pf-hint">Loading…</p> : null}
+        {loading && expenses.length === 0 ? <SkeletonLines rows={3} label="Loading costs…" /> : null}
         {!loading && expenses.length === 0 ? <p className="pf-hint">Nothing recorded in this period.</p> : null}
         {expenses.length > 0 ? (
           <div className="table-scroll">

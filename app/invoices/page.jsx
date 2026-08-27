@@ -32,6 +32,7 @@ import {
   toISOStart,
 } from '@/utils/invoices.js'
 import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+import Skeleton, { SkeletonTable } from '@/components/Skeleton.jsx'
 
 export default function InvoicesListPage() {
   const router = useRouter()
@@ -192,7 +193,9 @@ export default function InvoicesListPage() {
             it also names the filter that is hiding everything. */}
         {loading || invoices.length ? (
           <div className="invoices-list-meta">
-            <p className="muted small">{loading ? 'Loading…' : pageSummary}</p>
+            {loading
+              ? <Skeleton width="9rem" height="0.8rem" />
+              : <p className="muted small">{pageSummary}</p>}
           </div>
         ) : null}
 
@@ -202,7 +205,22 @@ export default function InvoicesListPage() {
             {filterType !== 'all' ? ' for this business' : ''}.
           </p>
         ) : loading ? (
-          <p className="muted">Loading invoices…</p>
+          <SkeletonTable
+            label="Loading invoices…"
+            rows={6}
+            tableClassName="invoices-table"
+            wrapClassName="invoices-table-wrap"
+            columns={[
+              { key: 'order', label: 'Order #' },
+              ...(hasCounters ? [{ key: 'counter', label: 'Counter' }] : []),
+              { key: 'invoice', label: 'Invoice' },
+              { key: 'type', label: 'Type' },
+              { key: 'date', label: 'Date' },
+              { key: 'total', label: 'Total', num: true },
+              { key: 'discount', label: 'Discount', num: true },
+              { key: 'status', label: 'Status' },
+            ]}
+          />
         ) : (
           <div className="table-scroll invoices-table-wrap">
             <table className="invoices-table">
