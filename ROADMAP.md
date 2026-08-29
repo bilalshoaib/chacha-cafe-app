@@ -33,7 +33,7 @@ in it, and none of the ten backlog items has been started.
 | ⬜ | 10. Smaller / later (timezone picker, per-branch currency, …) | §3 |
 
 §2.1 is commit `1ca8bb2`; §2.2 and §2.3 are commit `95d97f9`; §2.4 is commit
-`1099644`. Nothing is left uncommitted.
+`52eafaa`. Nothing is left uncommitted.
 
 ---
 
@@ -307,7 +307,7 @@ tenant as it stands; clear it if you want it clean.
 
 ---
 
-### 2.4 Done — offline mode (commit `1099644`, 2026-08-30)
+### 2.4 Done — offline mode (commit `52eafaa`, 2026-08-30)
 
 The wifi can go down and the till keeps taking money.
 
