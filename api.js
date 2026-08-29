@@ -4,12 +4,35 @@ export function setUnauthorizedHandler(fn) {
   onUnauthorized = fn
 }
 
+/**
+ * True when the request never reached the server, as opposed to reaching it
+ * and being refused.
+ *
+ * The till has to tell those apart before it can decide to sell offline: a 400
+ * means the sale is wrong and must not be queued, while an unreachable server
+ * means the sale is fine and the network is not. fetch rejects with a
+ * TypeError for both a dropped connection and a DNS failure, and resolves
+ * normally for every HTTP status, so the distinction has to be made here at
+ * the point where the rejection is visible.
+ */
+export function isOfflineError(e) {
+  return Boolean(e?.offline)
+}
+
 async function request(path, options = {}) {
-  const res = await fetch(path, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
-  })
+  let res
+  try {
+    res = await fetch(path, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options,
+    })
+  } catch (e) {
+    const err = new Error('Could not reach the server.')
+    err.offline = true
+    err.cause = e
+    throw err
+  }
   const text = await res.text()
   let data
   try {
@@ -150,6 +173,12 @@ export const api = {
   restoreDeal: (id) =>
     request(`/api/deals/${encodeURIComponent(id)}/restore`, { method: 'PATCH' }),
   checkout: (body) => request('/api/checkout', { method: 'POST', body: JSON.stringify(body) }),
+  // Takes a block of invoice and order numbers for the till to spend if it
+  // loses the connection, and sends back the sales it rang up while it had.
+  reserveNumbers: (count) =>
+    request('/api/checkout/reserve', { method: 'POST', body: JSON.stringify({ count }) }),
+  syncOfflineSales: (sales) =>
+    request('/api/checkout/sync', { method: 'POST', body: JSON.stringify({ sales }) }),
   getInvoices: (params = {}) => {
     const q = new URLSearchParams()
     if (params.from) q.set('from', params.from)

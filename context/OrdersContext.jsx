@@ -1,11 +1,30 @@
 'use client'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { api } from '@/api.js'
+import { api, isOfflineError } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { buildCategoryTabs } from '@/utils/formatting.js'
 import { applyPricing, discountPartsOf, priceLine, repriceLine } from '@/lib/pricing.js'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax.js'
+import { buildOfflineInvoice } from '@/lib/offlineSale.js'
+import {
+  cacheMenu,
+  dropFromQueue,
+  enqueueSale,
+  listQueue,
+  numbersRemaining,
+  queueLength,
+  readCachedMenu,
+  readReservation,
+  saveReservation,
+  takeNumber,
+} from '@/lib/offline/store.js'
+
+// How many numbers a till holds, and the point at which it asks for more. The
+// gap between them is the margin: the till tops up while it is still healthy,
+// so it is never asking for numbers at the moment it stops being able to.
+const BLOCK_SIZE = 50
+const LOW_WATER = 15
 
 const OrdersContext = createContext(null)
 
@@ -78,6 +97,17 @@ export function OrdersProvider({ children }) {
   // "start a new order" state — the cart having just been cleared — before
   // the router got round to the invoice, which read as a stray flash.
   const [openingInvoiceId, setOpeningInvoiceId] = useState(null)
+  // Whether the last thing the till tried actually reached the server. Not
+  // navigator.onLine, which reports the network adapter and cheerfully says
+  // true on a café wifi that has stopped routing anywhere — the state that
+  // matters is "can I reach the server", and only a request can answer it.
+  // navigator.onLine still feeds in below, because it is the fastest *negative*
+  // signal there is.
+  const [online, setOnline] = useState(true)
+  const [queuedCount, setQueuedCount] = useState(0)
+  const [numbersLeft, setNumbersLeft] = useState(0)
+  const [menuCachedAt, setMenuCachedAt] = useState(null)
+  const [syncing, setSyncing] = useState(false)
 
   // The provider outlives the navigation, so the flag has to be dropped once
   // the invoice route has actually taken over. The timeout is the backstop for
@@ -93,23 +123,123 @@ export function OrdersProvider({ children }) {
     return () => clearTimeout(t)
   }, [openingInvoiceId, pathname])
 
+  // The platform owner signs in with no café of their own, and only acquires
+  // one by opening a support session. Asking for a menu before then would get
+  // a 401, which the client reads as a dead session and signs them straight
+  // back out — so it does not ask.
+  const tenantId = user?.effectiveTenantId ?? user?.tenantId ?? null
+  const hasTenant = Boolean(tenantId)
+
+  /** Re-reads the two counts the offline banner is built from. */
+  const refreshOfflineCounts = useCallback(async (tid) => {
+    if (!tid) return
+    setQueuedCount(await queueLength(tid))
+    setNumbersLeft(await numbersRemaining(tid))
+  }, [])
+
+  /**
+   * Makes sure the till is holding enough numbers to keep selling if the
+   * connection goes now.
+   *
+   * Tops up rather than replacing whenever the block still belongs to the
+   * current shift, because numbers thrown away are numbers missing from the
+   * café's invoice sequence — the reservation spends them at the database
+   * whether the till uses them or not. Once the shift date has moved on the
+   * old order numbers are worthless and the block is replaced.
+   */
+  const topUpNumbers = useCallback(async (tid) => {
+    if (!tid) return
+    try {
+      const held = await readReservation(tid)
+      const remaining = Array.isArray(held?.numbers) ? held.numbers.length : 0
+      if (remaining >= LOW_WATER) {
+        setNumbersLeft(remaining)
+        return
+      }
+      const block = await api.reserveNumbers(BLOCK_SIZE)
+      const sameShift = held?.shiftDate === block.shiftDate
+      const numbers = sameShift ? [...held.numbers, ...block.numbers] : block.numbers
+      await saveReservation(tid, {
+        shiftDate: block.shiftDate,
+        dayStartHour: block.dayStartHour,
+        numbers,
+      })
+      setNumbersLeft(numbers.length)
+    } catch (e) {
+      // A till that cannot reserve is a till that cannot sell offline, but it
+      // can still sell. Nothing is surfaced here; the banner already says
+      // how many numbers are left, and that is the honest signal.
+      if (!isOfflineError(e)) console.warn('[offline] could not reserve numbers:', e.message)
+    }
+  }, [])
+
+  /**
+   * Sends everything the till rang up while it was disconnected.
+   *
+   * Entries are dropped only on a definite answer. `stored` means the sale is
+   * in the database — including the duplicate case, where a previous attempt
+   * got through and the reply did not. `rejected` means it will never store
+   * and keeping it would block the queue forever. Anything else stays, because
+   * the alternative to retrying a sale is losing it.
+   */
+  const drainQueue = useCallback(async (tid) => {
+    if (!tid) return
+    const pending = await listQueue(tid)
+    if (!pending.length) return
+    setSyncing(true)
+    try {
+      const { results } = await api.syncOfflineSales(
+        pending.map((row) => ({ ...row.invoice, localId: row.localId })),
+      )
+      const settled = (results || [])
+        .filter((r) => r.status === 'stored' || r.status === 'rejected')
+        .map((r) => r.localId)
+      if (settled.length) await dropFromQueue(tid, settled)
+
+      const refused = (results || []).filter((r) => r.status === 'rejected')
+      if (refused.length) {
+        setError(`${refused.length} offline sale${refused.length > 1 ? 's' : ''} could not be saved: ${refused[0].error}`)
+      }
+    } catch (e) {
+      if (!isOfflineError(e)) console.warn('[offline] sync failed:', e.message)
+    } finally {
+      setSyncing(false)
+      await refreshOfflineCounts(tid)
+    }
+  }, [refreshOfflineCounts])
+
   const refreshAll = useCallback(async () => {
     setError('')
     try {
       const m = await api.getMenu()
       setMenu(m)
+      setOnline(true)
+      setMenuCachedAt(null)
+      // Deliberately not awaited as a group: the menu is on screen the moment
+      // it arrives, and the housekeeping behind it must not hold up the till.
+      void cacheMenu(tenantId, m)
+      void drainQueue(tenantId).then(() => topUpNumbers(tenantId))
     } catch (e) {
-      setError(e.message || 'Could not load data.')
+      // Falling back to the last menu this till saw. A café with no cached
+      // menu — a device being set up for the first time on a dead connection —
+      // still gets the error, because there is genuinely nothing to sell from.
+      if (isOfflineError(e)) {
+        setOnline(false)
+        const cached = await readCachedMenu(tenantId)
+        if (cached?.menu) {
+          setMenu(cached.menu)
+          setMenuCachedAt(cached.cachedAt)
+          await refreshOfflineCounts(tenantId)
+        } else {
+          setError('No connection, and this device has no saved menu to sell from.')
+        }
+      } else {
+        setError(e.message || 'Could not load data.')
+      }
     } finally {
       setLoading(false)
     }
-  }, [])
-
-  // The platform owner signs in with no café of their own, and only acquires
-  // one by opening a support session. Asking for a menu before then would get
-  // a 401, which the client reads as a dead session and signs them straight
-  // back out — so it does not ask.
-  const hasTenant = Boolean(user?.effectiveTenantId ?? user?.tenantId)
+  }, [tenantId, drainQueue, topUpNumbers, refreshOfflineCounts])
 
   useEffect(() => {
     if (authenticated && hasTenant) {
@@ -118,6 +248,39 @@ export function OrdersProvider({ children }) {
       setLoading(false)
     }
   }, [authenticated, hasTenant, refreshAll])
+
+  /**
+   * The browser's own view of the network, used only in the direction it is
+   * reliable. `offline` firing means there is definitely no connection, so the
+   * till switches over immediately rather than making a cashier wait for a
+   * request to time out. `online` firing means only that an adapter came back,
+   * which is not the same as the server being reachable — so it triggers a
+   * refresh and lets the outcome of that decide.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+    const goOffline = () => setOnline(false)
+    const goOnline = () => { if (authenticated && hasTenant) void refreshAll() }
+    window.addEventListener('offline', goOffline)
+    window.addEventListener('online', goOnline)
+    return () => {
+      window.removeEventListener('offline', goOffline)
+      window.removeEventListener('online', goOnline)
+    }
+  }, [authenticated, hasTenant, refreshAll])
+
+  /**
+   * While there are sales waiting, the till keeps trying on its own.
+   *
+   * A café that comes back after an outage should not have to know that
+   * anything needs doing — least of all mid-service. The interval only exists
+   * when there is something queued, so a normally-connected till never runs it.
+   */
+  useEffect(() => {
+    if (!hasTenant || !queuedCount) return undefined
+    const t = setInterval(() => { void drainQueue(tenantId) }, 30000)
+    return () => clearInterval(t)
+  }, [hasTenant, tenantId, queuedCount, drainQueue])
 
   const categoryTabs = useMemo(() => buildCategoryTabs(menu.items, menu.categories), [menu.items, menu.categories])
 
@@ -301,12 +464,64 @@ export function OrdersProvider({ children }) {
     updateActiveOrderLines((lines) => lines.map((l) => (l.id === lineId ? repriceLine(l, { [field]: d }) : l)))
   }
 
+  /**
+   * Rings the sale up on this device, out of the reserved block.
+   *
+   * Returns null if there is nothing left to number with, which is the one
+   * case where an offline till genuinely has to stop: an invoice number is
+   * the only part of a sale it cannot work out for itself, and inventing one
+   * would collide with a number the server will hand to somebody else.
+   */
+  async function checkoutOffline(dc) {
+    const reservation = await takeNumber(tenantId)
+    if (!reservation) return null
+
+    const invoice = buildOfflineInvoice({
+      lines: activeOrder.lines,
+      reservation,
+      rates: menu.tax?.rates ?? [],
+      pricesIncludeTax: menu.tax?.pricesIncludeTax ?? true,
+      orderType,
+      deliveryCharge: dc,
+      customerNote,
+      dayStartHour: reservation.dayStartHour,
+    })
+    await enqueueSale(tenantId, invoice)
+    await refreshOfflineCounts(tenantId)
+    return invoice
+  }
+
+  function clearSoldOrder(invoiceId) {
+    setOpeningInvoiceId(invoiceId)
+    setOrders((prev) => prev.filter((o) => o.id !== activeOrderId))
+    setActiveOrderId(null)
+    setCustomerNote('')
+    setOrderType('dine_in')
+    setDeliveryCharge('')
+    router.push(`/invoices/${invoiceId}`)
+  }
+
   async function doCheckout() {
     if (!activeOrderId || !activeOrder || checkingOut) return
     setError('')
     setCheckingOut(true)
+    const dc = orderType === 'delivery' ? (Number(deliveryCharge) || 0) : 0
     try {
-      const dc = orderType === 'delivery' ? (Number(deliveryCharge) || 0) : 0
+      // Straight to the queue when the till already knows it is disconnected,
+      // rather than making the cashier watch a request time out with a
+      // customer waiting. Any other time it goes to the server first: the
+      // server is the authority on price whenever it can be reached, and this
+      // path stays the one that normally runs.
+      if (!online) {
+        const invoice = await checkoutOffline(dc)
+        if (!invoice) {
+          setError('No connection and no invoice numbers left on this device. Reconnect to keep selling.')
+          return
+        }
+        clearSoldOrder(invoice.id)
+        return
+      }
+
       const lines = activeOrder.lines.map((l) => ({
         kind: l.kind,
         refId: l.refId,
@@ -320,16 +535,34 @@ export function OrdersProvider({ children }) {
         orderType,
         deliveryCharge: dc,
       })
-      setOpeningInvoiceId(invoice.id)
-      setOrders((prev) => prev.filter((o) => o.id !== activeOrderId))
-      setActiveOrderId(null)
-      setCustomerNote('')
-      setOrderType('dine_in')
-      setDeliveryCharge('')
-      router.push(`/invoices/${invoice.id}`)
+      clearSoldOrder(invoice.id)
     } catch (e) {
+      // The connection dropped between pressing the button and the server
+      // answering. The sale is good — it was the network that failed — so it
+      // is rung up locally instead of being handed back as an error.
+      //
+      // Safe against the sale having actually landed: the server's copy would
+      // carry a different invoice number from the sequence, and this one takes
+      // a number from the block, so the retry cannot overwrite it. A sale that
+      // got through and lost its reply is the one case that can produce two
+      // invoices, and a duplicate is recoverable in a way that a lost sale and
+      // an unhappy customer at the counter is not.
+      if (isOfflineError(e)) {
+        setOnline(false)
+        try {
+          const invoice = await checkoutOffline(dc)
+          if (invoice) {
+            clearSoldOrder(invoice.id)
+            return
+          }
+          setError('Lost the connection, and there are no invoice numbers left on this device.')
+        } catch (offlineError) {
+          setError(offlineError.message)
+        }
+      } else {
+        setError(e.message)
+      }
       setOpeningInvoiceId(null)
-      setError(e.message)
     } finally {
       setCheckingOut(false)
     }
@@ -359,6 +592,12 @@ export function OrdersProvider({ children }) {
     loading,
     checkingOut,
     openingInvoiceId,
+    online,
+    queuedCount,
+    numbersLeft,
+    menuCachedAt,
+    syncing,
+    syncNow: () => drainQueue(tenantId),
     refreshAll,
     startNewOrder,
     addItemToOrder,
@@ -372,6 +611,7 @@ export function OrdersProvider({ children }) {
     menu, orders, activeOrderId, activeOrder,
     orderMenuItems, orderDeals, orderCategoryTabs, orderTotal, orderTax, orderGrandTotal,
     categoryTabs, customerNote, orderType, deliveryCharge, error, loading, checkingOut, openingInvoiceId, refreshAll,
+    online, queuedCount, numbersLeft, menuCachedAt, syncing, drainQueue, tenantId,
   ])
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>

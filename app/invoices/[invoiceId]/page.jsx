@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { api } from '@/api.js'
+import { api, isOfflineError } from '@/api.js'
+import { findQueuedSale } from '@/lib/offline/store.js'
 import Modal, { ConfirmActions } from '@/components/Modal.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
@@ -118,6 +119,7 @@ export default function InvoiceDetailPage() {
   const { user } = useAuth()
   const toast = useToast()
   const isCounterCashier = user?.role === 'counter_cashier'
+  const tenantId = user?.effectiveTenantId ?? user?.tenantId ?? null
   const [invoice, setInvoice] = useState(null)
   const [invoiceLoading, setInvoiceLoading] = useState(true)
   const [returnNoteDraft, setReturnNoteDraft] = useState('')
@@ -127,14 +129,26 @@ export default function InvoiceDetailPage() {
   const [returnOpen, setReturnOpen] = useState(false)
   const [showPayMethodModal, setShowPayMethodModal] = useState(false)
 
+  // A sale rung up offline is not in the database yet, and this page is where
+  // checkout lands to print the receipt — so it reads the queue when the
+  // server cannot be reached. Marked `pendingSync` so the screen can say the
+  // sale is recorded on this device and not yet sent, which is the one thing
+  // that is materially different about it.
   const loadInvoice = useCallback(async () => {
     setInvoiceLoading(true)
     try {
       const inv = await api.getInvoice(invoiceId)
       setInvoice(inv)
-    } catch { setInvoice(null) }
+    } catch (e) {
+      if (isOfflineError(e) && tenantId) {
+        const queued = await findQueuedSale(tenantId, invoiceId)
+        setInvoice(queued ? { ...queued, pendingSync: true } : null)
+      } else {
+        setInvoice(null)
+      }
+    }
     finally { setInvoiceLoading(false) }
-  }, [invoiceId])
+  }, [invoiceId, tenantId])
 
   useEffect(() => { void loadInvoice() }, [loadInvoice])
   useEffect(() => { if (!invoice) return; setReturnNoteDraft(invoice.returnNote ?? '') }, [invoice])
@@ -294,6 +308,12 @@ export default function InvoiceDetailPage() {
                 <OrderTypeBadge type={invoice.orderType} />
                 {invoice.paid ? <span className="badge-paid">Paid</span> : <span className="badge-unpaid">Unpaid</span>}
                 {invoice.returned ? <span className="badge-returned">Returned</span> : null}
+                {/* Rung up offline and still only on this device. The number
+                    and the figures are final — see §2.4 — so the receipt
+                    prints normally; what this says is that the sale has not
+                    reached the books yet, which is the one thing a manager
+                    reconciling a drawer needs to know. */}
+                {invoice.pendingSync ? <span className="badge-pending-sync">⚡ Not yet sent</span> : null}
                 {invoice.paymentMethod === 'cash' ? <span className="badge-payment-method">💵 Cash</span> : invoice.paymentMethod === 'online' ? <span className="badge-payment-method">💳 Online / Card</span> : null}
               </div>
               {invoice.paid && invoice.paidAt ? (
