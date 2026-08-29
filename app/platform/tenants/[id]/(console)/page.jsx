@@ -3,7 +3,8 @@ import { PendingLink } from '@/components/NavPending.jsx'
 import { useParams } from 'next/navigation'
 import { useTenantConsole } from '@/context/TenantConsoleContext.jsx'
 import { tenantAccess, trialDaysLeft } from '@/lib/tenantAccess.js'
-import { formatShortDateTime } from '@/utils/formatting.js'
+import { formatShortDateTime, moneyFormatter } from '@/utils/formatting.js'
+import { currencyInfo, localeForCurrency } from '@/constants/locales.js'
 
 /**
  * What this café is and how it is doing — the tab you land on.
@@ -29,6 +30,15 @@ export default function TenantOverviewPage() {
   ]
 
   const recent = (tenant.audit ?? []).slice(0, 5)
+
+  // This café's money, not the console's: formatted through the functions
+  // directly rather than the useMoney() hook, which would answer in the
+  // currency of whoever is signed in. The ROADMAP's rule for exactly this case.
+  const currency = currencyInfo(tenant.currency)
+  const sample = moneyFormatter({
+    locale: localeForCurrency(tenant.currency),
+    currency: currency.code,
+  })(1234.56)
 
   return (
     <div className="tenant-overview">
@@ -76,6 +86,26 @@ export default function TenantOverviewPage() {
             <div className="pf-actions">
               <PendingLink href={`${base}/reports`} className="primary btn-link">Open reports</PendingLink>
               <PendingLink href={`${base}/support`} className="ghost btn-link">Support access →</PendingLink>
+            </div>
+          </div>
+
+          {/*
+            Here because this is the tab somebody opens before a phone call,
+            and "their prices are all in rupees" is one of the things that
+            call is about. The café cannot change it from their own settings,
+            so the answer and the way to fix it both have to be findable from
+            here.
+          */}
+          <div className="pf-card">
+            <h2>Trades in</h2>
+            <p>
+              <strong>{currency.name} ({currency.code})</strong> — prices on their till, menu board
+              and receipts read {sample}.
+            </p>
+            <div className="pf-actions">
+              <PendingLink href={`${base}/currency`} className="ghost sm btn-link">
+                Change currency →
+              </PendingLink>
             </div>
           </div>
         </div>

@@ -9,16 +9,17 @@ import { formatShortDateTime } from '@/utils/formatting.js'
 
 /**
  * The chrome around one café: who they are, what state they are in, and the
- * six places you can go.
+ * places you can go.
  *
- * A route group rather than a plain layout, so that this wraps the six console
+ * A route group rather than a plain layout, so that this wraps the console
  * tabs and leaves /reports alone — the reports workbench is a full screen with
  * its own heading and back link, shared with the café's own settings, and
  * putting a second header above it would be two headers arguing.
  */
 const TABS = [
   { seg: '',           label: 'Overview',   hint: 'How they are doing' },
-  { seg: 'details',    label: 'Details',    hint: 'Name and web address' },
+  { seg: 'details',    label: 'Details',    hint: 'Name, web address, trading hours' },
+  { seg: 'currency',   label: 'Currency',   hint: 'The money they trade in' },
   { seg: 'appearance', label: 'Appearance', hint: 'Colours and logo' },
   { seg: 'billing',    label: 'Billing',    hint: 'Plan and price' },
   { seg: 'access',     label: 'Access',     hint: 'Trial, pause for payment, suspend' },
@@ -74,7 +75,9 @@ function ConsoleChrome({ children }) {
         {/* The tab row and a card, so the console's shape is on screen before
             its contents are and the tabs do not drop in underneath the hero. */}
         <div className="tenant-tabs tenant-tabs-skeleton" aria-hidden="true">
-          {Array.from({ length: 8 }, (_, i) => (
+          {/* Counted from TABS, so adding a tab cannot leave the skeleton a
+              placeholder short and the row jumping wider once it loads. */}
+          {TABS.map((_, i) => (
             <Skeleton key={i} width={`${4 + ((i * 3) % 4)}rem`} height="0.9rem" />
           ))}
         </div>

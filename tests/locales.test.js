@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  CURRENCIES, LANGUAGES, DEFAULT_CURRENCY, DEFAULT_LOCALE,
-  parseCurrency, parseLocale, isCurrency, isLocale, directionOf, currencyInfo,
+  CURRENCIES, DEFAULT_CURRENCY, DEFAULT_LOCALE,
+  parseCurrency, isCurrency, localeForCurrency, directionOf, currencyInfo,
 } from '../constants/locales.js'
 import { formatMoney, moneyFormatter, formatShortDateTime } from '../utils/formatting.js'
 
@@ -19,15 +19,40 @@ test('every offered currency is one Intl can actually format', () => {
   }
 })
 
-test('every offered language is a tag Intl can actually format', () => {
-  for (const l of LANGUAGES) {
-    assert.doesNotThrow(() => new Intl.NumberFormat(l.tag), `${l.tag} is not a locale Intl knows`)
+test('every currency carries a locale Intl can actually format', () => {
+  // The currency is now the only regional choice, so a row whose locale Intl
+  // rejects would send that market's dates and separators through a fallback
+  // with nothing in the interface to correct it.
+  for (const c of CURRENCIES) {
+    assert.doesNotThrow(() => new Intl.NumberFormat(c.locale), `${c.locale} is not a locale Intl knows`)
+    assert.doesNotThrow(() => new Intl.DateTimeFormat(c.locale), `${c.locale} is not a locale Intl knows`)
   }
 })
 
-test('the defaults are themselves offered, so the picker can show what is stored', () => {
+test('every currency formats in English, because every label in the app is', () => {
+  // The reason there is no language picker: choosing a currency must never be
+  // a way to half-translate the app into a language it has no words for.
+  for (const c of CURRENCIES) {
+    assert.equal(c.locale.split('-')[0], 'en', `${c.code} is set to ${c.locale}`)
+  }
+})
+
+test('the default currency is offered, and the default locale is the one it implies', () => {
   assert.ok(isCurrency(DEFAULT_CURRENCY))
-  assert.ok(isLocale(DEFAULT_LOCALE))
+  assert.equal(localeForCurrency(DEFAULT_CURRENCY), DEFAULT_LOCALE)
+})
+
+test('the locale follows the currency, so dollars are never written the Pakistani way', () => {
+  assert.equal(localeForCurrency('USD'), 'en-US')
+  assert.equal(localeForCurrency('GBP'), 'en-GB')
+  assert.equal(localeForCurrency('PKR'), 'en-PK')
+})
+
+test('a currency nobody offers still yields a usable locale', () => {
+  // The read path calls this on whatever the row holds. A café whose code was
+  // dropped from the list needs a date on its receipt, not an exception.
+  assert.equal(localeForCurrency('ZZZ'), DEFAULT_LOCALE)
+  assert.equal(localeForCurrency(null), DEFAULT_LOCALE)
 })
 
 // ── Parsing: lenient on the way out, strict on the way in ───────────────────
@@ -35,8 +60,6 @@ test('the defaults are themselves offered, so the picker can show what is stored
 test('parsing falls back rather than throwing, so a stale row still renders', () => {
   assert.equal(parseCurrency('ZZZ'), DEFAULT_CURRENCY)
   assert.equal(parseCurrency(null), DEFAULT_CURRENCY)
-  assert.equal(parseLocale('xx-YY'), DEFAULT_LOCALE)
-  assert.equal(parseLocale(undefined), DEFAULT_LOCALE)
 })
 
 test('a currency is accepted in any case, because forms send what they are given', () => {
@@ -51,18 +74,14 @@ test('the strict checks refuse what the lenient ones would silently swallow', ()
   // which would answer PKR and store a café's prices in the wrong money.
   assert.equal(isCurrency('ZZZ'), false)
   assert.equal(parseCurrency('ZZZ'), DEFAULT_CURRENCY)
-  assert.equal(isLocale('xx-YY'), false)
-  assert.equal(parseLocale('xx-YY'), DEFAULT_LOCALE)
-})
-
-test('a language tag is matched exactly — es-MX is not es-ES', () => {
-  assert.ok(isLocale('es-MX'))
-  assert.equal(isLocale('es'), false)
 })
 
 // ── Writing direction ───────────────────────────────────────────────────────
 
 test('Arabic and Urdu are right to left, and everything else is not', () => {
+  // Nothing hands out these tags today — every locale a currency implies is
+  // English. Kept because the tag is still what decides the question, and a
+  // translation shipping is what changes the answer.
   assert.equal(directionOf('ar-AE'), 'rtl')
   assert.equal(directionOf('ur-PK'), 'rtl')
   assert.equal(directionOf('en-US'), 'ltr')
@@ -81,11 +100,15 @@ test('the default arguments are still Pakistan, so an un-updated caller is uncha
   assert.equal(formatMoney(99), formatMoney(99, { locale: DEFAULT_LOCALE, currency: DEFAULT_CURRENCY }))
 })
 
-test('a language decides the separators, not just the words', () => {
-  // The reason one setting covers both: "Spanish" alone cannot say whether
-  // 1.234,56 or 1,234.56 is meant.
-  const de = formatMoney(1234.56, { locale: 'de-DE', currency: 'EUR' })
-  assert.ok(de.includes('1.234,56'), de)
+test('the locale decides the separators, which is what it is kept for', () => {
+  // Why the currency has to carry a region and not just "English": en-ZA
+  // writes the same amount with a space and a comma.
+  // Whitespace stripped before comparing: South Africa's thousands separator
+  // is a non-breaking space, and which one Intl picks is not the point here.
+  const za = formatMoney(1234.56, { locale: localeForCurrency('ZAR'), currency: 'ZAR' })
+  assert.equal(za.replace(/\s/gu, ''), 'R1234,56')
+  const us = formatMoney(1234.56, { locale: localeForCurrency('USD'), currency: 'USD' })
+  assert.equal(us, '$1,234.56')
 })
 
 test('an unknown pair formats rather than throwing', () => {
@@ -105,11 +128,11 @@ test('a non-numeric amount reads as zero rather than NaN', () => {
   assert.equal(moneyFormatter({ locale: 'en-US', currency: 'USD' })(undefined), '$0.00')
 })
 
-test('dates follow the café’s language too', () => {
+test('dates follow the café’s currency too — 8/29 in Dallas, 29 Aug in London', () => {
   const iso = '2026-08-29T14:30:00Z'
   assert.notEqual(
-    formatShortDateTime(iso, { locale: 'en-US', timeZone: 'UTC' }),
-    formatShortDateTime(iso, { locale: 'es-MX', timeZone: 'UTC' }),
+    formatShortDateTime(iso, { locale: localeForCurrency('USD'), timeZone: 'UTC' }),
+    formatShortDateTime(iso, { locale: localeForCurrency('GBP'), timeZone: 'UTC' }),
   )
 })
 

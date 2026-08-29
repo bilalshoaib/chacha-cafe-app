@@ -391,6 +391,18 @@
   outline-offset: 1px;
 }
 .pf-hint { font-size: 0.78rem; color: var(--pf-ink-soft); }
+
+/* "Currently trading in X" — what a setting is *now*, said before the control
+   that changes it. A highlighted card in a grid of 23 is not an answer to the
+   question somebody opens the tab with. */
+.pf-current-value {
+  margin: 0 0 0.15rem;
+  padding: 0.45rem 0.65rem;
+  border-left: 3px solid var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 5%, transparent);
+  border-radius: 0 7px 7px 0;
+  font-size: 0.88rem;
+}
 .pf-row { display: flex; gap: 0.85rem; flex-wrap: wrap; }
 .pf-row > .pf-field { flex: 1 1 10rem; }
 

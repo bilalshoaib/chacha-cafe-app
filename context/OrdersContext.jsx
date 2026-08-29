@@ -5,6 +5,7 @@ import { api } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { buildCategoryTabs } from '@/utils/formatting.js'
 import { applyPricing, discountPartsOf, priceLine, repriceLine } from '@/lib/pricing.js'
+import { computeInvoiceTax, invoiceTotal } from '@/lib/tax.js'
 
 const OrdersContext = createContext(null)
 
@@ -63,7 +64,7 @@ export function OrdersProvider({ children }) {
   const router = useRouter()
   const pathname = usePathname()
   const { authenticated, user } = useAuth()
-  const [menu, setMenu] = useState({ items: [], deals: [], categories: [], brands: [] })
+  const [menu, setMenu] = useState({ items: [], deals: [], categories: [], brands: [], tax: { pricesIncludeTax: true, rates: [] } })
   const [orders, setOrders] = useState([])
   const [activeOrderId, setActiveOrderId] = useState(null)
   const [error, setError] = useState('')
@@ -141,6 +142,41 @@ export function OrdersProvider({ children }) {
     if (!activeOrder?.lines?.length) return 0
     return Math.round(activeOrder.lines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100
   }, [activeOrder])
+
+  /**
+   * The tax on the cart as it stands, so the till can show what the customer
+   * will owe before the sale is made rather than after.
+   *
+   * Computed by the same lib/tax.js the server runs at checkout, over rates
+   * that arrived with the menu — so the figure on the screen is the figure on
+   * the receipt, and neither costs a round trip. It is a preview and nothing
+   * more: /api/checkout recomputes it and the invoice records what the server
+   * decided, never what was sent.
+   *
+   * The order type is in the dependency list because a dine-in surcharge stops
+   * applying the moment the cashier presses Takeaway, and the total on screen
+   * has to follow.
+   */
+  const orderTax = useMemo(
+    () => computeInvoiceTax({
+      lines: activeOrder?.lines ?? [],
+      rates: menu.tax?.rates ?? [],
+      orderType,
+      pricesIncludeTax: menu.tax?.pricesIncludeTax ?? true,
+    }),
+    [activeOrder, menu.tax, orderType],
+  )
+
+  /** Subtotal, delivery and tax as one figure, added up the one way. */
+  const orderGrandTotal = useMemo(
+    () => invoiceTotal({
+      subtotal: orderTotal,
+      deliveryCharge: orderType === 'delivery' ? (Number(deliveryCharge) || 0) : 0,
+      taxTotal: orderTax.taxTotal,
+      inclusive: orderTax.inclusive,
+    }),
+    [orderTotal, orderType, deliveryCharge, orderTax],
+  )
 
   function updateActiveOrderLines(updater) {
     setOrders((prev) => prev.map((o) => (o.id === activeOrderId ? { ...o, lines: updater(o.lines) } : o)))
@@ -309,6 +345,8 @@ export function OrdersProvider({ children }) {
     orderDeals,
     orderCategoryTabs,
     orderTotal,
+    orderTax,
+    orderGrandTotal,
     categoryTabs,
     customerNote,
     setCustomerNote,
@@ -332,7 +370,7 @@ export function OrdersProvider({ children }) {
     doCheckout,
   }), [
     menu, orders, activeOrderId, activeOrder,
-    orderMenuItems, orderDeals, orderCategoryTabs, orderTotal,
+    orderMenuItems, orderDeals, orderCategoryTabs, orderTotal, orderTax, orderGrandTotal,
     categoryTabs, customerNote, orderType, deliveryCharge, error, loading, checkingOut, openingInvoiceId, refreshAll,
   ])
 

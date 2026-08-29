@@ -8,6 +8,7 @@ import { api } from '@/api.js'
 import { categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { cloneInvoiceLines, lineFromDeal, lineFromMenuItem, removeLineById, updateLineDiscount, updateLineQty } from '@/utils/invoiceLines.js'
 import { discountPartsOf, priceLine } from '@/lib/pricing.js'
+import { computeInvoiceTax, invoiceTotal } from '@/lib/tax.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useMoney } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
@@ -57,7 +58,36 @@ export default function InvoiceEditPage() {
     return m
   }, [menu.items])
 
-  const draftTotal = useMemo(() => Math.round(editedLines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100, [editedLines])
+  const draftSubtotal = useMemo(() => Math.round(editedLines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100, [editedLines])
+
+  /**
+   * What the edited ticket comes to, priced the way the server will price it
+   * when Save is pressed.
+   *
+   * This row said "Total due" over the bare sum of the lines, which was already
+   * short by any delivery charge and would now be short by the tax as well —
+   * on a US café that is the difference between the figure on this screen and
+   * the figure on the receipt. Same lib/tax.js the PATCH runs, over the rates
+   * that arrived with the menu, so the preview and the save agree.
+   */
+  const draftTax = useMemo(
+    () => computeInvoiceTax({
+      lines: editedLines,
+      rates: menu.tax?.rates ?? [],
+      orderType: invoice?.orderType ?? null,
+      pricesIncludeTax: menu.tax?.pricesIncludeTax ?? true,
+    }),
+    [editedLines, menu.tax, invoice],
+  )
+  const draftTotal = useMemo(
+    () => invoiceTotal({
+      subtotal: draftSubtotal,
+      deliveryCharge: invoice?.deliveryCharge ?? 0,
+      taxTotal: draftTax.taxTotal,
+      inclusive: draftTax.inclusive,
+    }),
+    [draftSubtotal, invoice, draftTax],
+  )
   const linesDirty = invoice != null && JSON.stringify(editedLines) !== JSON.stringify(invoice.lines)
   const noteDirty = invoice != null && (invoice.customerNote ?? '') !== noteDraft
   const saveDirty = (linesDirty || noteDirty) && invoice && !invoice.returned
@@ -292,6 +322,26 @@ export default function InvoiceEditPage() {
           </table>
         </div>
 
+        {(invoice.deliveryCharge > 0) || draftTax.taxTotal > 0 ? (
+          <>
+            <div className="total-row subtotal-row">
+              <span>Subtotal</span>
+              <span>{money(draftTax.inclusive ? Math.round((draftSubtotal - draftTax.taxTotal) * 100) / 100 : draftSubtotal)}</span>
+            </div>
+            {invoice.deliveryCharge > 0 ? (
+              <div className="total-row subtotal-row">
+                <span>🛵 Delivery charge</span>
+                <span>{money(invoice.deliveryCharge)}</span>
+              </div>
+            ) : null}
+            {draftTax.lines.map((t) => (
+              <div key={t.id} className="total-row subtotal-row tax-total-row">
+                <span>{t.name} ({t.rate}%){draftTax.inclusive ? ' · included' : ''}</span>
+                <span>{money(t.amount)}</span>
+              </div>
+            ))}
+          </>
+        ) : null}
         <div className="total-row big">
           <span>{invoice.paid ? 'Total' : 'Total due'}</span>
           <strong>{money(draftTotal)}</strong>

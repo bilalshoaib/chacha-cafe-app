@@ -7,7 +7,7 @@ import { STARTER_MENUS } from '@/constants/starterMenus.js'
 import BrandingFields, { DEFAULT_BRANDING_FORM, LogoPicker } from '@/components/BrandingFields.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { TRIAL_DAYS_DEFAULT, TRIAL_DAYS_MAX } from '@/lib/tenantAccess.js'
-import LocaleFields from '@/components/LocaleFields.jsx'
+import CurrencyField from '@/components/CurrencyField.jsx'
 
 /**
  * Creating a café.
@@ -44,7 +44,6 @@ export default function NewTenantPage() {
   const [starter, setStarter] = useState('cafe')
   const [currency, setCurrency] = useState('PKR')
   const [timezone, setTimezone] = useState('Asia/Karachi')
-  const [locale, setLocale] = useState('en-PK')
   const [branding, setBranding] = useState(DEFAULT_BRANDING_FORM)
   // Held in memory until the café exists to attach it to, then sent with the
   // rest of the form. There is nothing to upload against before that.
@@ -65,7 +64,7 @@ export default function NewTenantPage() {
         name, slug: autoSlug, ownerEmail, ownerName, plan,
         ...(plan === 'trial' ? { trialDays: Number(trialDays) } : {}),
         brandNames: separateCounters ? counterNames.filter((c) => c.trim()) : [],
-        starterMenu: starter, currency, timezone, locale,
+        starterMenu: starter, currency, timezone,
         ...branding,
         logo: logo ? { mime: logo.mime, data: logo.data } : null,
       }))
@@ -146,15 +145,14 @@ export default function NewTenantPage() {
 
           {/* Chosen from a list rather than typed. A free-text box here was
               three characters away from a café whose every price rendered in a
-              currency Intl has never heard of, and it offered no way to set the
-              language at all — so every café created got Pakistani English
-              whatever country it was in. */}
+              currency Intl has never heard of. It is also the one regional
+              answer asked for: number and date formatting follows from it, and
+              the café's own settings cannot change it afterwards, so it is
+              worth getting right here. */}
           <div className="pf-row">
-            <LocaleFields
+            <CurrencyField
               currency={currency}
-              locale={locale}
               onCurrencyChange={setCurrency}
-              onLocaleChange={setLocale}
               disabled={saving}
               fieldClass="pf-field"
             />

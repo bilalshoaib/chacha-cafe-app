@@ -1,90 +1,71 @@
 'use client'
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { api } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
-import { useBranding } from '@/context/BrandingContext.jsx'
-import LocaleFields from '@/components/LocaleFields.jsx'
+import { useBranding, useMoney } from '@/context/BrandingContext.jsx'
+import { currencyInfo } from '@/constants/locales.js'
+
+/**
+ * Settings, as a hub rather than a screen.
+ *
+ * It used to be one page holding five things at once — currency, language,
+ * sales tax, profile, password — and each of them was a form with its own
+ * submit button, its own error banner and its own success banner, stacked in a
+ * single column. Three of the five could be saved from the same screenful, so
+ * "Saved." could appear next to a form that had not been touched, and finding
+ * the password fields meant scrolling past the tax rates.
+ *
+ * Each thing now gets a page. This one lists them and says what each is for,
+ * which is also what makes the list additable: tipping and card payments are
+ * next, and neither has anywhere to go on a screen that is already full.
+ */
+
+/** The rows in the hub. `owner` marks the ones only the café's owner may open. */
+const SECTIONS = [
+  {
+    href: '/settings/profile',
+    icon: '👤',
+    title: 'Profile',
+    blurb: 'Your display name and the email address you sign in with.',
+  },
+  {
+    href: '/settings/password',
+    icon: '🔑',
+    title: 'Password',
+    blurb: 'Change the password on this account. Needs your current one.',
+  },
+  {
+    href: '/settings/tax',
+    icon: '🧾',
+    title: 'Sales tax',
+    blurb: 'The rates you charge, who they apply to, and whether your menu prices already include them.',
+    owner: true,
+  },
+  {
+    href: '/settings/team',
+    icon: '👥',
+    title: 'Team & admins',
+    blurb: 'Staff and admin logins: add an account, change a role, reset a password.',
+    owner: true,
+  },
+  {
+    href: '/settings/reports',
+    icon: '📊',
+    title: 'Sales & expense reports',
+    blurb: 'Invoices and expenses by date range — net sales, tax collected, returns and what is left after expenses.',
+    owner: true,
+  },
+]
 
 export default function SettingsPage() {
-  const { user, refreshAuth } = useAuth()
+  const { user } = useAuth()
   const branding = useBranding()
-  const router = useRouter()
-
-  const [profileEmail, setProfileEmail] = useState('')
-  const [profileName, setProfileName] = useState('')
-  const [profileMsg, setProfileMsg] = useState('')
-  const [profileErr, setProfileErr] = useState('')
-  const [profileSaving, setProfileSaving] = useState(false)
-
-  const [curPass, setCurPass] = useState('')
-  const [newPass, setNewPass] = useState('')
-  const [newPass2, setNewPass2] = useState('')
-  const [passMsg, setPassMsg] = useState('')
-  const [passErr, setPassErr] = useState('')
-  const [passSaving, setPassSaving] = useState(false)
-
-  // Seeded from the branding the server already resolved for this request, so
-  // the pickers open on the café's real settings with no second fetch and no
-  // flash of the wrong currency.
-  const [currency, setCurrency] = useState(branding?.currency ?? 'PKR')
-  const [locale, setLocale] = useState(branding?.locale ?? 'en-PK')
-  const [regionMsg, setRegionMsg] = useState('')
-  const [regionErr, setRegionErr] = useState('')
-  const [regionSaving, setRegionSaving] = useState(false)
-
-  useEffect(() => {
-    if (!user) return
-    setProfileEmail(user.email ?? '')
-    setProfileName(user.displayName ?? '')
-  }, [user])
-
-  useEffect(() => {
-    if (!branding) return
-    setCurrency(branding.currency)
-    setLocale(branding.locale)
-  }, [branding])
+  const money = useMoney()
 
   if (!user) return null
 
-  async function saveProfile(e) {
-    e.preventDefault(); setProfileErr(''); setProfileMsg(''); setProfileSaving(true)
-    try {
-      const { user: u } = await api.updateProfile({ email: profileEmail, displayName: profileName })
-      setProfileMsg('Profile saved.')
-      await refreshAuth()
-      if (u?.email) setProfileEmail(u.email)
-      if (u?.displayName != null) setProfileName(u.displayName ?? '')
-    } catch (err) { setProfileErr(err.message || 'Could not save profile') }
-    finally { setProfileSaving(false) }
-  }
-
-  async function savePassword(e) {
-    e.preventDefault(); setPassErr(''); setPassMsg('')
-    if (newPass !== newPass2) { setPassErr('New passwords do not match.'); return }
-    setPassSaving(true)
-    try {
-      await api.changeMyPassword(curPass, newPass)
-      setPassMsg('Password updated.')
-      setCurPass(''); setNewPass(''); setNewPass2('')
-    } catch (err) { setPassErr(err.message || 'Could not update password') }
-    finally { setPassSaving(false) }
-  }
-
-  async function saveRegion(e) {
-    e.preventDefault(); setRegionErr(''); setRegionMsg(''); setRegionSaving(true)
-    try {
-      await api.saveRegionalSettings({ currency, locale })
-      setRegionMsg('Saved. Prices and dates across the app now use these.')
-      // Currency and language are resolved on the server and handed to the
-      // page as branding, so a re-render alone would leave every price on
-      // every other screen in the old currency until a full reload. Refreshing
-      // the route re-runs the layout and repaints the app in one go.
-      router.refresh()
-    } catch (err) { setRegionErr(err.message || 'Could not save regional settings') }
-    finally { setRegionSaving(false) }
-  }
+  const isOwner = user.role === 'super_admin'
+  const sections = SECTIONS.filter((s) => !s.owner || isOwner)
+  const currency = currencyInfo(branding?.currency)
 
   return (
     <main className="settings-page">
@@ -94,7 +75,11 @@ export default function SettingsPage() {
           <div className="page-hero-icon">⚙️</div>
           <div>
             <h1 className="page-hero-title">Settings</h1>
-            <p className="page-hero-sub">Manage your profile, password, and team accounts.</p>
+            <p className="page-hero-sub">
+              {isOwner
+                ? 'Your account, your team, and how this café charges.'
+                : 'Your account.'}
+            </p>
           </div>
         </div>
         {/* A sibling of the body, not a child of it — which is how the Menu and
@@ -104,86 +89,46 @@ export default function SettingsPage() {
         <Link href="/orders" className="page-hero-action">← Back</Link>
       </div>
 
-      {user.role === 'super_admin' ? (
-        <>
-          <section className="card settings-card settings-team-link-card">
-            <h3 className="sub">Team &amp; admins</h3>
-            <p className="muted small">List accounts, open details, and add or edit staff and admin logins (with display name, email, role, and password).</p>
-            <Link href="/settings/team" className="primary sm settings-team-link">Open team management</Link>
-          </section>
-          <section className="card settings-card settings-team-link-card">
-            <h3 className="sub">Sales &amp; expense reports</h3>
-            <p className="muted small">Invoices and expenses by date range: net sales, returns, expense totals, net after expenses, and line-by-line lists.</p>
-            <Link href="/settings/reports" className="primary sm settings-team-link">Open reports</Link>
-          </section>
-        </>
-      ) : null}
+      <div className="settings-grid">
+        {sections.map((s) => (
+          <Link key={s.href} href={s.href} className="card settings-tile">
+            <span className="settings-tile-icon" aria-hidden="true">{s.icon}</span>
+            <span className="settings-tile-body">
+              <strong className="settings-tile-title">{s.title}</strong>
+              <span className="muted small settings-tile-blurb">{s.blurb}</span>
+            </span>
+            <span className="settings-tile-chevron" aria-hidden="true">→</span>
+          </Link>
+        ))}
+      </div>
 
-      {user.role === 'super_admin' ? (
-        <section className="card settings-card">
-          <h3 className="sub">Currency &amp; language</h3>
+      {/*
+        Shown, not offered. The currency is the platform owner's to set — it is
+        chosen when the café is created and changed from their console — because
+        a café does not change the money it trades in while it is trading, and
+        the one time it happens the owner is already on the phone to them.
+        Leaving it off this screen entirely would be worse: an owner who thinks
+        their prices are in the wrong currency needs to see what it is set to
+        before they can say so.
+      */}
+      {isOwner ? (
+        <section className="card settings-card settings-region-card">
+          <h3 className="sub">Currency</h3>
+          <div className="settings-region-row">
+            <span className="settings-region-symbol" aria-hidden="true">{currency.symbol}</span>
+            <div>
+              <strong>{currency.name} ({currency.code})</strong>
+              <p className="muted small">
+                Prices read {money(1234.56)} across the till, the menu board, receipts and reports.
+              </p>
+            </div>
+          </div>
           <p className="muted small">
-            What this café trades in and how it writes numbers and dates. Applies everywhere —
-            the till, the menu board, printed receipts and reports.
+            Set by your provider when this café was created. Ask them to change it if it is wrong —
+            it moves every price on every screen at once, so it is not something to change mid-shift.
           </p>
-          <form onSubmit={(e) => void saveRegion(e)} className="settings-form">
-            <LocaleFields
-              currency={currency}
-              locale={locale}
-              onCurrencyChange={setCurrency}
-              onLocaleChange={setLocale}
-              disabled={regionSaving}
-            />
-            {regionErr ? <p className="banner error" role="alert">{regionErr}</p> : null}
-            {regionMsg ? <p className="banner success settings-banner-quiet" role="status">{regionMsg}</p> : null}
-            <button
-              type="submit"
-              className="primary"
-              disabled={regionSaving || (currency === branding?.currency && locale === branding?.locale)}
-            >
-              {regionSaving ? 'Saving…' : 'Save currency & language'}
-            </button>
-          </form>
         </section>
       ) : null}
-
-      <section className="card settings-card">
-        <h3 className="sub">Profile</h3>
-        <form onSubmit={(e) => void saveProfile(e)} className="settings-form">
-          <label className="field">
-            <span>Display name</span>
-            <input value={profileName} onChange={(e) => setProfileName(e.target.value)} maxLength={80} disabled={profileSaving} placeholder="Shown on receipts or reports later" />
-          </label>
-          <label className="field">
-            <span>Email</span>
-            <input type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} required disabled={profileSaving} autoComplete="email" />
-          </label>
-          {profileErr ? <p className="banner error" role="alert">{profileErr}</p> : null}
-          {profileMsg ? <p className="banner success settings-banner-quiet" role="status">{profileMsg}</p> : null}
-          <button type="submit" className="primary" disabled={profileSaving}>{profileSaving ? 'Saving…' : 'Save profile'}</button>
-        </form>
-      </section>
-
-      <section className="card settings-card">
-        <h3 className="sub">Change password</h3>
-        <form onSubmit={(e) => void savePassword(e)} className="settings-form">
-          <label className="field">
-            <span>Current password</span>
-            <input type="password" value={curPass} onChange={(e) => setCurPass(e.target.value)} required disabled={passSaving} autoComplete="current-password" />
-          </label>
-          <label className="field">
-            <span>New password</span>
-            <input type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)} required minLength={8} disabled={passSaving} autoComplete="new-password" />
-          </label>
-          <label className="field">
-            <span>Confirm new password</span>
-            <input type="password" value={newPass2} onChange={(e) => setNewPass2(e.target.value)} required minLength={8} disabled={passSaving} autoComplete="new-password" />
-          </label>
-          {passErr ? <p className="banner error" role="alert">{passErr}</p> : null}
-          {passMsg ? <p className="banner success settings-banner-quiet" role="status">{passMsg}</p> : null}
-          <button type="submit" className="primary" disabled={passSaving}>{passSaving ? 'Updating…' : 'Update password'}</button>
-        </form>
-      </section>
     </main>
   )
 }

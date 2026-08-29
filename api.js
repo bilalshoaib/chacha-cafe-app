@@ -72,11 +72,16 @@ export const api = {
     }),
   listUsers: () => request('/api/auth/users'),
 
-  // The café's own currency and language. Separate from the console's
-  // updateTenant, which is the platform owner's and reaches far more.
-  regionalSettings: () => request('/api/tenant/settings'),
-  saveRegionalSettings: (body) =>
-    request('/api/tenant/settings', { method: 'PATCH', body: JSON.stringify(body) }),
+  // Sales tax. The GET carries the café's own categories and the order types
+  // with it, so the picker can only offer rules the server would accept.
+  taxSettings: () => request('/api/tenant/tax'),
+  setPricesIncludeTax: (pricesIncludeTax) =>
+    request('/api/tenant/tax', { method: 'PATCH', body: JSON.stringify({ pricesIncludeTax }) }),
+  createTaxRate: (body) => request('/api/tenant/tax', { method: 'POST', body: JSON.stringify(body) }),
+  updateTaxRate: (rateId, body) =>
+    request(`/api/tenant/tax/${encodeURIComponent(rateId)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteTaxRate: (rateId) =>
+    request(`/api/tenant/tax/${encodeURIComponent(rateId)}`, { method: 'DELETE' }),
   // Platform console — creating and governing cafés, not configuring them.
   listTenants: () => request('/api/platform/tenants'),
   platformActivity: (window = '30d') => request(`/api/platform/activity?window=${window}`),

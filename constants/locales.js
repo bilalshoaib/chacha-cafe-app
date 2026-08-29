@@ -1,16 +1,22 @@
 /**
- * The currencies and languages a café can trade and read in.
+ * The currencies a café can trade in, and how each one writes a number.
  *
- * Both live on the location row, not here — a business can open across a
- * border, and the branch is the thing that has a till, a currency and a
- * language. This file is only the list of what may be chosen and what happens
- * when nothing has been: no database, no React, importable from a route
- * handler and a client component alike.
+ * Currency lives on the location row, not here — a business can open across a
+ * border, and the branch is the thing that has a till and a currency. This
+ * file is only the list of what may be chosen and what happens when nothing
+ * has been: no database, no React, importable from a route handler and a
+ * client component alike.
+ *
+ * **There is no language choice.** Every label in this app is English and will
+ * stay English until translation files exist, so offering a picker that
+ * changed nothing but the decimal separator invited an owner to set their
+ * café to Urdu and then wonder why the screen was still in English. What the
+ * locale is actually needed for — 1,234.56 against 1.234,56, and 8/29 against
+ * 29/8 — follows from the currency instead: a café charging in pounds is in a
+ * market that writes dates the British way. See `localeForCurrency`.
  *
  * The defaults are Pakistan because that is what every existing row holds and
- * what the app rendered before any of this existed. A café created today picks
- * its own on the way in; a café created before this shipped keeps rendering
- * exactly as it did.
+ * what the app rendered before any of this existed.
  */
 
 export const DEFAULT_CURRENCY = 'PKR'
@@ -21,82 +27,51 @@ export const DEFAULT_LOCALE = 'en-PK'
  *
  * Not every ISO 4217 code — a list of 180 is a worse answer than a list of 20
  * when the person choosing runs one café and knows exactly which one they
- * want. `code` is what is stored; the rest is what makes the row readable in a
- * dropdown. Adding a market means adding a line here.
+ * want. `code` is what is stored; `name` and `symbol` are what make the row
+ * readable; `locale` is the formatting that comes with it.
  *
  * How many decimal places each has is deliberately absent: Intl already knows
  * the minor unit of every one of these, and a second opinion stored here would
  * eventually disagree with it.
+ *
+ * `locale` is always an English tag — the region is what varies, because the
+ * region is the part that decides how a number and a date are written. Adding
+ * a market means adding a line here, and both halves of it.
  */
 export const CURRENCIES = [
-  { code: 'USD', name: 'US Dollar', symbol: '$' },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: '$' },
-  { code: 'GBP', name: 'British Pound', symbol: '£' },
-  { code: 'EUR', name: 'Euro', symbol: '€' },
-  { code: 'AUD', name: 'Australian Dollar', symbol: '$' },
-  { code: 'NZD', name: 'New Zealand Dollar', symbol: '$' },
-  { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' },
-  { code: 'SAR', name: 'Saudi Riyal', symbol: '﷼' },
-  { code: 'QAR', name: 'Qatari Riyal', symbol: '﷼' },
-  { code: 'PKR', name: 'Pakistani Rupee', symbol: '₨' },
-  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
-  { code: 'BDT', name: 'Bangladeshi Taka', symbol: '৳' },
-  { code: 'LKR', name: 'Sri Lankan Rupee', symbol: '₨' },
-  { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM' },
-  { code: 'SGD', name: 'Singapore Dollar', symbol: '$' },
-  { code: 'PHP', name: 'Philippine Peso', symbol: '₱' },
-  { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
-  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
-  { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
-  { code: 'NGN', name: 'Nigerian Naira', symbol: '₦' },
-  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh' },
-  { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
-]
-
-/**
- * The languages offered in the picker.
- *
- * A BCP 47 tag, because one value has to answer two questions: which words to
- * show, and how this place writes a number and a date. "Spanish" alone cannot
- * say whether 1.234,56 or 1,234.56 is meant, and a café in Texas and a café in
- * Madrid disagree about it.
- *
- * `label` is the language in its own script, because somebody choosing their
- * language cannot necessarily read the current one. `region` disambiguates the
- * pairs that share a language.
- */
-export const LANGUAGES = [
-  { tag: 'en-US', label: 'English', region: 'United States' },
-  { tag: 'en-CA', label: 'English', region: 'Canada' },
-  { tag: 'en-GB', label: 'English', region: 'United Kingdom' },
-  { tag: 'en-AU', label: 'English', region: 'Australia' },
-  { tag: 'en-PK', label: 'English', region: 'Pakistan' },
-  { tag: 'en-IN', label: 'English', region: 'India' },
-  { tag: 'en-AE', label: 'English', region: 'United Arab Emirates' },
-  { tag: 'es-US', label: 'Español', region: 'Estados Unidos' },
-  { tag: 'es-MX', label: 'Español', region: 'México' },
-  { tag: 'es-ES', label: 'Español', region: 'España' },
-  { tag: 'fr-CA', label: 'Français', region: 'Canada' },
-  { tag: 'fr-FR', label: 'Français', region: 'France' },
-  { tag: 'pt-BR', label: 'Português', region: 'Brasil' },
-  { tag: 'de-DE', label: 'Deutsch', region: 'Deutschland' },
-  { tag: 'tr-TR', label: 'Türkçe', region: 'Türkiye' },
-  { tag: 'ur-PK', label: 'اردو', region: 'پاکستان' },
-  { tag: 'ar-AE', label: 'العربية', region: 'الإمارات' },
-  { tag: 'ar-SA', label: 'العربية', region: 'السعودية' },
-  { tag: 'hi-IN', label: 'हिन्दी', region: 'भारत' },
-  { tag: 'bn-BD', label: 'বাংলা', region: 'বাংলাদেশ' },
-  { tag: 'ms-MY', label: 'Bahasa Melayu', region: 'Malaysia' },
-  { tag: 'zh-CN', label: '中文', region: '中国' },
+  { code: 'USD', name: 'US Dollar', symbol: '$', locale: 'en-US' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: '$', locale: 'en-CA' },
+  { code: 'GBP', name: 'British Pound', symbol: '£', locale: 'en-GB' },
+  { code: 'EUR', name: 'Euro', symbol: '€', locale: 'en-IE' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: '$', locale: 'en-AU' },
+  { code: 'NZD', name: 'New Zealand Dollar', symbol: '$', locale: 'en-NZ' },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ', locale: 'en-AE' },
+  { code: 'SAR', name: 'Saudi Riyal', symbol: '﷼', locale: 'en-SA' },
+  { code: 'QAR', name: 'Qatari Riyal', symbol: '﷼', locale: 'en-QA' },
+  { code: 'PKR', name: 'Pakistani Rupee', symbol: '₨', locale: 'en-PK' },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹', locale: 'en-IN' },
+  { code: 'BDT', name: 'Bangladeshi Taka', symbol: '৳', locale: 'en-BD' },
+  { code: 'LKR', name: 'Sri Lankan Rupee', symbol: '₨', locale: 'en-LK' },
+  { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM', locale: 'en-MY' },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: '$', locale: 'en-SG' },
+  { code: 'PHP', name: 'Philippine Peso', symbol: '₱', locale: 'en-PH' },
+  { code: 'MXN', name: 'Mexican Peso', symbol: '$', locale: 'en-MX' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', locale: 'en-BR' },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R', locale: 'en-ZA' },
+  { code: 'NGN', name: 'Nigerian Naira', symbol: '₦', locale: 'en-NG' },
+  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', locale: 'en-KE' },
+  { code: 'TRY', name: 'Turkish Lira', symbol: '₺', locale: 'en-TR' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥', locale: 'en-JP' },
 ]
 
 /**
  * The languages written right to left, which the page has to be told about
  * before it lays anything out.
  *
- * Matched on the language subtag rather than the whole tag so that adding
- * ar-EG above needs no second edit here.
+ * Nothing selects one today — every locale this file hands out is English, so
+ * `directionOf` answers 'ltr' every time. Kept because the tag is still what
+ * decides the question, and the day a translation ships is the day the answer
+ * changes without this having to be rediscovered.
  */
 const RTL_LANGUAGES = new Set(['ar', 'ur', 'fa', 'he', 'ps', 'sd'])
 
@@ -106,7 +81,6 @@ export function directionOf(tag) {
 }
 
 const CURRENCY_CODES = new Set(CURRENCIES.map((c) => c.code))
-const LANGUAGE_TAGS = new Set(LANGUAGES.map((l) => l.tag))
 
 /**
  * Validates a stored or submitted currency, falling back rather than throwing.
@@ -122,17 +96,20 @@ export function parseCurrency(value) {
   return CURRENCY_CODES.has(code) ? code : DEFAULT_CURRENCY
 }
 
-export function parseLocale(value) {
-  const tag = String(value || '').trim()
-  return LANGUAGE_TAGS.has(tag) ? tag : DEFAULT_LOCALE
-}
-
 export function isCurrency(value) {
   return CURRENCY_CODES.has(String(value || '').trim().toUpperCase())
 }
 
-export function isLocale(value) {
-  return LANGUAGE_TAGS.has(String(value || '').trim())
+/**
+ * The formatting locale that comes with a currency.
+ *
+ * The single answer to "what locale is this café in", used on both the read
+ * path — where a row may still hold a language somebody picked before this
+ * existed, which is ignored — and the write path, where it is what gets
+ * stored beside the currency so the column never disagrees with this function.
+ */
+export function localeForCurrency(code) {
+  return currencyInfo(code).locale
 }
 
 /** The row for a code, for showing a symbol or a name beside a figure. */

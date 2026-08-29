@@ -93,8 +93,27 @@ const SUMMARY_STATS = [
   { key: 'paidUnpaid', label: 'Paid vs unpaid', value: (s) => `${s.paidCount} / ${s.unpaidCount}`, sub: () => 'Non-returned only' },
   { key: 'delivery', label: '🛵 Delivery charges', value: (s, money) => money(s.deliveryChargesTotal), sub: (s) => `${s.deliveryOrderCount} delivery orders` },
   { key: 'exclDelivery', label: 'Sales excl. delivery', value: (s, money) => money(s.netSalesExclDelivery), sub: () => 'Net sales − delivery charges' },
+  // Only for a café that charges tax. Every café on the platform before sales
+  // tax existed collects none, and a row of zeroes on their reports screen is
+  // a question they have to answer rather than a figure they can use.
+  {
+    key: 'taxCollected',
+    label: 'Sales tax collected',
+    value: (s, money) => money(s.taxCollectedTotal ?? 0),
+    sub: (s, money) => `On ${money(s.taxableSalesTotal ?? 0)} of sales · for filing`,
+    when: (s) => (s?.taxCollectedTotal ?? 0) > 0,
+  },
   { key: 'expenses', label: 'Total expenses', value: (s, money) => money(s.expensesTotal), sub: (s) => `${s.expenseCount} entries · date spent` },
-  { key: 'netAfterExpenses', label: 'Net after expenses', value: (s, money) => money(s.netAfterExpenses), sub: () => 'Sales excl. delivery − expenses' },
+  {
+    key: 'netAfterExpenses',
+    label: 'Net after expenses',
+    value: (s, money) => money(s.netAfterExpenses),
+    // Says which subtraction produced the figure, and the subtractions differ:
+    // tax only comes off when the café was collecting some.
+    sub: (s) => ((s?.taxCollectedTotal ?? 0) > 0
+      ? 'Sales excl. delivery & tax − expenses'
+      : 'Sales excl. delivery − expenses'),
+  },
 ]
 
 function dateInputValue(d) {
@@ -259,6 +278,7 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sel
   <div class="stat"><span class="stat-label">Gross Total</span><span class="stat-value">${money(summary.grossTotal)}</span><span class="stat-sub">All invoices</span></div>
   <div class="stat"><span class="stat-label">Returns</span><span class="stat-value">${summary.returnedCount}</span><span class="stat-sub">${money(summary.returnedTotal)} refunded</span></div>
   <div class="stat"><span class="stat-label">Paid / Unpaid</span><span class="stat-value">${summary.paidCount} / ${summary.unpaidCount}</span><span class="stat-sub">Non-returned</span></div>
+  ${(summary.taxCollectedTotal ?? 0) > 0 ? `<div class="stat"><span class="stat-label">Sales tax collected</span><span class="stat-value">${money(summary.taxCollectedTotal)}</span><span class="stat-sub">On ${money(summary.taxableSalesTotal ?? 0)} of sales</span></div>` : ''}
   <div class="stat"><span class="stat-label">Expenses</span><span class="stat-value">${money(summary.expensesTotal)}</span><span class="stat-sub">${summary.expenseCount} entries</span></div>
   <div class="stat"><span class="stat-label">Net after expenses</span><span class="stat-value">${money(summary.netAfterExpenses)}</span><span class="stat-sub">Sales excl. delivery − expenses</span></div>
 </div>
@@ -635,7 +655,12 @@ export default function ReportsWorkbench({
       {tab === 'summary' ? (
         loading || summary ? (
           <section className="reports-summary-grid">
-            {[SUMMARY_STATS[0], ...brandStats(summary), ...SUMMARY_STATS.slice(1)].map((stat) => (
+            {[SUMMARY_STATS[0], ...brandStats(summary), ...SUMMARY_STATS.slice(1)]
+              // A tile can say it does not apply to this café. Filtered while
+              // loading too, so a tile does not appear as a skeleton and then
+              // vanish once the figures arrive.
+              .filter((stat) => !stat.when || stat.when(summary))
+              .map((stat) => (
               <article key={stat.key} className="card reports-stat-card">
                 <span className="muted small reports-stat-label">{stat.label}</span>
                 {loading ? (

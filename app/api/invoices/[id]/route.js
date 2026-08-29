@@ -4,6 +4,7 @@ import { getInvoiceById, saveInvoice } from '@/lib/repositories/invoicesReposito
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import { buildOrderLine } from '@/lib/orderLines'
 import { applyPricing, priceLine } from '@/lib/pricing'
+import { computeInvoiceTax, invoiceTotal } from '@/lib/tax'
 
 /** Re-prices a line whose product is no longer on the menu, using the price the
  *  invoice already recorded — never one supplied by the request. */
@@ -89,8 +90,30 @@ export async function PATCH(request, { params }) {
     if (repriced.error) return NextResponse.json({ error: repriced.error }, { status: repriced.status || 400 })
     inv.lines = repriced.lines
     inv.subtotal = repriced.subtotal
+    // Tax follows the lines. Recomputed against the café's *current* rates
+    // rather than the ones frozen on the invoice, because the lines being
+    // priced here are new ones: adding a coffee to last week's ticket has to
+    // tax that coffee at a rate the café actually charges, and re-applying a
+    // superseded rate to a new sale is the thing an audit objects to.
+    //
+    // An invoice that is only being marked paid, returned or annotated never
+    // reaches this branch, so its frozen tax stays exactly as it was sold.
+    const tax = computeInvoiceTax({
+      lines: repriced.lines,
+      rates: menu.tax?.rates ?? [],
+      orderType: inv.orderType ?? null,
+      pricesIncludeTax: menu.tax?.pricesIncludeTax ?? true,
+    })
+    inv.taxTotal = tax.taxTotal
+    inv.taxLines = tax.lines
+    inv.taxInclusive = tax.inclusive
     // Delivery is charged on top of the lines, same as at checkout.
-    inv.total = Math.round((repriced.subtotal + (inv.deliveryCharge ?? 0)) * 100) / 100
+    inv.total = invoiceTotal({
+      subtotal: repriced.subtotal,
+      deliveryCharge: inv.deliveryCharge ?? 0,
+      taxTotal: tax.taxTotal,
+      inclusive: tax.inclusive,
+    })
   }
   if (customerNote !== undefined) inv.customerNote = String(customerNote).slice(0, 200)
   if (paid !== undefined) {

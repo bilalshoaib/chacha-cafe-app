@@ -7,6 +7,7 @@ import { getTenantDayHours } from '@/lib/repositories/tenantsRepository'
 import { buildOrderLine } from '@/lib/orderLines'
 import { invoiceBusinessTypeForLines } from '@/lib/businessTypes'
 import { shiftDateForInstant } from '@/lib/shift'
+import { computeInvoiceTax, invoiceTotal } from '@/lib/tax'
 
 /**
  * Every invoice draws its number from one continuous sequence, whichever
@@ -106,7 +107,23 @@ async function handleCheckout(request, marks, stats) {
   const deliveryCharge = orderType === 'delivery' && Number.isFinite(rawDeliveryCharge) && rawDeliveryCharge > 0
     ? Math.round(rawDeliveryCharge * 100) / 100
     : 0
-  const total = Math.round((subtotal + deliveryCharge) * 100) / 100
+
+  // Tax is computed here and never taken from the request, for the same reason
+  // line prices are not: the client is showing a preview, the server is
+  // deciding what the customer owes. The rates came back with the menu above,
+  // so this costs no round trip.
+  //
+  // What is computed is then frozen onto the invoice. A café that raises a
+  // rate next quarter must not retroactively change what this receipt says it
+  // charged, and the tax figure the quarter is filed on has to be the figure
+  // that was actually collected.
+  const tax = computeInvoiceTax({
+    lines,
+    rates: menu.tax?.rates ?? [],
+    orderType,
+    pricesIncludeTax: menu.tax?.pricesIncludeTax ?? true,
+  })
+  const total = invoiceTotal({ subtotal, deliveryCharge, taxTotal: tax.taxTotal, inclusive: tax.inclusive })
 
   const invoiceNum = await timed(marks, 'nextInvoiceNumber', () => nextInvoiceNumber(INVOICE_SEQUENCE))
   const createdAt = new Date()
@@ -131,6 +148,9 @@ async function handleCheckout(request, marks, stats) {
     subtotal,
     total,
     deliveryCharge,
+    taxTotal: tax.taxTotal,
+    taxLines: tax.lines,
+    taxInclusive: tax.inclusive,
     shiftDate,
     shiftNumber,
     ...(paymentMethod ? { paymentMethod } : {}),

@@ -1045,7 +1045,7 @@ a.danger-ghost:hover {
   /* Page heads: stack */
   .reports-head,
   .expenses-head,
-  .settings-head,
+  .settings-subpage-head,
   .team-page-head {
     flex-direction: column;
     gap: 0.5rem;
@@ -1168,18 +1168,6 @@ a.danger-ghost:hover {
 
   .saved-deal-price-info {
     align-items: flex-start;
-  }
-
-  /* Settings inline form: stack to column */
-  .settings-inline-form {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .settings-inline-form .field,
-  .settings-inline-form .select {
-    min-width: 0;
-    width: 100%;
   }
 
   /* Reports filter row: stack groups */

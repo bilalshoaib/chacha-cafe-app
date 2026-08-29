@@ -13,6 +13,7 @@ import {
   parseReportRange,
   roundMoney,
 } from '@/lib/reports'
+import { netOfTax } from '@/lib/tax'
 
 /** Headline totals for the reports Summary tab. Reads no invoice line detail. */
 export async function GET(request) {
@@ -50,6 +51,14 @@ export async function GET(request) {
   let paidCount = 0, unpaidCount = 0
   let deliveryChargesTotal = 0, deliveryOrderCount = 0
   let invoiceCount = 0
+  // Tax collected, and sales net of it. Kept apart from every other figure
+  // here because it is not the café's money: it is collected on behalf of a
+  // government and handed over, and the quarter is filed on this number.
+  let taxCollectedTotal = 0, taxableSalesTotal = 0
+  // How much of the tax collected is sitting inside net sales, and therefore
+  // has to come back out of it. Only inclusive-priced sales contribute: under
+  // exclusive pricing the tax was never in a line total to begin with.
+  let inclusiveTaxInNetSales = 0
 
   for (const inv of inRange) {
     if (!matchesPayment(inv.paymentMethod ?? null, payment)) continue
@@ -66,7 +75,26 @@ export async function GET(request) {
       returnedCount += 1; returnedTotal += total
       continue
     }
+    taxCollectedTotal += roundMoney(inv.taxTotal ?? 0)
+    taxableSalesTotal += netOfTax(inv)
+
     const portions = calcInvoiceSplits(inv, brands)
+
+    if (inv.taxInclusive && (inv.taxTotal ?? 0) > 0) {
+      const tax = roundMoney(inv.taxTotal)
+      if (!business) {
+        inclusiveTaxInNetSales += tax
+      } else {
+        // Net sales has been narrowed to one brand, so only that brand's share
+        // of this sale's tax should come out of it. Split by the brand's share
+        // of the sale — the same portions net sales itself was built from, so
+        // the two cannot disagree about what belongs to whom.
+        const whole = [...portions.values()].reduce((sum, v) => sum + v, 0)
+        const share = portions.get(business) ?? 0
+        inclusiveTaxInNetSales += whole > 0 ? roundMoney(tax * (share / whole)) : 0
+      }
+    }
+
     for (const [slug, amount] of portions) {
       netByBrand.set(slug, roundMoney((netByBrand.get(slug) ?? 0) + amount))
       // An invoice counts towards a brand when it actually sold something for
@@ -90,6 +118,11 @@ export async function GET(request) {
   // delivery charge — so it already excludes delivery.
   const netSalesExclDelivery = netSalesTotal
 
+  // Under tax-exclusive pricing the line totals never held the tax, so net
+  // sales is already clean. Under inclusive pricing it is inside them, and
+  // counting it as revenue overstates the café's takings by the rate.
+  const netSalesExclTax = roundMoney(netSalesExclDelivery - inclusiveTaxInNetSales)
+
   const matchingExpenses = await findExpenses(ctx, {
     from: from.toISOString(),
     to: to.toISOString(),
@@ -110,8 +143,13 @@ export async function GET(request) {
       brands: brandSummary,
       paidCount, unpaidCount,
       deliveryChargesTotal: roundMoney(deliveryChargesTotal), deliveryOrderCount,
+      taxCollectedTotal: roundMoney(taxCollectedTotal),
+      taxableSalesTotal: roundMoney(taxableSalesTotal),
+      netSalesExclTax,
       expenseCount, expensesTotal,
-      netAfterExpenses: roundMoney(netSalesExclDelivery - expensesTotal),
+      // Expenses come off sales the business actually keeps, which is sales
+      // with the tax taken out — tax collected was never the café's to spend.
+      netAfterExpenses: roundMoney(netSalesExclTax - expensesTotal),
     },
   })
 }

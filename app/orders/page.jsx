@@ -20,6 +20,8 @@ export default function OrdersPage() {
     setActiveOrderId,
     activeOrder,
     orderTotal,
+    orderTax,
+    orderGrandTotal,
     loading,
     customerNote,
     setCustomerNote,
@@ -624,19 +626,33 @@ export default function OrdersPage() {
               </table>
             </div>
 
-            {orderType === 'delivery' && Number(deliveryCharge) > 0 ? (
+            {/* The subtotal and delivery rows only earn their place once one of
+                them differs from the total — a café with no delivery and no tax
+                sees the single Total row it has always seen. */}
+            {(orderType === 'delivery' && Number(deliveryCharge) > 0) || orderTax.taxTotal > 0 ? (
               <>
                 <div className="total-row subtotal-row">
                   <span>Subtotal</span>
-                  <span>{money(orderTotal)}</span>
+                  {/* Under inclusive pricing the line totals already contain the
+                      tax, so the subtotal shown is the net — otherwise the rows
+                      on screen would add up to more than the customer pays. */}
+                  <span>{money(orderTax.inclusive ? Math.round((orderTotal - orderTax.taxTotal) * 100) / 100 : orderTotal)}</span>
                 </div>
-                <div className="total-row subtotal-row">
-                  <span>🛵 Delivery charge</span>
-                  <span>{money(Number(deliveryCharge))}</span>
-                </div>
+                {orderType === 'delivery' && Number(deliveryCharge) > 0 ? (
+                  <div className="total-row subtotal-row">
+                    <span>🛵 Delivery charge</span>
+                    <span>{money(Number(deliveryCharge))}</span>
+                  </div>
+                ) : null}
+                {orderTax.lines.map((t) => (
+                  <div key={t.id} className="total-row subtotal-row tax-total-row">
+                    <span>{t.name} ({t.rate}%){orderTax.inclusive ? ' · included' : ''}</span>
+                    <span>{money(t.amount)}</span>
+                  </div>
+                ))}
                 <div className="total-row">
                   <span>Total</span>
-                  <strong>{money(Math.round((orderTotal + Number(deliveryCharge)) * 100) / 100)}</strong>
+                  <strong>{money(orderGrandTotal)}</strong>
                 </div>
               </>
             ) : (
@@ -671,7 +687,7 @@ export default function OrdersPage() {
 
             {orderType === 'delivery' ? (
               <label className="field delivery-charge-field">
-                <span>🛵 Delivery charge (PKR)</span>
+                <span>🛵 Delivery charge</span>
                 <input
                   type="number"
                   min={0}

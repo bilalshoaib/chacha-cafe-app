@@ -87,8 +87,25 @@ function buildReceiptHtml(invoice, itemLabelById, branding) {
   const deliveryChargeLine = deliveryCharge > 0
     ? `<div class="total-row" style="font-size:10px;"><span>Subtotal</span><span>${money(invoice.subtotal ?? (invoice.total - deliveryCharge))}</span></div><div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${money(deliveryCharge)}</span></div>`
     : ''
+  // Tax, broken out, one row per rate — which is the point of storing the
+  // breakdown on the invoice rather than a single figure. A customer disputing
+  // a charge, and an inspector checking one, both want to see which tax at
+  // which rate, and this is the paper they are holding.
+  //
+  // Read from the invoice and never recomputed: this receipt may be reprinted
+  // a year after the sale, by which time the café's rates have moved on.
+  const taxLines = Array.isArray(invoice.taxLines) ? invoice.taxLines : []
+  const taxRows = taxLines.map((t) =>
+    `<div class="total-row" style="font-size:10px;"><span>${t.name} ${t.rate}%${invoice.taxInclusive ? ' (incl)' : ''}</span><span>${money(t.amount)}</span></div>`,
+  ).join('')
+  // Under inclusive pricing the tax is inside the total rather than added to
+  // it, and a receipt that lists it without saying so reads as if it were
+  // added twice.
+  const taxIncludedNote = invoice.taxInclusive && (invoice.taxTotal ?? 0) > 0
+    ? `<div class="status-row">Total includes ${money(invoice.taxTotal)} tax</div>`
+    : ''
   const orderNumBanner = invoice.shiftNumber != null ? '<div class="order-num-banner">ORDER #' + invoice.shiftNumber + '</div>' : ''
-  const body = orderNumBanner + `<div class="shop-name">${businessName}</div><div class="shop-sub">${tenantName}</div><div class="dashed"></div><div class="meta-row"><span>Invoice:</span><span>${invoice.id}</span></div><div class="meta-row"><span>Date:</span><span>${new Date(invoice.createdAt).toLocaleString(receiptLocale)}</span></div>${invoice.orderId ? `<div class="meta-row"><span>Order:</span><span>${invoice.orderId}</span></div>` : ''}${orderTypeBanner(invoice)}<table><thead><tr><th class="item-col">Item</th><th class="amt-col">Amt</th></tr></thead><tbody>${lineRows}</tbody></table><div class="solid"></div>${discountSummary}${!discountSummary ? deliveryChargeLine : (deliveryCharge > 0 ? `<div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${money(deliveryCharge)}</span></div>` : '')}<div class="total-row"><span>${invoice.paid || invoice.returned ? 'TOTAL' : 'TOTAL DUE'}</span><span>${money(invoice.total)}</span></div><div class="dashed"></div>${paymentLine ? `<div class="status-row">${paymentLine}</div>` : ''}<div class="status-row">${invoice.returned ? '** RETURNED **' : invoice.paid ? 'PAID' : 'UNPAID'}</div>${invoice.returned ? `<div class="returned-notice">** REFUNDED / RETURNED **</div>` : ''}${invoice.returnNote ? `<div class="note-box">Return note: ${invoice.returnNote}</div>` : ''}${invoice.customerNote ? `<div class="note-box">Note: ${invoice.customerNote}</div>` : ''}<div class="dashed"></div><div class="footer">Thank you for visiting!</div><div class="footer">${receiptFooter}</div>`
+  const body = orderNumBanner + `<div class="shop-name">${businessName}</div><div class="shop-sub">${tenantName}</div><div class="dashed"></div><div class="meta-row"><span>Invoice:</span><span>${invoice.id}</span></div><div class="meta-row"><span>Date:</span><span>${new Date(invoice.createdAt).toLocaleString(receiptLocale)}</span></div>${invoice.orderId ? `<div class="meta-row"><span>Order:</span><span>${invoice.orderId}</span></div>` : ''}${orderTypeBanner(invoice)}<table><thead><tr><th class="item-col">Item</th><th class="amt-col">Amt</th></tr></thead><tbody>${lineRows}</tbody></table><div class="solid"></div>${discountSummary}${!discountSummary ? deliveryChargeLine : (deliveryCharge > 0 ? `<div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${money(deliveryCharge)}</span></div>` : '')}${taxRows}<div class="total-row"><span>${invoice.paid || invoice.returned ? 'TOTAL' : 'TOTAL DUE'}</span><span>${money(invoice.total)}</span></div>${taxIncludedNote}<div class="dashed"></div>${paymentLine ? `<div class="status-row">${paymentLine}</div>` : ''}<div class="status-row">${invoice.returned ? '** RETURNED **' : invoice.paid ? 'PAID' : 'UNPAID'}</div>${invoice.returned ? `<div class="returned-notice">** REFUNDED / RETURNED **</div>` : ''}${invoice.returnNote ? `<div class="note-box">Return note: ${invoice.returnNote}</div>` : ''}${invoice.customerNote ? `<div class="note-box">Note: ${invoice.customerNote}</div>` : ''}<div class="dashed"></div><div class="footer">Thank you for visiting!</div><div class="footer">${receiptFooter}</div>`
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Receipt ${invoice.id}</title><style>${RECEIPT_STYLES}</style></head><body>${body}</body></html>`
 }
 
@@ -368,7 +385,7 @@ export default function InvoiceDetailPage() {
                     </tbody>
                   </table>
                 </div>
-                {hasLineDiscount || (invoice.deliveryCharge > 0) ? (
+                {hasLineDiscount || (invoice.deliveryCharge > 0) || (invoice.taxTotal > 0) ? (
                   <div className="invoice-totals-block">
                     {hasLineDiscount ? (
                       <>
@@ -384,7 +401,14 @@ export default function InvoiceDetailPage() {
                     ) : (
                       <div className="total-row subtotal-row">
                         <span>Subtotal</span>
-                        <span>{money(invoice.subtotal ?? invoice.total)}</span>
+                        {/* Net of tax when the price included it, so the rows
+                            below add up to the total rather than overshooting
+                            it by the tax. */}
+                        <span>
+                          {money(invoice.taxInclusive
+                            ? Math.round(((invoice.subtotal ?? invoice.total) - (invoice.taxTotal ?? 0)) * 100) / 100
+                            : (invoice.subtotal ?? invoice.total))}
+                        </span>
                       </div>
                     )}
                     {(invoice.deliveryCharge > 0) ? (
@@ -393,10 +417,24 @@ export default function InvoiceDetailPage() {
                         <span>{money(invoice.deliveryCharge)}</span>
                       </div>
                     ) : null}
+                    {/* The tax as it was charged, from the invoice's own record
+                        of it — not recomputed from the café's current rates,
+                        which may have changed since this sale. */}
+                    {(invoice.taxLines ?? []).map((t) => (
+                      <div key={t.id} className="total-row subtotal-row tax-total-row">
+                        <span>{t.name} ({t.rate}%){invoice.taxInclusive ? ' · included' : ''}</span>
+                        <span>{money(t.amount)}</span>
+                      </div>
+                    ))}
                     <div className="total-row big invoice-view-total">
                       <span>{invoice.paid || invoice.returned ? 'Total' : 'Total due'}</span>
                       <strong>{money(invoice.total)}</strong>
                     </div>
+                    {invoice.taxInclusive && invoice.taxTotal > 0 ? (
+                      <span className="muted small tax-included-note">
+                        Total includes {money(invoice.taxTotal)} tax.
+                      </span>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="total-row big invoice-view-total">
