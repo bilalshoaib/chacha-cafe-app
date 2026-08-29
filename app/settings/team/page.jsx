@@ -4,10 +4,11 @@ import Link from 'next/link'
 import { api } from '@/api.js'
 import RoleBadge from '@/components/RoleBadge.jsx'
 import RequireSuperAdmin from '@/components/RequireSuperAdmin.jsx'
-import { formatShortDateTime } from '@/utils/formatting.js'
+import { useLocale } from '@/context/BrandingContext.jsx'
 import { SkeletonTable } from '@/components/Skeleton.jsx'
 
 export default function TeamListPage() {
+  const { formatDateTime } = useLocale()
   const [list, setList] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -77,7 +78,7 @@ export default function TeamListPage() {
                       <td><Link href={`/settings/team/${u.id}`} className="team-row-link">{u.email}</Link></td>
                       <td className="muted">{u.displayName || '—'}</td>
                       <td><RoleBadge role={u.role} /></td>
-                      <td className="muted">{u.createdAt ? formatShortDateTime(u.createdAt) : '—'}</td>
+                      <td className="muted">{u.createdAt ? formatDateTime(u.createdAt) : '—'}</td>
                       <td className="team-col-action"><Link href={`/settings/team/${u.id}`} className="inline-link">View</Link></td>
                     </tr>
                   ))}

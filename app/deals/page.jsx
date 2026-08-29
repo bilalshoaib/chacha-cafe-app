@@ -7,10 +7,11 @@ import DealFormFields from '@/components/DealFormFields.jsx'
 import Modal, { FormActions } from '@/components/Modal.jsx'
 import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
-import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { buildCategoryTabs, categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { dealMatchesQuery } from '@/utils/dealSearch.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
+import { useMoney } from '@/context/BrandingContext.jsx'
 
 function buildDealCategorySections(menuItems, business, categories) {
   const byCat = new Map()
@@ -39,6 +40,7 @@ function includesFromQtyMap(qtyById, unitPriceById = {}) {
 }
 
 export default function DealsPage() {
+  const money = useMoney()
   const { menu, loading, refreshAll, setError } = useOrders()
   // More than one counter is the only reason to show a counter filter at all.
   const hasCounters = (menu.brands?.length ?? 0) > 1
@@ -102,8 +104,8 @@ export default function DealsPage() {
   }, [activeDeals, archivedDeals, menu.items, listFilter])
 
   const filteredDeals = useMemo(
-    () => dealsForTab.filter((d) => dealMatchesQuery(d, search, labelForItem)),
-    [dealsForTab, search, labelForItem],
+    () => dealsForTab.filter((d) => dealMatchesQuery(d, search, labelForItem, money)),
+    [dealsForTab, search, labelForItem, money],
   )
   const searching = search.trim().length > 0
 
@@ -367,10 +369,10 @@ export default function DealsPage() {
                       </div>
                       <div className="saved-deal-head-actions">
                         <div className="saved-deal-price-info">
-                          <span className="saved-deal-price">{formatMoney(deal.price)}</span>
+                          <span className="saved-deal-price">{money(deal.price)}</span>
                           {bt === 'combined' ? (
                             <span className="saved-deal-split muted small">
-                              Cafe {formatMoney(deal.cafeSplit ?? 0)} · Burger {formatMoney(deal.burgerSplit ?? 0)}
+                              Cafe {money(deal.cafeSplit ?? 0)} · Burger {money(deal.burgerSplit ?? 0)}
                             </span>
                           ) : null}
                         </div>

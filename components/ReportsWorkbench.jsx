@@ -6,7 +6,8 @@ import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import Pagination from '@/components/Pagination.jsx'
 import ItemBreakdownPicker from '@/components/ItemBreakdownPicker.jsx'
 import { expenseCategoryLabel } from '@/utils/expenses.js'
-import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+import { moneyFormatter, formatShortDateTime } from '@/utils/formatting.js'
+import { DEFAULT_CURRENCY, DEFAULT_LOCALE } from '@/constants/locales.js'
 import {
   tradingDay,
   tradingDayRange,
@@ -79,21 +80,21 @@ function brandStats(summary) {
   return brands.map((b) => ({
     key: `brand-${b.slug}`,
     label: b.name,
-    value: () => formatMoney(b.netSales),
-    sub: () => `${b.invoiceCount} invoice${b.invoiceCount === 1 ? '' : 's'}`,
+    value: (_s, money) => money(b.netSales),
+    sub: (_s, _money) => `${b.invoiceCount} invoice${b.invoiceCount === 1 ? '' : 's'}`,
   }))
 }
 
 const SUMMARY_STATS = [
-  { key: 'netSales', label: 'Net sales', value: (s) => formatMoney(s.netSalesTotal), sub: () => 'Excluding returns' },
+  { key: 'netSales', label: 'Net sales', value: (s, money) => money(s.netSalesTotal), sub: () => 'Excluding returns' },
   { key: 'invoiceCount', label: 'Invoices', value: (s) => s.invoiceCount, sub: () => 'In range' },
-  { key: 'grossTotal', label: 'Gross total', value: (s) => formatMoney(s.grossTotal), sub: () => 'All invoices' },
-  { key: 'returns', label: 'Returns', value: (s) => s.returnedCount, sub: (s) => `${formatMoney(s.returnedTotal)} refunded / voided` },
+  { key: 'grossTotal', label: 'Gross total', value: (s, money) => money(s.grossTotal), sub: () => 'All invoices' },
+  { key: 'returns', label: 'Returns', value: (s) => s.returnedCount, sub: (s, money) => `${money(s.returnedTotal)} refunded / voided` },
   { key: 'paidUnpaid', label: 'Paid vs unpaid', value: (s) => `${s.paidCount} / ${s.unpaidCount}`, sub: () => 'Non-returned only' },
-  { key: 'delivery', label: '🛵 Delivery charges', value: (s) => formatMoney(s.deliveryChargesTotal), sub: (s) => `${s.deliveryOrderCount} delivery orders` },
-  { key: 'exclDelivery', label: 'Sales excl. delivery', value: (s) => formatMoney(s.netSalesExclDelivery), sub: () => 'Net sales − delivery charges' },
-  { key: 'expenses', label: 'Total expenses', value: (s) => formatMoney(s.expensesTotal), sub: (s) => `${s.expenseCount} entries · date spent` },
-  { key: 'netAfterExpenses', label: 'Net after expenses', value: (s) => formatMoney(s.netAfterExpenses), sub: () => 'Sales excl. delivery − expenses' },
+  { key: 'delivery', label: '🛵 Delivery charges', value: (s, money) => money(s.deliveryChargesTotal), sub: (s) => `${s.deliveryOrderCount} delivery orders` },
+  { key: 'exclDelivery', label: 'Sales excl. delivery', value: (s, money) => money(s.netSalesExclDelivery), sub: () => 'Net sales − delivery charges' },
+  { key: 'expenses', label: 'Total expenses', value: (s, money) => money(s.expensesTotal), sub: (s) => `${s.expenseCount} entries · date spent` },
+  { key: 'netAfterExpenses', label: 'Net after expenses', value: (s, money) => money(s.netAfterExpenses), sub: () => 'Sales excl. delivery − expenses' },
 ]
 
 function dateInputValue(d) {
@@ -184,7 +185,7 @@ function businessLabel(type) {
   return type
 }
 
-function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sellerSort, businessFilter, paymentFilter, tenantName }) {
+function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sellerSort, businessFilter, paymentFilter, tenantName, money, formatDateTime }) {
   const filterNote = [
     businessFilter !== 'all' ? `Business: ${businessLabel(businessFilter)}` : '',
     paymentFilter !== 'all' ? `Payment: ${paymentLabel(paymentFilter)}` : '',
@@ -195,10 +196,10 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sel
     <tr>
       <td>${businessLabel(inv.businessType)}</td>
       <td>${inv.id}</td>
-      <td>${formatShortDateTime(inv.createdAt)}</td>
+      <td>${formatDateTime(inv.createdAt)}</td>
       <td>${inv.orderType ? (orderTypeLabels[inv.orderType] ?? inv.orderType) : '—'}</td>
-      <td style="text-align:right">${formatMoney(inv.total)}</td>
-      <td style="text-align:right">${(inv.deliveryCharge ?? 0) > 0 ? formatMoney(inv.deliveryCharge) : '—'}</td>
+      <td style="text-align:right">${money(inv.total)}</td>
+      <td style="text-align:right">${(inv.deliveryCharge ?? 0) > 0 ? money(inv.deliveryCharge) : '—'}</td>
       <td>${inv.returned ? 'Returned' : inv.paid ? 'Paid' : 'Unpaid'}</td>
       <td>${paymentLabel(inv.paymentMethod)}</td>
     </tr>`).join('')
@@ -209,17 +210,17 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sel
       <td>${r.label}</td>
       <td>${r.kind === 'deal' ? 'Deal' : 'Item'}</td>
       <td style="text-align:right">${r.qty}</td>
-      <td style="text-align:right">${formatMoney(r.revenue)}</td>
+      <td style="text-align:right">${money(r.revenue)}</td>
       <td style="text-align:right">${r.orderCount}</td>
     </tr>`).join('')
 
   const expenseRows = expenses.map((ex) => `
     <tr>
-      <td>${formatShortDateTime(ex.spentAt)}</td>
+      <td>${formatDateTime(ex.spentAt)}</td>
       <td>${ex.title || '—'}</td>
       <td>${businessLabel(ex.businessType)}</td>
       <td>${expenseCategoryLabel(ex.category)}</td>
-      <td style="text-align:right">${formatMoney(ex.amount)}</td>
+      <td style="text-align:right">${money(ex.amount)}</td>
       <td>${ex.note?.trim() || '—'}</td>
     </tr>`).join('')
 
@@ -250,16 +251,16 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sel
 <h1>Sales Report</h1>
 <p class="sub">${rangeLabel}${filterNote ? ` · Filtered by: ${filterNote}` : ''}</p>
 <div class="stats">
-  <div class="stat"><span class="stat-label">Net Sales</span><span class="stat-value">${formatMoney(summary.netSalesTotal)}</span><span class="stat-sub">Excl. returns</span></div>
-  <div class="stat"><span class="stat-label">Sales excl. delivery</span><span class="stat-value">${formatMoney(summary.netSalesExclDelivery ?? summary.netSalesTotal)}</span><span class="stat-sub">Net sales − delivery charges</span></div>
-  <div class="stat"><span class="stat-label">Delivery charges</span><span class="stat-value">${formatMoney(summary.deliveryChargesTotal ?? 0)}</span><span class="stat-sub">${summary.deliveryOrderCount ?? 0} delivery orders</span></div>
-  ${(summary.brands ?? []).length > 1 ? (summary.brands ?? []).map((b) => `<div class="stat"><span class="stat-label">${b.name}</span><span class="stat-value">${formatMoney(b.netSales)}</span><span class="stat-sub">${b.invoiceCount} invoices</span></div>`).join('') : ''}
+  <div class="stat"><span class="stat-label">Net Sales</span><span class="stat-value">${money(summary.netSalesTotal)}</span><span class="stat-sub">Excl. returns</span></div>
+  <div class="stat"><span class="stat-label">Sales excl. delivery</span><span class="stat-value">${money(summary.netSalesExclDelivery ?? summary.netSalesTotal)}</span><span class="stat-sub">Net sales − delivery charges</span></div>
+  <div class="stat"><span class="stat-label">Delivery charges</span><span class="stat-value">${money(summary.deliveryChargesTotal ?? 0)}</span><span class="stat-sub">${summary.deliveryOrderCount ?? 0} delivery orders</span></div>
+  ${(summary.brands ?? []).length > 1 ? (summary.brands ?? []).map((b) => `<div class="stat"><span class="stat-label">${b.name}</span><span class="stat-value">${money(b.netSales)}</span><span class="stat-sub">${b.invoiceCount} invoices</span></div>`).join('') : ''}
   <div class="stat"><span class="stat-label">Invoices</span><span class="stat-value">${summary.invoiceCount}</span><span class="stat-sub">In range</span></div>
-  <div class="stat"><span class="stat-label">Gross Total</span><span class="stat-value">${formatMoney(summary.grossTotal)}</span><span class="stat-sub">All invoices</span></div>
-  <div class="stat"><span class="stat-label">Returns</span><span class="stat-value">${summary.returnedCount}</span><span class="stat-sub">${formatMoney(summary.returnedTotal)} refunded</span></div>
+  <div class="stat"><span class="stat-label">Gross Total</span><span class="stat-value">${money(summary.grossTotal)}</span><span class="stat-sub">All invoices</span></div>
+  <div class="stat"><span class="stat-label">Returns</span><span class="stat-value">${summary.returnedCount}</span><span class="stat-sub">${money(summary.returnedTotal)} refunded</span></div>
   <div class="stat"><span class="stat-label">Paid / Unpaid</span><span class="stat-value">${summary.paidCount} / ${summary.unpaidCount}</span><span class="stat-sub">Non-returned</span></div>
-  <div class="stat"><span class="stat-label">Expenses</span><span class="stat-value">${formatMoney(summary.expensesTotal)}</span><span class="stat-sub">${summary.expenseCount} entries</span></div>
-  <div class="stat"><span class="stat-label">Net after expenses</span><span class="stat-value">${formatMoney(summary.netAfterExpenses)}</span><span class="stat-sub">Sales excl. delivery − expenses</span></div>
+  <div class="stat"><span class="stat-label">Expenses</span><span class="stat-value">${money(summary.expensesTotal)}</span><span class="stat-sub">${summary.expenseCount} entries</span></div>
+  <div class="stat"><span class="stat-label">Net after expenses</span><span class="stat-value">${money(summary.netAfterExpenses)}</span><span class="stat-sub">Sales excl. delivery − expenses</span></div>
 </div>
 <h2>Top selling items &amp; deals (by ${sellerSort === 'revenue' ? 'revenue' : 'quantity'})</h2>
 ${topSellers.length === 0 ? '<p style="color:#6b7280">No sales in this period.</p>' : `<table><thead><tr><th style="text-align:right">#</th><th>Item / Deal</th><th>Type</th><th style="text-align:right">Qty sold</th><th style="text-align:right">Revenue</th><th style="text-align:right">Orders</th></tr></thead><tbody>${sellerRows}</tbody></table>`}
@@ -300,7 +301,15 @@ export default function ReportsWorkbench({
   // tenant has arrived shows a sane range rather than an empty one.
   dayStartHour = DEFAULT_DAY_START_HOUR,
   dayEndHour = DEFAULT_DAY_END_HOUR,
+  // What this café trades and reads in. Props rather than the hook, for the
+  // same reason the hours are: the console renders this against a café that is
+  // not the one the signed-in session belongs to, and reading the context
+  // there would print a Texas café's takings in rupees.
+  currency = DEFAULT_CURRENCY,
+  locale = DEFAULT_LOCALE,
 }) {
+  const money = useMemo(() => moneyFormatter({ locale, currency }), [locale, currency])
+  const formatDateTime = useCallback((v) => formatShortDateTime(v, { locale }), [locale])
   // Rows link to the invoice and expense pages, which live inside the café.
   // The platform owner reading from the console has no tenant of their own to
   // open them against, so there they are plain text — a link that lands on a
@@ -444,7 +453,7 @@ export default function ReportsWorkbench({
 
   const rangeLabel = useMemo(() => {
     if (!fromIso || !toIso) return ''
-    try { return `${formatShortDateTime(new Date(fromIso))} → ${formatShortDateTime(new Date(toIso))}` }
+    try { return `${formatDateTime(new Date(fromIso))} → ${formatDateTime(new Date(toIso))}` }
     catch { return '' }
   }, [fromIso, toIso])
 
@@ -461,6 +470,8 @@ export default function ReportsWorkbench({
         api.getReportExpenses(queryParams),
       ])
       const html = buildPdfHtml({
+        money,
+        formatDateTime,
         rangeLabel,
         summary: summaryRes.summary,
         invoices: invoiceRes.invoices,
@@ -634,8 +645,8 @@ export default function ReportsWorkbench({
                   </>
                 ) : (
                   <>
-                    <strong className="reports-stat-value">{stat.value(summary)}</strong>
-                    <span className="muted small">{stat.sub(summary)}</span>
+                    <strong className="reports-stat-value">{stat.value(summary, money)}</strong>
+                    <span className="muted small">{stat.sub(summary, money)}</span>
                   </>
                 )}
               </article>
@@ -677,10 +688,10 @@ export default function ReportsWorkbench({
                         <tr key={inv.id}>
                           <td><BusinessTypeBadge type={inv.businessType} /></td>
                           <td>{linkRows ? <Link href={`/invoices/${inv.id}`} className="team-row-link">{inv.id}</Link> : inv.id}</td>
-                          <td className="muted">{formatShortDateTime(inv.createdAt)}</td>
+                          <td className="muted">{formatDateTime(inv.createdAt)}</td>
                           <td className="muted small">{inv.orderType ? (orderTypeLabels[inv.orderType] ?? inv.orderType) : '—'}</td>
-                          <td className="num">{formatMoney(inv.total)}</td>
-                          <td className="num muted small">{(inv.deliveryCharge ?? 0) > 0 ? formatMoney(inv.deliveryCharge) : '—'}</td>
+                          <td className="num">{money(inv.total)}</td>
+                          <td className="num muted small">{(inv.deliveryCharge ?? 0) > 0 ? money(inv.deliveryCharge) : '—'}</td>
                           <td>{inv.returned ? <span className="badge-role badge-role-returned">Returned</span> : inv.paid ? <span className="badge-role badge-role-super">Paid</span> : <span className="badge-role badge-role-staff">Unpaid</span>}</td>
                           <td className="muted small">{inv.paymentMethod === 'cash' ? '💵 Cash' : inv.paymentMethod === 'online' ? '💳 Online' : '—'}</td>
                         </tr>
@@ -729,20 +740,20 @@ export default function ReportsWorkbench({
                     <div className="reports-breakdown-stat">
                       <span className="muted small">Sold alone</span>
                       <strong>{selectedItem.standaloneQty}</strong>
-                      <span className="reports-breakdown-money">{formatMoney(selectedItem.standaloneRevenue)}</span>
+                      <span className="reports-breakdown-money">{money(selectedItem.standaloneRevenue)}</span>
                       {breakdownProfit ? (
                         <span className={breakdownProfit.alone < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>
-                          {formatMoney(breakdownProfit.alone)} profit
+                          {money(breakdownProfit.alone)} profit
                         </span>
                       ) : null}
                     </div>
                     <div className="reports-breakdown-stat">
                       <span className="muted small">Inside deals</span>
                       <strong>{selectedItem.inDealQty}</strong>
-                      <span className="reports-breakdown-money">{formatMoney(selectedItem.inDealRevenue)}</span>
+                      <span className="reports-breakdown-money">{money(selectedItem.inDealRevenue)}</span>
                       {breakdownProfit ? (
                         <span className={breakdownProfit.inDeals < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>
-                          {formatMoney(breakdownProfit.inDeals)} profit
+                          {money(breakdownProfit.inDeals)} profit
                         </span>
                       ) : null}
                       <span className="muted small">{selectedItem.deals.length} deal{selectedItem.deals.length === 1 ? '' : 's'}</span>
@@ -750,10 +761,10 @@ export default function ReportsWorkbench({
                     <div className="reports-breakdown-stat reports-breakdown-total">
                       <span className="muted small">Total units</span>
                       <strong>{selectedItem.totalQty}</strong>
-                      <span className="reports-breakdown-money">{formatMoney(selectedItem.totalRevenue)}</span>
+                      <span className="reports-breakdown-money">{money(selectedItem.totalRevenue)}</span>
                       {breakdownProfit ? (
                         <span className={breakdownProfit.total < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>
-                          {formatMoney(breakdownProfit.total)} profit
+                          {money(breakdownProfit.total)} profit
                         </span>
                       ) : null}
                       <span className="muted small">Alone + in deals</span>
@@ -764,7 +775,7 @@ export default function ReportsWorkbench({
                     deal actually took — using the price you set for it inside that deal, or its menu price if you
                     haven’t set one. The shares add back up to the deal’s revenue.
                     {breakdownProfit
-                      ? ` Profit uses a cost of ${formatMoney(breakdownProfit.unitCost)} per unit.`
+                      ? ` Profit uses a cost of ${money(breakdownProfit.unitCost)} per unit.`
                       : ' Set a cost price on this item under Menu items to see profit here.'}
                   </p>
                   {selectedItem.deals.length > 0 ? (
@@ -783,12 +794,12 @@ export default function ReportsWorkbench({
                             <tr key={d.label}>
                               <td>{d.label}</td>
                               <td className="num"><strong>{d.qty}</strong></td>
-                              <td className="num">{formatMoney(d.revenue)}</td>
+                              <td className="num">{money(d.revenue)}</td>
                               <td className="num">
                                 {breakdownProfit ? (
                                   (() => {
                                     const p = Math.round((d.revenue - breakdownProfit.unitCost * d.qty) * 100) / 100
-                                    return <span className={p < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{formatMoney(p)}</span>
+                                    return <span className={p < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{money(p)}</span>
                                   })()
                                 ) : <span className="muted">—</span>}
                               </td>
@@ -799,10 +810,10 @@ export default function ReportsWorkbench({
                           <tr>
                             <td><strong>Total from deals</strong></td>
                             <td className="num"><strong>{selectedItem.inDealQty}</strong></td>
-                            <td className="num"><strong>{formatMoney(selectedItem.inDealRevenue)}</strong></td>
+                            <td className="num"><strong>{money(selectedItem.inDealRevenue)}</strong></td>
                             <td className="num">
                               {breakdownProfit
-                                ? <strong className={breakdownProfit.inDeals < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{formatMoney(breakdownProfit.inDeals)}</strong>
+                                ? <strong className={breakdownProfit.inDeals < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{money(breakdownProfit.inDeals)}</strong>
                                 : <span className="muted">—</span>}
                             </td>
                           </tr>
@@ -843,11 +854,11 @@ export default function ReportsWorkbench({
                       <td>{row.label}</td>
                       <td>{row.kind === 'deal' ? <span className="badge-role badge-role-super">Deal</span> : <span className="badge-role badge-role-staff">Item</span>}</td>
                       <td className="num"><strong>{row.qty}</strong></td>
-                      <td className="num">{formatMoney(row.revenue)}</td>
+                      <td className="num">{money(row.revenue)}</td>
                       <td className="num">
                         {row.profit == null
                           ? <span className="muted" title="No cost price set for this item">—</span>
-                          : <span className={row.profit < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{formatMoney(row.profit)}</span>}
+                          : <span className={row.profit < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{money(row.profit)}</span>}
                       </td>
                       <td className="num muted small">{row.orderCount}</td>
                     </tr>
@@ -885,11 +896,11 @@ export default function ReportsWorkbench({
                 <tbody>
                   {expenseData.expenses.map((ex) => (
                     <tr key={ex.id}>
-                      <td className="muted">{formatShortDateTime(ex.spentAt)}</td>
+                      <td className="muted">{formatDateTime(ex.spentAt)}</td>
                       <td>{linkRows ? <Link href={`/expenses/${ex.id}`} className="team-row-link">{ex.title || '—'}</Link> : (ex.title || '—')}</td>
                       <td><BusinessTypeBadge type={ex.businessType ?? 'cafe'} /></td>
                       <td>{expenseCategoryLabel(ex.category)}</td>
-                      <td className="num">{formatMoney(ex.amount)}</td>
+                      <td className="num">{money(ex.amount)}</td>
                       <td className="muted small reports-expense-note">{ex.note?.trim() ? ex.note : '—'}</td>
                     </tr>
                   ))}

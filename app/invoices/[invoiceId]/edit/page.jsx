@@ -5,14 +5,16 @@ import { useParams, useRouter } from 'next/navigation'
 import ItemAutocomplete from '@/components/ItemAutocomplete.jsx'
 import DealPicker from '@/components/DealPicker.jsx'
 import { api } from '@/api.js'
-import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { cloneInvoiceLines, lineFromDeal, lineFromMenuItem, removeLineById, updateLineDiscount, updateLineQty } from '@/utils/invoiceLines.js'
 import { discountPartsOf, priceLine } from '@/lib/pricing.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
+import { useMoney } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { SkeletonFields } from '@/components/Skeleton.jsx'
 
 export default function InvoiceEditPage() {
+  const money = useMoney()
   const { invoiceId } = useParams()
   const router = useRouter()
   const { menu } = useOrders()
@@ -221,7 +223,7 @@ export default function InvoiceEditPage() {
                         onChange={(e) => setEditedLines((prev) => updateLineQty(prev, line.id, e.target.value))}
                         aria-label="Quantity" />
                     </td>
-                    <td>{formatMoney(line.unitPrice)}</td>
+                    <td>{money(line.unitPrice)}</td>
                     {['unitDiscount', 'lineDiscount'].map((field) => {
                       const locked = discountLockedBy(line, field)
                       return (
@@ -241,8 +243,8 @@ export default function InvoiceEditPage() {
                       )
                     })}
                     <td>
-                      {formatMoney(line.lineTotal)}
-                      {(line.discount ?? 0) > 0 ? <span className="line-discount-badge">−{formatMoney(line.discount)}</span> : null}
+                      {money(line.lineTotal)}
+                      {(line.discount ?? 0) > 0 ? <span className="line-discount-badge">−{money(line.discount)}</span> : null}
                     </td>
                     <td><button type="button" className="ghost danger sm" onClick={() => setEditedLines((prev) => removeLineById(prev, line.id))}>Remove</button></td>
                   </tr>
@@ -266,7 +268,7 @@ export default function InvoiceEditPage() {
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEntryLine() } }}
                     aria-label="Quantity for new line" />
                 </td>
-                <td className="cell-readonly">{entryItem ? formatMoney(entryItem.price) : '—'}</td>
+                <td className="cell-readonly">{entryItem ? money(entryItem.price) : '—'}</td>
                 <td>
                   <input className="input-table discount-input" type="number" min={0} step={1} inputMode="decimal" placeholder="0"
                     value={entryUnitDiscount} disabled={!entryItem || entryUnitLocked}
@@ -283,7 +285,7 @@ export default function InvoiceEditPage() {
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEntryLine() } }}
                     aria-label="Discount on the whole new line" />
                 </td>
-                <td className="cell-readonly">{entryLinePreview != null ? formatMoney(entryLinePreview) : '—'}</td>
+                <td className="cell-readonly">{entryLinePreview != null ? money(entryLinePreview) : '—'}</td>
                 <td><button type="button" className="primary sm" disabled={!canAddLine} onClick={commitEntryLine}>Add line</button></td>
               </tr>
             </tbody>
@@ -292,7 +294,7 @@ export default function InvoiceEditPage() {
 
         <div className="total-row big">
           <span>{invoice.paid ? 'Total' : 'Total due'}</span>
-          <strong>{formatMoney(draftTotal)}</strong>
+          <strong>{money(draftTotal)}</strong>
         </div>
 
         <label className="field invoice-note-edit">

@@ -5,6 +5,7 @@ import { api } from '@/api.js'
 import { brandingFormOf } from '@/components/BrandingFields.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { tradingDay, DEFAULT_DAY_START_HOUR, DEFAULT_DAY_END_HOUR } from '@/lib/tradingDay.js'
+import { DEFAULT_CURRENCY, DEFAULT_LOCALE } from '@/constants/locales.js'
 
 const TenantConsoleContext = createContext(null)
 
@@ -39,7 +40,11 @@ export function TenantConsoleProvider({ children }) {
   // reaches the café. Seeded once the café arrives and reseeded on every
   // successful save, which is what discards a failed edit cleanly.
   const [details, setDetails] = useState(
-    { name: '', slug: '', dayStartHour: DEFAULT_DAY_START_HOUR, dayEndHour: DEFAULT_DAY_END_HOUR },
+    {
+      name: '', slug: '',
+      dayStartHour: DEFAULT_DAY_START_HOUR, dayEndHour: DEFAULT_DAY_END_HOUR,
+      currency: DEFAULT_CURRENCY, locale: DEFAULT_LOCALE,
+    },
   )
   const [branding, setBranding] = useState(brandingFormOf(null))
 
@@ -53,6 +58,8 @@ export function TenantConsoleProvider({ children }) {
       slug: t.slug ?? '',
       dayStartHour: hours.startHour,
       dayEndHour: hours.endHour,
+      currency: t.currency ?? DEFAULT_CURRENCY,
+      locale: t.locale ?? DEFAULT_LOCALE,
     })
     setBranding(brandingFormOf(t))
   }, [])

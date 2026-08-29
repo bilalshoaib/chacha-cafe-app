@@ -1,5 +1,5 @@
 'use client'
-import { formatMoney } from '@/utils/formatting.js'
+import { useMoney } from '@/context/BrandingContext.jsx'
 
 export default function MenuItemFormFields({
   name,
@@ -21,6 +21,7 @@ export default function MenuItemFormFields({
   disabled = false,
   categoryListId = 'menu-item-category-dl',
 }) {
+  const money = useMoney()
   // Live margin readout, so the person typing sees straight away whether the
   // selling price actually covers the cost.
   const sell = Number(price)
@@ -154,8 +155,8 @@ export default function MenuItemFormFields({
           <p className={`margin-callout ${profit < 0 ? 'is-bad' : 'is-good'}`} role="status">
             <strong>{profit < 0 ? '⚠' : '✓'}</strong>
             {profit < 0
-              ? ` Selling below cost — losing ${formatMoney(Math.abs(profit))} per unit`
-              : ` Profit ${formatMoney(profit)} per unit · ${marginPct}% margin`}
+              ? ` Selling below cost — losing ${money(Math.abs(profit))} per unit`
+              : ` Profit ${money(profit)} per unit · ${marginPct}% margin`}
           </p>
         ) : (
           <p className="field-hint muted small">

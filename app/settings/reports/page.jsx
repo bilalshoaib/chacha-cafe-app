@@ -23,6 +23,8 @@ export default function ReportsPage() {
         tenantName={branding?.name}
         dayStartHour={branding?.dayStartHour}
         dayEndHour={branding?.dayEndHour}
+        currency={branding?.currency}
+        locale={branding?.locale}
       />
     </RequireSuperAdmin>
   )

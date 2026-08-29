@@ -39,6 +39,8 @@ const FIELD_LABELS = {
   brandPrimary: 'the main colour',
   brandSecondary: 'the accent colour',
   receiptFooter: 'the receipt footer',
+  currency: 'the currency',
+  locale: 'the language',
 }
 
 export async function PATCH(request, { params }) {

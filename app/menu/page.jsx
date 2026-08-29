@@ -10,11 +10,13 @@ import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { ADD_MENU_ITEM_HASH } from '@/constants/categories.js'
 import { itemBusinessType } from '@/constants/businessTypes.js'
 import { clearAddMenuItemHash } from '@/utils/hashNavigation.js'
-import { buildCategoryTabs, categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { buildCategoryTabs, categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
+import { useMoney } from '@/context/BrandingContext.jsx'
 
 export default function MenuItemsPage() {
+  const money = useMoney()
   const { menu, loading, refreshAll, setError } = useOrders()
   const toast = useToast()
   const selectAllRef = useRef(null)
@@ -363,10 +365,10 @@ export default function MenuItemsPage() {
                     </div>
                     <div className="menu-item-admin-actions">
                       <span className="menu-item-admin-price">
-                        {formatMoney(item.price)}
+                        {money(item.price)}
                         {item.costPrice != null ? (
                           <span className={`menu-item-margin ${item.price - item.costPrice < 0 ? 'menu-margin-bad' : 'menu-margin-good'}`}>
-                            cost {formatMoney(item.costPrice)} · {item.price > 0
+                            cost {money(item.costPrice)} · {item.price > 0
                               ? `${Math.round(((item.price - item.costPrice) / item.price) * 100)}%`
                               : '—'}
                           </span>

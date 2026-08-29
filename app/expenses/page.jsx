@@ -6,10 +6,13 @@ import { useOrders } from '@/context/OrdersContext.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import { expenseBusinessType } from '@/constants/businessTypes.js'
 import { EXPENSE_RANGE_PRESETS, expenseCategoryLabel, startOfMonth, toISOEnd, toISOStart } from '@/utils/expenses.js'
-import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+
 import { SkeletonTable } from '@/components/Skeleton.jsx'
+import { useMoney, useLocale } from '@/context/BrandingContext.jsx'
 
 export default function ExpensesListPage() {
+  const money = useMoney()
+  const { formatDateTime } = useLocale()
   const { menu } = useOrders()
   // A café with one counter has nothing to tell apart, so the filter and the
   // per-row badge that names it both disappear.
@@ -54,7 +57,7 @@ export default function ExpensesListPage() {
   const rangeSummary = useMemo(() => {
     if (presetId === 'all') return 'All recorded expenses'
     if (!fromIso || !toIso) return ''
-    try { return `${formatShortDateTime(fromIso)} → ${formatShortDateTime(toIso)}` }
+    try { return `${formatDateTime(fromIso)} → ${formatDateTime(toIso)}` }
     catch { return '' }
   }, [presetId, fromIso, toIso])
 
@@ -103,7 +106,7 @@ export default function ExpensesListPage() {
       <section className="card expenses-summary-card">
         <div className="expenses-summary-row">
           <span className="muted">Total in range</span>
-          <strong className="expenses-total-value">{loading ? '…' : formatMoney(total)}</strong>
+          <strong className="expenses-total-value">{loading ? '…' : money(total)}</strong>
         </div>
       </section>
 
@@ -142,10 +145,10 @@ export default function ExpensesListPage() {
                 {expenses.map((row) => (
                   <tr key={row.id}>
                     {hasCounters ? <td><BusinessTypeBadge type={expenseBusinessType(row)} /></td> : null}
-                    <td className="muted">{formatShortDateTime(row.spentAt || row.createdAt)}</td>
+                    <td className="muted">{formatDateTime(row.spentAt || row.createdAt)}</td>
                     <td><Link href={`/expenses/${row.id}`} className="team-row-link">{row.title}</Link></td>
                     <td>{expenseCategoryLabel(row.category)}</td>
-                    <td className="num">{formatMoney(row.amount)}</td>
+                    <td className="num">{money(row.amount)}</td>
                     <td className="muted small expenses-note-cell">{row.note || '—'}</td>
                     <td className="expenses-actions-cell"><Link href={`/expenses/${row.id}`} className="inline-link">View</Link></td>
                   </tr>

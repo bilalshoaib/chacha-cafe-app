@@ -1,5 +1,3 @@
-import { formatMoney } from './formatting.js'
-
 /**
  * Matches a deal against one lowercase search term. A term can hit the deal's
  * name, its price ("1000" or "1,000"), or the name of any item inside it — so
@@ -7,13 +5,19 @@ import { formatMoney } from './formatting.js'
  *
  * `labelFor(itemId)` resolves an included item id to its display name; callers
  * hold the menu in different shapes, so they supply the lookup.
+ *
+ * `money` formats a price the way this café writes one, so that typing "$12"
+ * finds what the screen shows. It is passed rather than imported because a
+ * plain function cannot reach the React context that knows which café is on
+ * screen, and a search that quietly matched against rupees while the list
+ * displayed dollars would look like the search was broken.
  */
-function matchesTerm(deal, needle, labelFor) {
+function matchesTerm(deal, needle, labelFor, money) {
   if (deal?.name?.toLowerCase().includes(needle)) return true
 
   const digits = needle.replace(/[^0-9.]/g, '')
   if (digits && String(deal?.price).includes(digits)) return true
-  if (formatMoney(deal?.price ?? 0).toLowerCase().includes(needle)) return true
+  if (money(deal?.price ?? 0).toLowerCase().includes(needle)) return true
 
   return (deal?.includes || []).some((inc) =>
     String(labelFor(inc.itemId) ?? inc.itemId ?? '').toLowerCase().includes(needle),
@@ -21,8 +25,8 @@ function matchesTerm(deal, needle, labelFor) {
 }
 
 /** Every whitespace-separated term must match, so "zinger 1000" narrows. */
-export function dealMatchesQuery(deal, query, labelFor) {
+export function dealMatchesQuery(deal, query, labelFor, money) {
   const needle = String(query ?? '').trim().toLowerCase()
   if (!needle) return true
-  return needle.split(/\s+/).every((term) => matchesTerm(deal, term, labelFor))
+  return needle.split(/\s+/).every((term) => matchesTerm(deal, term, labelFor, money))
 }

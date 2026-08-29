@@ -2,10 +2,10 @@
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useOrders } from '@/context/OrdersContext.jsx'
-import { useBranding } from '@/context/BrandingContext.jsx'
+import { useBranding, useMoney } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { dealBusinessType, itemMatchesBusiness } from '@/constants/businessTypes.js'
-import { buildCategoryTabs, formatItemExtras, formatMoney, categoryIcon, categoryColor } from '@/utils/formatting.js'
+import { buildCategoryTabs, formatItemExtras, categoryIcon, categoryColor } from '@/utils/formatting.js'
 import { SkeletonLines } from '@/components/Skeleton.jsx'
 
 const SHOP_PHONE = '0315-9988295'
@@ -43,6 +43,7 @@ function buildMenuBoardSections(items, business, categories) {
 }
 
 export default function MenuBoardPage() {
+  const money = useMoney()
   const branding = useBranding()
   const { menu, loading } = useOrders()
   // More than one counter is the only reason to show a counter filter at all.
@@ -185,7 +186,7 @@ export default function MenuBoardPage() {
                                 {extras ? <span className="menu-board-item-extras">{extras}</span> : null}
                               </div>
                               <span className="menu-board-item-dots" aria-hidden="true" />
-                              <span className="menu-board-item-price">{formatMoney(item.price)}</span>
+                              <span className="menu-board-item-price">{money(item.price)}</span>
                             </li>
                           )
                         })}
@@ -205,7 +206,7 @@ export default function MenuBoardPage() {
                         <div key={deal.id} className="menu-board-deal-card">
                           <div className="menu-board-deal-badge" style={{ background: color }}>
                             <span className="menu-board-deal-badge-label">Deal No. {i + 1}</span>
-                            <span className="menu-board-deal-badge-price">{formatMoney(deal.price)}</span>
+                            <span className="menu-board-deal-badge-price">{money(deal.price)}</span>
                           </div>
                           <ul className="menu-board-deal-includes">
                             {deal.includes.map((inc, idx) => {
@@ -227,7 +228,7 @@ export default function MenuBoardPage() {
                     <div className="menu-board-deal-featured" style={{ background: DEAL_COLORS[featuredIndex % DEAL_COLORS.length] }}>
                       <div className="menu-board-deal-featured-info">
                         <span className="menu-board-deal-featured-label">Deal No. {featuredIndex + 1}</span>
-                        <span className="menu-board-deal-featured-price">{formatMoney(featuredDeal.price)}</span>
+                        <span className="menu-board-deal-featured-price">{money(featuredDeal.price)}</span>
                       </div>
                       <ul className="menu-board-deal-featured-includes">
                         {featuredDeal.includes.map((inc, idx) => {

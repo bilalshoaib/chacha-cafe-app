@@ -1,11 +1,16 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
+import { useBranding } from '@/context/BrandingContext.jsx'
+import LocaleFields from '@/components/LocaleFields.jsx'
 
 export default function SettingsPage() {
   const { user, refreshAuth } = useAuth()
+  const branding = useBranding()
+  const router = useRouter()
 
   const [profileEmail, setProfileEmail] = useState('')
   const [profileName, setProfileName] = useState('')
@@ -20,11 +25,26 @@ export default function SettingsPage() {
   const [passErr, setPassErr] = useState('')
   const [passSaving, setPassSaving] = useState(false)
 
+  // Seeded from the branding the server already resolved for this request, so
+  // the pickers open on the café's real settings with no second fetch and no
+  // flash of the wrong currency.
+  const [currency, setCurrency] = useState(branding?.currency ?? 'PKR')
+  const [locale, setLocale] = useState(branding?.locale ?? 'en-PK')
+  const [regionMsg, setRegionMsg] = useState('')
+  const [regionErr, setRegionErr] = useState('')
+  const [regionSaving, setRegionSaving] = useState(false)
+
   useEffect(() => {
     if (!user) return
     setProfileEmail(user.email ?? '')
     setProfileName(user.displayName ?? '')
   }, [user])
+
+  useEffect(() => {
+    if (!branding) return
+    setCurrency(branding.currency)
+    setLocale(branding.locale)
+  }, [branding])
 
   if (!user) return null
 
@@ -50,6 +70,20 @@ export default function SettingsPage() {
       setCurPass(''); setNewPass(''); setNewPass2('')
     } catch (err) { setPassErr(err.message || 'Could not update password') }
     finally { setPassSaving(false) }
+  }
+
+  async function saveRegion(e) {
+    e.preventDefault(); setRegionErr(''); setRegionMsg(''); setRegionSaving(true)
+    try {
+      await api.saveRegionalSettings({ currency, locale })
+      setRegionMsg('Saved. Prices and dates across the app now use these.')
+      // Currency and language are resolved on the server and handed to the
+      // page as branding, so a re-render alone would leave every price on
+      // every other screen in the old currency until a full reload. Refreshing
+      // the route re-runs the layout and repaints the app in one go.
+      router.refresh()
+    } catch (err) { setRegionErr(err.message || 'Could not save regional settings') }
+    finally { setRegionSaving(false) }
   }
 
   return (
@@ -83,6 +117,34 @@ export default function SettingsPage() {
             <Link href="/settings/reports" className="primary sm settings-team-link">Open reports</Link>
           </section>
         </>
+      ) : null}
+
+      {user.role === 'super_admin' ? (
+        <section className="card settings-card">
+          <h3 className="sub">Currency &amp; language</h3>
+          <p className="muted small">
+            What this café trades in and how it writes numbers and dates. Applies everywhere —
+            the till, the menu board, printed receipts and reports.
+          </p>
+          <form onSubmit={(e) => void saveRegion(e)} className="settings-form">
+            <LocaleFields
+              currency={currency}
+              locale={locale}
+              onCurrencyChange={setCurrency}
+              onLocaleChange={setLocale}
+              disabled={regionSaving}
+            />
+            {regionErr ? <p className="banner error" role="alert">{regionErr}</p> : null}
+            {regionMsg ? <p className="banner success settings-banner-quiet" role="status">{regionMsg}</p> : null}
+            <button
+              type="submit"
+              className="primary"
+              disabled={regionSaving || (currency === branding?.currency && locale === branding?.locale)}
+            >
+              {regionSaving ? 'Saving…' : 'Save currency & language'}
+            </button>
+          </form>
+        </section>
       ) : null}
 
       <section className="card settings-card">

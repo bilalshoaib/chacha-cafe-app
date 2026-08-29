@@ -1,4 +1,5 @@
 import { CATEGORIES } from '../constants/categories.js'
+import { DEFAULT_CURRENCY, DEFAULT_LOCALE } from '../constants/locales.js'
 
 /**
  * How a category is written on screen.
@@ -35,28 +36,75 @@ export function categoryColor(key, categories) {
  * The café's own currency and number formatting.
  *
  * Both come from the location, not from here: a customer can open across a
- * border, and a second café may not price in rupees at all. The defaults keep
- * every existing call site rendering exactly as it does today, so the money
- * on screen does not change the day this ships — only where the choice lives
- * does.
+ * border, and a second café may not price in rupees at all. The defaults are
+ * Pakistan's, which is what every row held before this was settable — so a
+ * caller that has not been given the café's choice yet renders exactly what it
+ * rendered before, rather than silently switching a price to dollars.
+ *
+ * Most callers should not use this directly. `useMoney()` in
+ * context/BrandingContext.jsx hands a component a formatter already bound to
+ * the café it is showing, which is one fewer thing for each of forty call
+ * sites to remember to pass.
  */
-export function formatMoney(n, { locale = 'en-PK', currency = 'PKR' } = {}) {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n)
+export function formatMoney(n, { locale = DEFAULT_LOCALE, currency = DEFAULT_CURRENCY } = {}) {
+  return moneyFormatter({ locale, currency })(n)
 }
 
-export function formatShortDateTime(value) {
+/**
+ * A formatter bound to one currency and language.
+ *
+ * Cached on the pair because constructing an Intl.NumberFormat is expensive
+ * relative to using one, and the menu board formats every price on the wall on
+ * every render. The cache is keyed by the two strings and holds at most as many
+ * entries as there are combinations in constants/locales.js, so it needs no
+ * eviction.
+ */
+const moneyFormatters = new Map()
+
+export function moneyFormatter({ locale = DEFAULT_LOCALE, currency = DEFAULT_CURRENCY } = {}) {
+  const key = `${locale}|${currency}`
+  const hit = moneyFormatters.get(key)
+  if (hit) return hit
+
+  let fmt
+  try {
+    fmt = new Intl.NumberFormat(locale, { style: 'currency', currency })
+  } catch {
+    // An unknown tag or code reaching this far is a bug upstream, but a till
+    // that throws instead of printing a price is a worse one. constants/locales
+    // validates on the way in; this is the net under it.
+    fmt = new Intl.NumberFormat(DEFAULT_LOCALE, { style: 'currency', currency: DEFAULT_CURRENCY })
+  }
+
+  const format = (n) => fmt.format(Number(n) || 0)
+  moneyFormatters.set(key, format)
+  return format
+}
+
+/**
+ * A date and time as this café writes them.
+ *
+ * The locale defaults to US English rather than to DEFAULT_LOCALE: that is what
+ * this has always produced, and the day this became settable is not the day
+ * every existing café's timestamps should change shape. Pass the café's own tag
+ * to get its own format.
+ *
+ * Built from parts rather than a single toLocaleString because the two-space
+ * gap between the date and the time is what the invoice list aligns on.
+ */
+export function formatShortDateTime(value, { locale = 'en-US', timeZone } = {}) {
   const d = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(d.getTime())) return '—'
-  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' })
-  const month = d.toLocaleDateString('en-US', { month: 'short' })
-  const day = d.getDate()
-  const year = d.getFullYear()
-  const time = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
+  const opts = timeZone ? { timeZone } : {}
+  const date = d.toLocaleDateString(locale, {
+    ...opts,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   })
-  return `${weekday} ${month} ${day}, ${year}  ${time}`
+  const time = d.toLocaleTimeString(locale, { ...opts, hour: 'numeric', minute: '2-digit' })
+  return `${date}  ${time}`
 }
 
 export function formatItemExtras(obj) {

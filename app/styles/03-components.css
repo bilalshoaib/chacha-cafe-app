@@ -2816,3 +2816,28 @@ button.link-add-menu-item {
 @media (max-width: 640px) {
   .audit-list li { grid-template-columns: 1fr; gap: 0.15rem; }
 }
+
+/* The currency and language preview.
+   
+   Rendered by components/LocaleFields.jsx on both the café's own settings and
+   the platform console, which style their form fields differently — so this
+   rule sticks to the box itself and inherits the rest. It sits full width
+   under the two selects, which is why it breaks out of .pf-row's columns. */
+.locale-preview {
+  flex: 1 0 100%;
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--brand-secondary, #c9b8a4);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.02);
+}
+.locale-preview-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+  /* Figures line up between renders as the picker changes, so the row does not
+     jitter while somebody scrolls the currency list. */
+  font-variant-numeric: tabular-nums;
+}

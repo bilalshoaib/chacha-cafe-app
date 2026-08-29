@@ -4,11 +4,13 @@ import Link from 'next/link'
 import ItemAutocomplete from '@/components/ItemAutocomplete.jsx'
 import DealPicker from '@/components/DealPicker.jsx'
 import { SkeletonStatus } from '@/components/Skeleton.jsx'
-import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { discountPartsOf, priceLine } from '@/lib/pricing.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
+import { useMoney } from '@/context/BrandingContext.jsx'
 
 export default function OrdersPage() {
+  const money = useMoney()
   const {
     orderMenuItems: menuItems,
     orderCategoryTabs: categoryTabs,
@@ -405,7 +407,7 @@ export default function OrdersPage() {
                         <td className="cell-readonly muted">
                           {line.kind === 'item' ? categoryLabel(line.category) : '—'}
                         </td>
-                        <td className="cell-readonly">{formatMoney(line.unitPrice)}</td>
+                        <td className="cell-readonly">{money(line.unitPrice)}</td>
                         {['unitDiscount', 'lineDiscount'].map((field) => {
                           const locked = discountLockedBy(line, field)
                           return (
@@ -445,9 +447,9 @@ export default function OrdersPage() {
                           )
                         })}
                         <td className="cell-readonly">
-                          {formatMoney(previewLineTotal(line))}
+                          {money(previewLineTotal(line))}
                           {(line.discount ?? 0) > 0 ? (
-                            <span className="line-discount-badge">−{formatMoney(line.discount)}</span>
+                            <span className="line-discount-badge">−{money(line.discount)}</span>
                           ) : null}
                         </td>
                         <td>
@@ -556,7 +558,7 @@ export default function OrdersPage() {
                           aria-label="Unit price for new item"
                         />
                       ) : entryItem ? (
-                        formatMoney(entryItem.price)
+                        money(entryItem.price)
                       ) : (
                         '—'
                       )}
@@ -605,7 +607,7 @@ export default function OrdersPage() {
                       />
                     </td>
                     <td className="cell-readonly">
-                      {entryLinePreview != null ? formatMoney(entryLinePreview) : '—'}
+                      {entryLinePreview != null ? money(entryLinePreview) : '—'}
                     </td>
                     <td>
                       <button
@@ -626,21 +628,21 @@ export default function OrdersPage() {
               <>
                 <div className="total-row subtotal-row">
                   <span>Subtotal</span>
-                  <span>{formatMoney(orderTotal)}</span>
+                  <span>{money(orderTotal)}</span>
                 </div>
                 <div className="total-row subtotal-row">
                   <span>🛵 Delivery charge</span>
-                  <span>{formatMoney(Number(deliveryCharge))}</span>
+                  <span>{money(Number(deliveryCharge))}</span>
                 </div>
                 <div className="total-row">
                   <span>Total</span>
-                  <strong>{formatMoney(Math.round((orderTotal + Number(deliveryCharge)) * 100) / 100)}</strong>
+                  <strong>{money(Math.round((orderTotal + Number(deliveryCharge)) * 100) / 100)}</strong>
                 </div>
               </>
             ) : (
               <div className="total-row">
                 <span>Total</span>
-                <strong>{formatMoney(orderTotal)}</strong>
+                <strong>{money(orderTotal)}</strong>
               </div>
             )}
 

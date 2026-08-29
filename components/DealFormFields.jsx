@@ -2,7 +2,8 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ADD_MENU_ITEM_HASH } from '@/constants/categories.js'
-import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { categoryLabel, formatItemExtras } from '@/utils/formatting.js'
+import { useMoney } from '@/context/BrandingContext.jsx'
 
 export default function DealFormFields({
   business,
@@ -25,6 +26,7 @@ export default function DealFormFields({
   disabled = false,
   showMenuHint = true,
 }) {
+  const money = useMoney()
   const isCombined = business === 'combined'
 
   // The counters this café actually has, not the product's founding two.
@@ -245,7 +247,7 @@ export default function DealFormFields({
                   <tr key={item.id}>
                     <td>
                       {item.name}
-                      <span className="muted small"> · menu {formatMoney(item.price)}</span>
+                      <span className="muted small"> · menu {money(item.price)}</span>
                     </td>
                     <td className="num">{item.qty}</td>
                     <td className="num">
@@ -262,7 +264,7 @@ export default function DealFormFields({
                         aria-label={`Price of one ${item.name} inside this deal`}
                       />
                     </td>
-                    <td className="num">{lineTotal == null ? '—' : formatMoney(lineTotal)}</td>
+                    <td className="num">{lineTotal == null ? '—' : money(lineTotal)}</td>
                     <td>
                       <button
                         type="button"
@@ -282,16 +284,16 @@ export default function DealFormFields({
           <div className="deal-summary-value">
             <span className="muted small">
               {selected.length} item{selected.length === 1 ? '' : 's'} · worth{' '}
-              <strong>{formatMoney(itemsValue)}</strong> bought separately
+              <strong>{money(itemsValue)}</strong> bought separately
             </span>
             {hasPrice ? (
               savings > 0 ? (
                 <span className="deal-savings-good">
-                  Bundle {formatMoney(bundlePrice)} — customer saves {formatMoney(savings)} ({savingsPct}%)
+                  Bundle {money(bundlePrice)} — customer saves {money(savings)} ({savingsPct}%)
                 </span>
               ) : savings < 0 ? (
                 <span className="deal-savings-bad">
-                  ⚠ Bundle {formatMoney(bundlePrice)} costs {formatMoney(Math.abs(savings))} more than buying
+                  ⚠ Bundle {money(bundlePrice)} costs {money(Math.abs(savings))} more than buying
                   the items separately.
                 </span>
               ) : (
@@ -301,12 +303,12 @@ export default function DealFormFields({
             {allPriced && hasPrice ? (
               statedGap === 0 ? (
                 <span className="deal-savings-good">
-                  Item prices add up to {formatMoney(statedTotal)} — matches the bundle price ✓
+                  Item prices add up to {money(statedTotal)} — matches the bundle price ✓
                 </span>
               ) : (
                 <span className="deal-savings-bad">
-                  ⚠ Item prices add up to {formatMoney(statedTotal)}, bundle is {formatMoney(bundlePrice)} —{' '}
-                  {formatMoney(Math.abs(statedGap))} {statedGap > 0 ? 'unaccounted for' : 'over'}. You can still save;
+                  ⚠ Item prices add up to {money(statedTotal)}, bundle is {money(bundlePrice)} —{' '}
+                  {money(Math.abs(statedGap))} {statedGap > 0 ? 'unaccounted for' : 'over'}. You can still save;
                   reports will scale the prices to fit.
                 </span>
               )
@@ -356,7 +358,7 @@ export default function DealFormFields({
                       {item.name}
                       {extras ? <small className="muted"> · {extras}</small> : null}
                       <small className="muted"> · {categoryLabel(item.category)}</small>
-                      <small className="deal-row-price"> {formatMoney(item.price)}</small>
+                      <small className="deal-row-price"> {money(item.price)}</small>
                     </span>
                     <input
                       type="number"

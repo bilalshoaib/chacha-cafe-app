@@ -31,10 +31,13 @@ import {
   toISOEnd,
   toISOStart,
 } from '@/utils/invoices.js'
-import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+
 import Skeleton, { SkeletonTable } from '@/components/Skeleton.jsx'
+import { useMoney, useLocale } from '@/context/BrandingContext.jsx'
 
 export default function InvoicesListPage() {
+  const money = useMoney()
+  const { formatDateTime } = useLocale()
   const router = useRouter()
   const { menu } = useOrders()
   // A café with one counter has nothing to tell apart, so the filter and the
@@ -104,7 +107,7 @@ export default function InvoicesListPage() {
   const rangeSummary = useMemo(() => {
     if (presetId === 'all' || (!fromIso && !toIso)) return 'All invoices — no date filter applied'
     if (!fromIso || !toIso) return ''
-    try { return `${formatShortDateTime(fromIso)} → ${formatShortDateTime(toIso)}` }
+    try { return `${formatDateTime(fromIso)} → ${formatDateTime(toIso)}` }
     catch { return '' }
   }, [presetId, fromIso, toIso])
 
@@ -256,15 +259,15 @@ export default function InvoicesListPage() {
                     {hasCounters ? <td><BusinessTypeBadge type={invoiceBusinessType(inv)} /></td> : null}
                     <td className="invoices-table-id">{inv.id}</td>
                     <td><OrderTypeBadge type={inv.orderType} /></td>
-                    <td className="muted">{formatShortDateTime(inv.createdAt)}</td>
-                    <td className="num invoices-table-total">{formatMoney(inv.total)}</td>
+                    <td className="muted">{formatDateTime(inv.createdAt)}</td>
+                    <td className="num invoices-table-total">{money(inv.total)}</td>
                     <td className="num invoices-table-discount">
                       {(() => {
                         const d = Array.isArray(inv.lines)
                           ? inv.lines.reduce((s, l) => s + (l.discount ?? 0), 0)
                           : 0
                         return d > 0
-                          ? <span className="invoice-list-discount-badge">−{formatMoney(d)}</span>
+                          ? <span className="invoice-list-discount-badge">−{money(d)}</span>
                           : <span className="muted">—</span>
                       })()}
                     </td>

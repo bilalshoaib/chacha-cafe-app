@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
-import { useBranding } from '@/context/BrandingContext.jsx'
-import { buildCategoryTabs, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { useBranding, useMoney } from '@/context/BrandingContext.jsx'
+import { buildCategoryTabs, formatItemExtras } from '@/utils/formatting.js'
 import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 
 /**
@@ -29,6 +29,7 @@ function aboutLine(name, sections) {
 }
 
 export default function HomePage() {
+  const money = useMoney()
   const { authenticated } = useAuth()
   const [menu, setMenu] = useState(null)
   const [error, setError] = useState('')
@@ -171,7 +172,7 @@ export default function HomePage() {
                     <div className="hp-deal-badge">DEAL</div>
                     <div className="hp-deal-head">
                       <span className="hp-deal-name">{deal.name}</span>
-                      <span className="hp-deal-price">{formatMoney(deal.price)}</span>
+                      <span className="hp-deal-price">{money(deal.price)}</span>
                     </div>
                     <p className="muted small hp-deal-includes-label">Includes</p>
                     <ul className="hp-deal-includes">
@@ -210,7 +211,7 @@ export default function HomePage() {
                               <span className="hp-menu-name">{item.name}</span>
                               {extras ? <span className="muted small">{extras}</span> : null}
                             </div>
-                            <span className="hp-menu-price">{formatMoney(item.price)}</span>
+                            <span className="hp-menu-price">{money(item.price)}</span>
                           </li>
                         )
                       })}

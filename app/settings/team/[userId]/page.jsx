@@ -5,10 +5,11 @@ import { useParams } from 'next/navigation'
 import { api } from '@/api.js'
 import RoleBadge from '@/components/RoleBadge.jsx'
 import RequireSuperAdmin from '@/components/RequireSuperAdmin.jsx'
-import { formatShortDateTime } from '@/utils/formatting.js'
+import { useLocale } from '@/context/BrandingContext.jsx'
 import { SkeletonDetail } from '@/components/Skeleton.jsx'
 
 export default function TeamUserDetailPage() {
+  const { formatDateTime } = useLocale()
   const { userId } = useParams()
   const [u, setU] = useState(null)
   const [error, setError] = useState('')
@@ -58,7 +59,7 @@ export default function TeamUserDetailPage() {
               <div><dt>Email</dt><dd>{u.email}</dd></div>
               <div><dt>Display name</dt><dd>{u.displayName || '—'}</dd></div>
               <div><dt>Role</dt><dd><RoleBadge role={u.role} /></dd></div>
-              <div><dt>Created</dt><dd>{u.createdAt ? formatShortDateTime(u.createdAt) : '—'}</dd></div>
+              <div><dt>Created</dt><dd>{u.createdAt ? formatDateTime(u.createdAt) : '—'}</dd></div>
             </dl>
           </article>
         ) : null}

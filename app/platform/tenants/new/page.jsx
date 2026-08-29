@@ -7,6 +7,7 @@ import { STARTER_MENUS } from '@/constants/starterMenus.js'
 import BrandingFields, { DEFAULT_BRANDING_FORM, LogoPicker } from '@/components/BrandingFields.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { TRIAL_DAYS_DEFAULT, TRIAL_DAYS_MAX } from '@/lib/tenantAccess.js'
+import LocaleFields from '@/components/LocaleFields.jsx'
 
 /**
  * Creating a café.
@@ -43,6 +44,7 @@ export default function NewTenantPage() {
   const [starter, setStarter] = useState('cafe')
   const [currency, setCurrency] = useState('PKR')
   const [timezone, setTimezone] = useState('Asia/Karachi')
+  const [locale, setLocale] = useState('en-PK')
   const [branding, setBranding] = useState(DEFAULT_BRANDING_FORM)
   // Held in memory until the café exists to attach it to, then sent with the
   // rest of the form. There is nothing to upload against before that.
@@ -63,7 +65,7 @@ export default function NewTenantPage() {
         name, slug: autoSlug, ownerEmail, ownerName, plan,
         ...(plan === 'trial' ? { trialDays: Number(trialDays) } : {}),
         brandNames: separateCounters ? counterNames.filter((c) => c.trim()) : [],
-        starterMenu: starter, currency, timezone,
+        starterMenu: starter, currency, timezone, locale,
         ...branding,
         logo: logo ? { mime: logo.mime, data: logo.data } : null,
       }))
@@ -142,16 +144,27 @@ export default function NewTenantPage() {
             <span className="pf-hint">Used in their web address. Letters and numbers only.</span>
           </label>
 
+          {/* Chosen from a list rather than typed. A free-text box here was
+              three characters away from a café whose every price rendered in a
+              currency Intl has never heard of, and it offered no way to set the
+              language at all — so every café created got Pakistani English
+              whatever country it was in. */}
           <div className="pf-row">
-            <label className="pf-field">
-              <span>Currency</span>
-              <input value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} />
-            </label>
-            <label className="pf-field">
-              <span>Timezone</span>
-              <input value={timezone} onChange={(e) => setTimezone(e.target.value)} />
-            </label>
+            <LocaleFields
+              currency={currency}
+              locale={locale}
+              onCurrencyChange={setCurrency}
+              onLocaleChange={setLocale}
+              disabled={saving}
+              fieldClass="pf-field"
+            />
           </div>
+
+          <label className="pf-field">
+            <span>Timezone</span>
+            <input value={timezone} onChange={(e) => setTimezone(e.target.value)} />
+            <span className="pf-hint">An IANA name, like America/Chicago or Asia/Karachi.</span>
+          </label>
         </fieldset>
 
         <fieldset className="pf-fieldset">

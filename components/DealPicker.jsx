@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { formatMoney } from '@/utils/formatting.js'
 import { dealMatchesQuery } from '@/utils/dealSearch.js'
+import { useMoney } from '@/context/BrandingContext.jsx'
 
 export default function DealPicker({ deals, itemLabelById, onSelect, disabled }) {
+  const money = useMoney()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(0)
@@ -34,8 +35,8 @@ export default function DealPicker({ deals, itemLabelById, onSelect, disabled })
   }, [open])
 
   const filtered = useMemo(
-    () => deals.filter((d) => dealMatchesQuery(d, query, (id) => itemLabelById[id])),
-    [deals, query, itemLabelById],
+    () => deals.filter((d) => dealMatchesQuery(d, query, (id) => itemLabelById[id], money)),
+    [deals, query, itemLabelById, money],
   )
 
   // Narrowing the list can strand the highlight past the end of it.
@@ -133,7 +134,7 @@ export default function DealPicker({ deals, itemLabelById, onSelect, disabled })
                     >
                       <div className="deal-picker-item-row">
                         <span className="deal-picker-item-name">{d.name}</span>
-                        <span className="deal-picker-item-price">{formatMoney(d.price)}</span>
+                        <span className="deal-picker-item-price">{money(d.price)}</span>
                       </div>
                       {includes.length > 0 ? (
                         <ul className="deal-picker-item-includes">

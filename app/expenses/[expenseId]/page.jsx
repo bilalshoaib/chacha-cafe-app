@@ -6,11 +6,14 @@ import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import { api } from '@/api.js'
 import { expenseBusinessType } from '@/constants/businessTypes.js'
 import { expenseCategoryLabel } from '@/utils/expenses.js'
-import { formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+
 import { useToast } from '@/context/ToastContext.jsx'
 import { SkeletonDetail } from '@/components/Skeleton.jsx'
+import { useMoney, useLocale } from '@/context/BrandingContext.jsx'
 
 export default function ExpenseDetailPage() {
+  const money = useMoney()
+  const { formatDateTime } = useLocale()
   const { expenseId } = useParams()
   const router = useRouter()
   const toast = useToast()
@@ -78,11 +81,11 @@ export default function ExpenseDetailPage() {
       {loading ? <SkeletonDetail rows={6} label="Loading expense…" className="expense-detail-card" /> : row ? (
         <article className="card team-detail-card expense-detail-card">
           <dl className="team-detail-dl">
-            <div><dt>Amount</dt><dd>{formatMoney(row.amount)}</dd></div>
+            <div><dt>Amount</dt><dd>{money(row.amount)}</dd></div>
             <div><dt>Business</dt><dd><BusinessTypeBadge type={expenseBusinessType(row)} /></dd></div>
             <div><dt>Category</dt><dd>{expenseCategoryLabel(row.category)}</dd></div>
-            <div><dt>Date spent</dt><dd>{formatShortDateTime(row.spentAt || row.createdAt)}</dd></div>
-            <div><dt>Recorded</dt><dd>{row.createdAt ? formatShortDateTime(row.createdAt) : '—'}</dd></div>
+            <div><dt>Date spent</dt><dd>{formatDateTime(row.spentAt || row.createdAt)}</dd></div>
+            <div><dt>Recorded</dt><dd>{row.createdAt ? formatDateTime(row.createdAt) : '—'}</dd></div>
             <div><dt>Note</dt><dd>{row.note?.trim() ? row.note : '—'}</dd></div>
           </dl>
         </article>

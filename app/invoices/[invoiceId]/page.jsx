@@ -7,10 +7,10 @@ import Modal, { ConfirmActions } from '@/components/Modal.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { businessTypeLabel, invoiceBusinessType } from '@/constants/businessTypes.js'
-import { categoryLabel, formatItemExtras, formatMoney, formatShortDateTime } from '@/utils/formatting.js'
+import { categoryLabel, formatItemExtras, moneyFormatter } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
-import { useBranding } from '@/context/BrandingContext.jsx'
+import { useBranding, useMoney, useLocale } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 
 const ORDER_TYPE_META = {
@@ -58,6 +58,12 @@ function businessLabel(invoice, branding) {
 }
 
 function buildReceiptHtml(invoice, itemLabelById, branding) {
+  // The printed receipt is built as a string rather than rendered, so it
+  // cannot reach the hook the rest of this file uses. It takes the same two
+  // values off the branding it is already handed, which is what the hook reads
+  // too — so the paper and the screen can never disagree about the currency.
+  const money = moneyFormatter({ locale: branding?.locale, currency: branding?.currency })
+  const receiptLocale = branding?.locale ?? undefined
   const tenantName = branding?.name ?? ''
   const receiptFooter = branding?.receiptFooter || tenantName
   const businessName = businessLabel(invoice, branding)
@@ -65,9 +71,9 @@ function buildReceiptHtml(invoice, itemLabelById, branding) {
   const lineRows = invoice.lines.map((line) => {
     const extras = formatItemExtras(line)
     const label = (line.kind === 'deal' ? 'Deal: ' : '') + line.name + (extras ? ` (${extras})` : '')
-    const lineTotal = formatMoney(line.lineTotal)
-    const each = line.qty > 1 ? `${line.qty} x ${formatMoney(line.unitPrice)}` : ''
-    const discRow = (line.discount ?? 0) > 0 ? `<div class="item-disc">Disc: -${formatMoney(line.discount)}</div>` : ''
+    const lineTotal = money(line.lineTotal)
+    const each = line.qty > 1 ? `${line.qty} x ${money(line.unitPrice)}` : ''
+    const discRow = (line.discount ?? 0) > 0 ? `<div class="item-disc">Disc: -${money(line.discount)}</div>` : ''
     const includes = line.kind === 'deal' && line.dealIncludes?.length
       ? line.dealIncludes.map((inc) => `<div class="inc-line">&nbsp;&nbsp;${inc.qty}x ${itemLabelById[inc.itemId] || inc.itemId}</div>`).join('')
       : ''
@@ -76,18 +82,20 @@ function buildReceiptHtml(invoice, itemLabelById, branding) {
   const totalDiscountAmt = invoice.lines.reduce((s, l) => s + (l.discount ?? 0), 0)
   const deliveryCharge = invoice.deliveryCharge ?? 0
   const discountSummary = totalDiscountAmt > 0
-    ? `<div class="total-row" style="font-size:10px;"><span>Subtotal</span><span>${formatMoney(invoice.lines.reduce((s, l) => s + l.unitPrice * l.qty, 0))}</span></div><div class="total-row" style="font-size:10px;"><span>Total Discount</span><span>-${formatMoney(totalDiscountAmt)}</span></div>`
+    ? `<div class="total-row" style="font-size:10px;"><span>Subtotal</span><span>${money(invoice.lines.reduce((s, l) => s + l.unitPrice * l.qty, 0))}</span></div><div class="total-row" style="font-size:10px;"><span>Total Discount</span><span>-${money(totalDiscountAmt)}</span></div>`
     : ''
   const deliveryChargeLine = deliveryCharge > 0
-    ? `<div class="total-row" style="font-size:10px;"><span>Subtotal</span><span>${formatMoney(invoice.subtotal ?? (invoice.total - deliveryCharge))}</span></div><div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${formatMoney(deliveryCharge)}</span></div>`
+    ? `<div class="total-row" style="font-size:10px;"><span>Subtotal</span><span>${money(invoice.subtotal ?? (invoice.total - deliveryCharge))}</span></div><div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${money(deliveryCharge)}</span></div>`
     : ''
   const orderNumBanner = invoice.shiftNumber != null ? '<div class="order-num-banner">ORDER #' + invoice.shiftNumber + '</div>' : ''
-  const body = orderNumBanner + `<div class="shop-name">${businessName}</div><div class="shop-sub">${tenantName}</div><div class="dashed"></div><div class="meta-row"><span>Invoice:</span><span>${invoice.id}</span></div><div class="meta-row"><span>Date:</span><span>${new Date(invoice.createdAt).toLocaleString()}</span></div>${invoice.orderId ? `<div class="meta-row"><span>Order:</span><span>${invoice.orderId}</span></div>` : ''}${orderTypeBanner(invoice)}<table><thead><tr><th class="item-col">Item</th><th class="amt-col">Amt</th></tr></thead><tbody>${lineRows}</tbody></table><div class="solid"></div>${discountSummary}${!discountSummary ? deliveryChargeLine : (deliveryCharge > 0 ? `<div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${formatMoney(deliveryCharge)}</span></div>` : '')}<div class="total-row"><span>${invoice.paid || invoice.returned ? 'TOTAL' : 'TOTAL DUE'}</span><span>${formatMoney(invoice.total)}</span></div><div class="dashed"></div>${paymentLine ? `<div class="status-row">${paymentLine}</div>` : ''}<div class="status-row">${invoice.returned ? '** RETURNED **' : invoice.paid ? 'PAID' : 'UNPAID'}</div>${invoice.returned ? `<div class="returned-notice">** REFUNDED / RETURNED **</div>` : ''}${invoice.returnNote ? `<div class="note-box">Return note: ${invoice.returnNote}</div>` : ''}${invoice.customerNote ? `<div class="note-box">Note: ${invoice.customerNote}</div>` : ''}<div class="dashed"></div><div class="footer">Thank you for visiting!</div><div class="footer">${receiptFooter}</div>`
+  const body = orderNumBanner + `<div class="shop-name">${businessName}</div><div class="shop-sub">${tenantName}</div><div class="dashed"></div><div class="meta-row"><span>Invoice:</span><span>${invoice.id}</span></div><div class="meta-row"><span>Date:</span><span>${new Date(invoice.createdAt).toLocaleString(receiptLocale)}</span></div>${invoice.orderId ? `<div class="meta-row"><span>Order:</span><span>${invoice.orderId}</span></div>` : ''}${orderTypeBanner(invoice)}<table><thead><tr><th class="item-col">Item</th><th class="amt-col">Amt</th></tr></thead><tbody>${lineRows}</tbody></table><div class="solid"></div>${discountSummary}${!discountSummary ? deliveryChargeLine : (deliveryCharge > 0 ? `<div class="total-row" style="font-size:10px;"><span>Delivery Charge</span><span>${money(deliveryCharge)}</span></div>` : '')}<div class="total-row"><span>${invoice.paid || invoice.returned ? 'TOTAL' : 'TOTAL DUE'}</span><span>${money(invoice.total)}</span></div><div class="dashed"></div>${paymentLine ? `<div class="status-row">${paymentLine}</div>` : ''}<div class="status-row">${invoice.returned ? '** RETURNED **' : invoice.paid ? 'PAID' : 'UNPAID'}</div>${invoice.returned ? `<div class="returned-notice">** REFUNDED / RETURNED **</div>` : ''}${invoice.returnNote ? `<div class="note-box">Return note: ${invoice.returnNote}</div>` : ''}${invoice.customerNote ? `<div class="note-box">Note: ${invoice.customerNote}</div>` : ''}<div class="dashed"></div><div class="footer">Thank you for visiting!</div><div class="footer">${receiptFooter}</div>`
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Receipt ${invoice.id}</title><style>${RECEIPT_STYLES}</style></head><body>${body}</body></html>`
 }
 
 export default function InvoiceDetailPage() {
   const branding = useBranding()
+  const money = useMoney()
+  const { formatDateTime } = useLocale()
   const { invoiceId } = useParams()
   const { menu } = useOrders()
   const { user } = useAuth()
@@ -272,14 +280,14 @@ export default function InvoiceDetailPage() {
                 {invoice.paymentMethod === 'cash' ? <span className="badge-payment-method">💵 Cash</span> : invoice.paymentMethod === 'online' ? <span className="badge-payment-method">💳 Online / Card</span> : null}
               </div>
               {invoice.paid && invoice.paidAt ? (
-                <p className="muted small invoice-meta-line">Paid · {formatShortDateTime(invoice.paidAt)}{invoice.paymentMethod ? ` · ${invoice.paymentMethod === 'cash' ? 'Cash' : 'Online / Card'}` : ''}</p>
+                <p className="muted small invoice-meta-line">Paid · {formatDateTime(invoice.paidAt)}{invoice.paymentMethod ? ` · ${invoice.paymentMethod === 'cash' ? 'Cash' : 'Online / Card'}` : ''}</p>
               ) : null}
-              {invoice.returned && invoice.returnedAt ? <p className="muted small invoice-meta-line">Return recorded · {formatShortDateTime(invoice.returnedAt)}</p> : null}
+              {invoice.returned && invoice.returnedAt ? <p className="muted small invoice-meta-line">Return recorded · {formatDateTime(invoice.returnedAt)}</p> : null}
               <p className="muted small invoice-meta-line">{businessTypeLabel(invoiceBusinessType(invoice))}</p>
             </div>
             <div className="text-right invoice-view-dates">
               <p className="muted small">Issued</p>
-              <p className="invoice-view-date-main">{formatShortDateTime(invoice.createdAt)}</p>
+              <p className="invoice-view-date-main">{formatDateTime(invoice.createdAt)}</p>
             </div>
           </div>
 
@@ -345,15 +353,15 @@ export default function InvoiceDetailPage() {
                               ) : null}
                             </td>
                             <td>{line.qty}</td>
-                            <td>{formatMoney(line.unitPrice)}</td>
+                            <td>{money(line.unitPrice)}</td>
                             {hasLineDiscount ? (
                               <td className="num invoice-discount-cell">
                                 {(line.discount ?? 0) > 0 ? (
-                                  <span className="invoice-line-discount-badge">−{formatMoney(line.discount)}</span>
+                                  <span className="invoice-line-discount-badge">−{money(line.discount)}</span>
                                 ) : '—'}
                               </td>
                             ) : null}
-                            <td>{formatMoney(line.lineTotal)}</td>
+                            <td>{money(line.lineTotal)}</td>
                           </tr>
                         )
                       })}
@@ -366,34 +374,34 @@ export default function InvoiceDetailPage() {
                       <>
                         <div className="total-row subtotal-row">
                           <span>Subtotal (before discounts)</span>
-                          <span>{formatMoney(invoice.lines.reduce((s, l) => s + l.unitPrice * l.qty, 0))}</span>
+                          <span>{money(invoice.lines.reduce((s, l) => s + l.unitPrice * l.qty, 0))}</span>
                         </div>
                         <div className="total-row discount-summary-row">
                           <span>Total discount</span>
-                          <span>− {formatMoney(totalDiscount)}</span>
+                          <span>− {money(totalDiscount)}</span>
                         </div>
                       </>
                     ) : (
                       <div className="total-row subtotal-row">
                         <span>Subtotal</span>
-                        <span>{formatMoney(invoice.subtotal ?? invoice.total)}</span>
+                        <span>{money(invoice.subtotal ?? invoice.total)}</span>
                       </div>
                     )}
                     {(invoice.deliveryCharge > 0) ? (
                       <div className="total-row subtotal-row">
                         <span>🛵 Delivery charge</span>
-                        <span>{formatMoney(invoice.deliveryCharge)}</span>
+                        <span>{money(invoice.deliveryCharge)}</span>
                       </div>
                     ) : null}
                     <div className="total-row big invoice-view-total">
                       <span>{invoice.paid || invoice.returned ? 'Total' : 'Total due'}</span>
-                      <strong>{formatMoney(invoice.total)}</strong>
+                      <strong>{money(invoice.total)}</strong>
                     </div>
                   </div>
                 ) : (
                   <div className="total-row big invoice-view-total">
                     <span>{invoice.paid || invoice.returned ? 'Total' : 'Total due'}</span>
-                    <strong>{formatMoney(invoice.total)}</strong>
+                    <strong>{money(invoice.total)}</strong>
                   </div>
                 )}
               </>

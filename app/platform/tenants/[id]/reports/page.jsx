@@ -46,6 +46,10 @@ export default function TenantReportsPage() {
       // for the first render rather than to somebody else's day.
       dayStartHour={tenant?.dayStartHour}
       dayEndHour={tenant?.dayEndHour}
+      // Likewise their currency and language: the console must quote a café
+      // its own takings in its own money, not in the platform owner's.
+      currency={tenant?.currency}
+      locale={tenant?.locale}
       title={tenant ? `${tenant.name} — reports` : 'Reports'}
       subtitle={<>Their sales and expenses, exactly as their owner sees them. Read-only, and written to this café’s trail.</>}
       backHref={`/platform/tenants/${id}`}

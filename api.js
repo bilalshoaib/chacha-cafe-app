@@ -71,6 +71,12 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
   listUsers: () => request('/api/auth/users'),
+
+  // The café's own currency and language. Separate from the console's
+  // updateTenant, which is the platform owner's and reaches far more.
+  regionalSettings: () => request('/api/tenant/settings'),
+  saveRegionalSettings: (body) =>
+    request('/api/tenant/settings', { method: 'PATCH', body: JSON.stringify(body) }),
   // Platform console — creating and governing cafés, not configuring them.
   listTenants: () => request('/api/platform/tenants'),
   platformActivity: (window = '30d') => request(`/api/platform/activity?window=${window}`),

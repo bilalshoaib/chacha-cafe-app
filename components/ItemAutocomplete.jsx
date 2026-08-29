@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { categoryLabel, formatItemExtras, formatMoney } from '@/utils/formatting.js'
+import { categoryLabel, formatItemExtras } from '@/utils/formatting.js'
+import { useMoney } from '@/context/BrandingContext.jsx'
 
 /**
  * Ranks a match, lowest first — a plain `includes` filter left the wanted item
@@ -32,6 +33,7 @@ export default function ItemAutocomplete({
   disabled,
   inputRef,
 }) {
+  const money = useMoney()
   const wrapRef = useRef(null)
   const listRef = useRef(null)
   const [open, setOpen] = useState(false)
@@ -205,7 +207,7 @@ export default function ItemAutocomplete({
                     <div className="ac-name">{item.name}</div>
                     <div className="muted small ac-meta">
                       {extras ? `${extras} · ` : ''}
-                      {categoryLabel(item.category)} · {formatMoney(item.price)}
+                      {categoryLabel(item.category)} · {money(item.price)}
                     </div>
                   </li>
                 )

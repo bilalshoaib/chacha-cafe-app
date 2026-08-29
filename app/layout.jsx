@@ -60,7 +60,15 @@ export default async function RootLayout({ children }) {
   const branding = await loadBranding()
 
   return (
-    <html lang="en">
+    // The café's own language and writing direction.
+    //
+    // `dir` gets text, inputs, flexbox and grid mirrored for Arabic and Urdu
+    // for free. It is not the whole of right-to-left support: app/styles still
+    // positions with margin-left, padding-left and text-align: left in about
+    // sixty places, and each of those stays on the wrong side until it becomes
+    // a logical property. Correct for every left-to-right language, which is
+    // all of them bar three in constants/locales.js.
+    <html lang={branding.locale} dir={branding.direction}>
       <body suppressHydrationWarning>
         {/* The stylesheets derive every colour from these two custom
             properties, so a re-skin is these two values and nothing else. They
