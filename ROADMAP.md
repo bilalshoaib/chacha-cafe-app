@@ -21,6 +21,7 @@ in it, and none of the ten backlog items has been started.
 | ✅ | Settings split into subpages, language picker removed | §2.2 |
 | ✅ | Sales tax | §2.3 |
 | ✅ | Offline mode — the till keeps selling | §2.4 |
+| ✅ | Timezone picker, and the shift-date bug it fixes | §2.5 |
 | ⬜ | 1. Tipping — *blocker* | §3 |
 | ⬜ | 2. Card payments — *blocker* | §3 |
 | ⬜ | 3. Menu modifiers — *largest build* | §3 |
@@ -30,10 +31,10 @@ in it, and none of the ten backlog items has been started.
 | ⬜ | 7. End-of-day close / Z-report | §3 |
 | ⬜ | 8. Open tabs and table service | §3 |
 | ⬜ | 9. Email / SMS receipts | §3 |
-| ⬜ | 10. Smaller / later (timezone picker, per-branch currency, …) | §3 |
+| ⬜ | 10. Smaller / later (per-branch currency, console locale, loyalty) | §3 |
 
 §2.1 is commit `1ca8bb2`; §2.2 and §2.3 are commit `95d97f9`; §2.4 is commit
-`52eafaa`. Nothing is left uncommitted.
+`52eafaa`; §2.5 is commit `077e155`. Nothing is left uncommitted.
 
 ---
 
@@ -407,6 +408,75 @@ gap-leaving behaviour described above, showing up in the test data.
 
 ---
 
+### 2.5 Done — timezone, and the shift date it fixes (commit `077e155`, 2026-08-30)
+
+A café says where it is, and its trading day is counted on that clock.
+
+**The problem it fixed.** Two halves of one gap. The new-café form asked for a
+timezone in a free-text box, and nothing ever read the answer:
+`app/api/checkout/route.js` passed `shiftDateForInstant` only a start hour, so
+`lib/shift.js` fell back to its `Asia/Karachi` default for every café on the
+platform. A Chicago café closing at 6 PM had its morning takings filed against
+the wrong trading day, and its order numbers restarting mid-service.
+
+**What shipped:**
+
+| Area | File(s) |
+|---|---|
+| The offered zones, validation, the live clock | `constants/timezones.js` *(new)* |
+| Picker — the currency grid's twin, grouped by region | `components/TimezoneField.jsx` *(new)* |
+| Read path: location → tenant runtime → the till | `lib/repositories/tenantsRepository.js`, `lib/tradingDay.js` |
+| The fix itself — the shift date on the café's own clock | `app/api/checkout/route.js`, `app/api/checkout/reserve/route.js` |
+| The offline till gets the zone with its block | `lib/offlineSale.js`, `lib/offline/store.js`, `context/OrdersContext.jsx` |
+| Set on creation and from the console's Trading day card | `app/platform/tenants/new/page.jsx`, `…/(console)/details/page.jsx`, `context/TenantConsoleContext.jsx` |
+| Write path, validation, audit line | `lib/repositories/tenantsRepository.js`, `app/api/platform/tenants/[id]/route.js` |
+| 17 tests | `tests/timezones.test.js` *(new)* |
+
+**Decisions worth knowing before changing any of it:**
+
+- **The currency cannot supply the timezone**, which is the whole reason it is
+  a field of its own rather than another thing `localeForCurrency` derives. A
+  café in Karachi and one in Lahore share `en-PK` and share a clock, so
+  deriving would have worked for the original customer and gone unnoticed —
+  but `en-US` spans six zones, and New York and Los Angeles do not close on the
+  same instant.
+- **Reading the column is a no-op for existing data.** Every location row
+  already held `Asia/Karachi`, the value the code was hard-defaulting to, so
+  not one stored sale moves. `tests/timezones.test.js` asserts that explicitly.
+  That is what made this safe to do now rather than after a US café had
+  accumulated a month of sales under the wrong zone — and it is why the
+  roadmap's old warning that this "moves which day existing sales report into"
+  turned out not to apply.
+- **Anything `Intl` can resolve is accepted, not just the curated list.** The
+  list is what the picker offers, not the limit of what is legal. Validation is
+  asymmetric in the same way `constants/locales.js` is: refused on the way in,
+  falls back on the way out, because a till that throws is worse than one with
+  the wrong day boundary.
+- **The card shows a clock, not a UTC offset.** An offset is a number somebody
+  has to convert in their head, and it is wrong for half the year in any zone
+  that observes daylight saving. Nothing about the offset is stored for the
+  same reason.
+- **It lives in the Trading day card, not a tab of its own.** An opening hour
+  without the zone it is counted in is two thirds of an answer, so the two are
+  set and saved together, and the audit line names both.
+- **`tradingDay()` carries the zone but never invents one.** `lib/shift.js`
+  owns the default; a second module deciding it would be a second place that
+  can disagree.
+
+**Verified** against local staging: Solo Coffee set to Chicago with a boundary
+where the two zones diverge, and both the reservation and a real checkout
+stamped `2026-08-28` where the old behaviour gave `2026-08-29`. A bad zone is
+refused on the create and the update path; the audit trail reads "Set the
+trading day to 6 PM – 5 PM the next day, Denver time"; the picker is in the
+compiled client chunk. 173 tests pass. **Staging was restored** to
+`Asia/Karachi` afterwards, the probe invoice deleted, and the throwaway
+platform-owner account used for the console checks removed.
+
+**Not verified:** no manual browser pass, and `next build` was not run — a dev
+server was up on 3002.
+
+---
+
 ## 3. ⬜ LEFT — not done, the backlog
 
 Ordered by what will actually cost an American demo. Items 1 and 2 are the ones
@@ -510,19 +580,9 @@ into a customer list for loyalty later.
 
 ### 10. Smaller / later
 
-- **Timezone picker** is still a free-text box on the new-café form, unlike
-  currency. Same treatment would take an hour, and the currency's own locale
-  cannot supply it — a café in Karachi and one in Lahore share `en-PK` and a
-  timezone, but `en-US` spans six.
-- **The shift date is computed in Karachi time for every café.**
-  `app/api/checkout/route.js` passes `shiftDateForInstant` only a start hour,
-  so `lib/shift.js` falls back to its `Asia/Karachi` default even for a US
-  tenant — a late-evening American sale can be counted against the wrong
-  trading day. `locations.timezone` already holds the right answer and is not
-  read. Left alone deliberately: fixing it moves which day existing sales
-  report into, so it wants doing on purpose rather than as a side effect.
-  Offline mode sidesteps it by resolving the shift date server-side at
-  reservation time, so the two paths at least agree with each other.
+*(The timezone picker and the Karachi shift-date bug that used to head this
+list are done — see §2.5.)*
+
 - **Per-branch currency.** `getTenantBranding` deliberately reads the tenant's
   *first* location. A tenant trading across a border needs a branch switcher
   first; the query comment marks the spot.
