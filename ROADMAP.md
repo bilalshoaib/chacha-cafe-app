@@ -10,8 +10,8 @@ There are now demos lined up in the United States, which is what most of the
 backlog below is driven by.
 
 **Last audited 2026-08-30** against the working tree on `feat/multi-tenant`.
-Every claim below was re-checked against the code: the four shipped items are
-in it, and none of the ten backlog items has been started.
+Every claim below was re-checked against the code: the seven shipped items are
+in it, and none of the eight backlog items has been started.
 
 ## Status at a glance
 
@@ -22,19 +22,20 @@ in it, and none of the ten backlog items has been started.
 | ✅ | Sales tax | §2.3 |
 | ✅ | Offline mode — the till keeps selling | §2.4 |
 | ✅ | Timezone picker, and the shift-date bug it fixes | §2.5 |
+| ✅ | End-of-day close / Z-report | §2.6 |
+| ✅ | Open tabs and table service | §2.7 |
 | ⬜ | 1. Tipping — *blocker* | §3 |
 | ⬜ | 2. Card payments — *blocker* | §3 |
 | ⬜ | 3. Menu modifiers — *largest build* | §3 |
 | ⬜ | 4. UI translation (Spanish first) | §3 |
 | ⬜ | 5. Right-to-left layout | §3 |
 | ⬜ | 6. Partial refunds | §3 |
-| ⬜ | 7. End-of-day close / Z-report | §3 |
-| ⬜ | 8. Open tabs and table service | §3 |
-| ⬜ | 9. Email / SMS receipts | §3 |
-| ⬜ | 10. Smaller / later (per-branch currency, console locale, loyalty) | §3 |
+| ⬜ | 7. Email / SMS receipts | §3 |
+| ⬜ | 8. Smaller / later (per-branch currency, console locale, loyalty) | §3 |
 
 §2.1 is commit `1ca8bb2`; §2.2 and §2.3 are commit `95d97f9`; §2.4 is commit
-`52eafaa`; §2.5 is commit `077e155`. Nothing is left uncommitted.
+`52eafaa`; §2.5 is commit `077e155`; §2.6 is commit `d8fa265`; §2.7 is commit
+`f6d7912`. Nothing is left uncommitted.
 
 ---
 
@@ -95,7 +96,7 @@ the till from being able to sell offline.
 written to be re-runnable (`IF NOT EXISTS`). Offline mode added none: reserving
 a number is just consuming the counters that already existed.
 
-**Tests:** `npm test` (`node --test tests/*.test.js`, no framework). 156 passing.
+**Tests:** `npm test` (`node --test tests/*.test.js`, no framework). 194 passing.
 Integration tests in `tests/integration/` need a database.
 
 **Environment gotchas** (these have bitten before):
@@ -477,6 +478,119 @@ server was up on 3002.
 
 ---
 
+### 2.6 Done — end-of-day close / Z-report (commit `d8fa265`, 2026-08-30)
+
+A café counts the drawer and closes the day, and the difference is kept.
+
+**The problem it fixed.** There was no way to close a trading day. Sales
+accumulated against a `shift_date` and the reports screen would add them up on
+request, but nothing recorded that anybody had counted the drawer, what they
+found, or whether it matched. That difference is how a café notices money going
+astray, and it is the first thing a manager asks about.
+
+**What shipped:**
+
+| Area | File(s) |
+|---|---|
+| Schema — one row per café per trading day, with RLS | `migrations/028_shift_close.sql` *(new)* |
+| The arithmetic, and the check on what a person types | `lib/zReport.js` *(new)* |
+| Read/write of closes | `lib/repositories/shiftClosesRepository.js` *(new)* |
+| Invoices for one trading day | `lib/repositories/invoicesRepository.js` |
+| The report, and closing it | `app/api/shifts/[shiftDate]/route.js`, `app/api/shifts/route.js` *(new)* |
+| The screen | `components/ShiftClose.jsx`, `app/settings/close/page.jsx` *(new)*, `app/settings/page.jsx` |
+| 21 tests | `tests/zReport.test.js` *(new)* |
+
+**Decisions worth knowing before changing any of it:**
+
+- **The variance is the feature.** It needs two numbers arrived at
+  independently, so the counted figure is refused rather than defaulted — a
+  blank box read as zero would record a drawer nobody counted as an empty one —
+  and the expected figure is computed server-side from the invoices, never
+  taken from the request.
+- **Cash is the only line that can vary.** Card takings reconcile against the
+  processor's statement, not a drawer, so a card refund does not come out of
+  expected cash and card sales are not counted there. Doing otherwise invents a
+  discrepancy nobody can act on.
+- **An unmarked invoice is reported unpaid, not folded into cash.** Folding it
+  in would make the drawer look short by exactly that amount with nothing on the
+  report to say why.
+- **The report is frozen onto the close**, the same way 027 freezes a tax rate
+  onto an invoice. Recomputing would drift as invoices are edited, refunded or
+  synced late from an offline till, and a report that changes after sign-off is
+  not evidence of anything. Verified: refunding an invoice after the close left
+  the recorded figures untouched.
+- **Closing is owner-only**, which is the substance rather than a detail: a
+  cashier signing off their own variance is not a control.
+- **The screen warns when offline sales are still queued**, because closing on
+  top of them counts the day short by their value.
+- **A day is closed once.** A second attempt returns 409 with the standing
+  count rather than overwriting it.
+
+**Verified** against local staging: two cash sales, a card sale and a cash
+refund gave expected cash of 110.40 against a 100 float; a counted 108 recorded
+a variance of −2.40; a second close was refused with 409; the audit trail reads
+"Closed 2026-08-29. The drawer was 2.40 short." Probe data removed afterwards.
+
+---
+
+### 2.7 Done — open tabs and table service (commit `f6d7912`, 2026-08-30)
+
+An order can be held open on a table and picked up on any device.
+
+**The problem it fixed.** Checkout went from a cart in one browser straight to
+an invoice, so an order existed only on the device typing it. No tabs, no table
+service, and no picking up an order somebody else began.
+
+**What shipped:**
+
+| Area | File(s) |
+|---|---|
+| Schema — tabs, versioned, with RLS | `migrations/029_open_tabs.sql` *(new)* |
+| Open, edit, close, abandon | `lib/repositories/tabsRepository.js` *(new)* |
+| The endpoints | `app/api/tabs/route.js`, `app/api/tabs/[tabId]/route.js` *(new)* |
+| Ringing a tab up | `app/api/checkout/route.js` |
+| Tabs in the till | `context/OrdersContext.jsx`, `components/TabStrip.jsx` *(new)*, `app/orders/page.jsx` |
+| 10 integration tests | `tests/integration/tabs.test.js` *(new)* |
+
+**Decisions worth knowing before changing any of it:**
+
+- **The old `orders` table was neither built on nor dropped**, which is the one
+  thing the backlog did not consider. It predates every tenancy concept, so
+  adapting it in place is most of a new table anyway — but it is *not* empty:
+  it holds **38 rows from June–July 2026, 25 of them referenced by
+  `invoices.order_id`**. Dropping it, which this file previously suggested,
+  would orphan the history of twenty-five real sales. It stays as a record of
+  how orders used to work.
+- **Every write states the version it read.** Two servers can hold the same tab,
+  and a stale save is refused rather than allowed to erase the round the other
+  just added. The conflict is surfaced, never auto-resolved: choosing which of
+  two people's rounds to keep is not a decision that can be made correctly, and
+  guessing wrong loses somebody's drinks.
+- **A tab is checked before checkout prices anything**, so one already closed
+  elsewhere is refused without spending an invoice number — the sequence has no
+  way to hand one back. It is marked invoiced only *after* the invoice is
+  written, because a tab closed against a sale that failed to save is a sale
+  that has vanished.
+- **Abandoned, never deleted.** "Table six left without paying" is exactly the
+  thing a manager wants a record of.
+- **Tabs need a connection, by definition** — the point of one is that it is not
+  on this device. The strip says so when offline rather than failing oddly. This
+  is the one place offline mode (§2.4) and tabs do not meet.
+
+**Verified** against local staging: a stale write refused with the first
+writer's round intact; checkout closed the tab and linked the invoice; a second
+checkout refused with the sequence still at 64, so no number was wasted; the 38
+legacy rows and their 25 invoice links untouched throughout. The 10 integration
+tests cover the version check, the closed-once guard, and that one café can
+neither read, write, close nor abandon another's tabs.
+
+**Both 2.6 and 2.7:** migrations 028 and 029 were applied to staging by hand,
+with their `schema_migrations` rows, because the dev server had booted before
+the files existed. A restart runs them normally; both are idempotent. Neither
+has had a manual browser pass, and `next build` was not run.
+
+---
+
 ## 3. ⬜ LEFT — not done, the backlog
 
 Ordered by what will actually cost an American demo. Items 1 and 2 are the ones
@@ -560,25 +674,13 @@ Benefits Urdu/Arabic, not the American demos, which is why it was left.
 refund one item off a four-item ticket routinely, and card refunds must go back
 to the original card. Needs per-line quantities and a reason code.
 
-### 7. End-of-day close / Z-report
-
-No cash drawer count, no expected-vs-actual variance, no Z-report. Managers ask
-about this specifically because it is how they catch theft.
-
-### 8. Open tabs and table service
-
-The `orders` table exists in the schema and **nothing reads or writes it** —
-checkout goes straight to `invoices`. So a customer cannot start a tab and a
-server cannot hold a table's order open. Fine for counter service, blocking for
-anything with table numbers. Either build on it or drop the table.
-
-### 9. Email / SMS receipts
+### 7. Email / SMS receipts
 
 Receipts are print-only (`app/invoices/[invoiceId]/page.jsx` builds receipt
 HTML). US customers expect a digital receipt, and it is also the cheapest route
 into a customer list for loyalty later.
 
-### 10. Smaller / later
+### 8. Smaller / later
 
 *(The timezone picker and the Karachi shift-date bug that used to head this
 list are done — see §2.5.)*
@@ -604,9 +706,11 @@ list are done — see §2.5.)*
 4. Partial refunds, which offline mode has made more urgent: a sale can now be
    rung up on a device and refunded before it has ever reached the server.
 
-Items 5, 8 and 10 are cleanup that can happen whenever.
+Items 5 and 8 are cleanup that can happen whenever.
 
-**Two things sales tax leaves for whoever does the next item:**
+**What the shipped work leaves for whoever does the next item:**
+
+*From sales tax (§2.3):*
 
 - Partial refunds (item 6) will have to refund tax proportionally. The
   breakdown to do it with is already on every invoice — `taxLines` carries the
@@ -615,3 +719,27 @@ Items 5, 8 and 10 are cleanup that can happen whenever.
 - Tipping (item 1) must be added *after* tax and must not be taxed. The place
   it goes is `invoiceTotal()` in `lib/tax.js`, which is the one function that
   decides what the customer owes.
+
+*From the end-of-day close (§2.6):*
+
+- Tipping also has to reach `lib/zReport.js`. A cash tip is in the drawer and
+  will otherwise read as an overage on every shift that takes one; a card tip
+  is not in the drawer and must not. Tips are held for staff rather than earned
+  by the café, so they belong beside tax as a figure the report carries but net
+  sales does not include.
+- Card payments (item 2) will want their own line in `byMethod`. The bucket
+  list is `PAYMENT_METHODS` in `lib/zReport.js` and the same constant in
+  `app/api/checkout/route.js` — adding a method means both, which is the
+  duplication item 2 already has to resolve.
+- Partial refunds will have to decide what a refund against a *closed* day
+  does. The close is frozen deliberately, so the refund belongs to the day it
+  is given on, not the day of the sale — but nothing enforces that yet.
+
+*From open tabs (§2.7):*
+
+- Tabs are the one thing offline mode (§2.4) cannot cover, since a tab exists
+  precisely so it is not on one device. If offline table service is ever
+  wanted, it needs a merge story, not just a queue.
+- `invoices` has no `tab_id`. The link is one-directional — the tab knows its
+  invoice. Reporting "which table did this sale come from" would need the
+  reverse, and `order_id` is taken by the legacy table.
