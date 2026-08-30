@@ -3,6 +3,7 @@ import { requirePlatformOwner } from '@/lib/session'
 import { getTenant, updateTenant, getTenantOwner } from '@/lib/repositories/tenantsRepository'
 import { listAuditForTenant, recordAudit } from '@/lib/audit'
 import { tradingDayLabel } from '@/lib/tradingDay'
+import { timezoneInfo } from '@/constants/timezones'
 
 export async function GET(_request, { params }) {
   const owner = await requirePlatformOwner()
@@ -40,6 +41,7 @@ const FIELD_LABELS = {
   brandSecondary: 'the accent colour',
   receiptFooter: 'the receipt footer',
   currency: 'the currency',
+  timezone: 'where they are',
 }
 
 export async function PATCH(request, { params }) {
@@ -61,9 +63,12 @@ export async function PATCH(request, { params }) {
     // The trading day gets a line of its own rather than "changed when their
     // day opens, when their day closes": it moves which day a sale counts
     // against, so the trail should say what it was set to.
-    const dayChanged = body.dayStartHour !== undefined || body.dayEndHour !== undefined
-    const detail = dayChanged && changed.every((k) => k === 'dayStartHour' || k === 'dayEndHour')
-      ? `Set the trading day to ${tradingDayLabel(result.tenant)}`
+    const dayChanged = body.dayStartHour !== undefined || body.dayEndHour !== undefined || body.timezone !== undefined
+    const detail = dayChanged && changed.every((k) => k === 'dayStartHour' || k === 'dayEndHour' || k === 'timezone')
+      // The zone is named alongside the hours because it is half of what they
+      // mean — "6 PM" moved from Karachi to Chicago is an eleven-hour change to
+      // which day a sale counts against, and the trail has to show it.
+      ? `Set the trading day to ${tradingDayLabel(result.tenant)}, ${timezoneInfo(result.tenant?.timezone).city} time`
       : body.status === 'suspended' ? 'Suspended this café'
       : body.status === 'restricted'
         ? `Paused access pending payment${body.restrictedReason ? ` — ${body.restrictedReason}` : ''}`

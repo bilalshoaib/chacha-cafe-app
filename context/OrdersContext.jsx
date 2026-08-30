@@ -162,6 +162,7 @@ export function OrdersProvider({ children }) {
       await saveReservation(tid, {
         shiftDate: block.shiftDate,
         dayStartHour: block.dayStartHour,
+        timezone: block.timezone,
         numbers,
       })
       setNumbersLeft(numbers.length)
@@ -485,6 +486,7 @@ export function OrdersProvider({ children }) {
       deliveryCharge: dc,
       customerNote,
       dayStartHour: reservation.dayStartHour,
+      timezone: reservation.timezone,
     })
     await enqueueSale(tenantId, invoice)
     await refreshOfflineCounts(tenantId)

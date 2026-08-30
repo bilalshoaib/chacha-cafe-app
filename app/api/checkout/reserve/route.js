@@ -40,8 +40,8 @@ export async function POST(request) {
     ? Math.min(MAX_BLOCK, Math.max(1, Math.floor(requested)))
     : DEFAULT_BLOCK
 
-  const { startHour } = await getTenantDayHours(ctx.tenantId)
-  const shiftDate = shiftDateForInstant(new Date(), { shiftStartHour: startHour })
+  const { startHour, timezone } = await getTenantDayHours(ctx.tenantId)
+  const shiftDate = shiftDateForInstant(new Date(), { shiftStartHour: startHour, timezone })
 
   const [invoiceNumbers, shiftNumbers] = await Promise.all([
     reserveInvoiceNumbers(INVOICE_SEQUENCE, count),
@@ -50,9 +50,13 @@ export async function POST(request) {
 
   return NextResponse.json({
     shiftDate,
-    // The hour is handed over so the till can work out for itself when the
-    // café's day has rolled past the one these numbers belong to.
+    // The hour and the zone are handed over together so the till can work out
+    // for itself when the café's day has rolled past the one these numbers
+    // belong to. Both, because an hour on the wrong clock answers it wrongly —
+    // and a till disagreeing with the server about which day it is would queue
+    // sales against a shift the server then files them under differently.
     dayStartHour: startHour,
+    timezone,
     numbers: invoiceNumbers.map((invoiceNumber, i) => ({
       invoiceNumber,
       shiftNumber: shiftNumbers[i],

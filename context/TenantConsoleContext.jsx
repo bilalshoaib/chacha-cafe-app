@@ -6,6 +6,7 @@ import { brandingFormOf } from '@/components/BrandingFields.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
 import { tradingDay, DEFAULT_DAY_START_HOUR, DEFAULT_DAY_END_HOUR } from '@/lib/tradingDay.js'
 import { DEFAULT_CURRENCY, DEFAULT_LOCALE } from '@/constants/locales.js'
+import { DEFAULT_TIMEZONE } from '@/constants/timezones.js'
 
 const TenantConsoleContext = createContext(null)
 
@@ -43,6 +44,7 @@ export function TenantConsoleProvider({ children }) {
     {
       name: '', slug: '',
       dayStartHour: DEFAULT_DAY_START_HOUR, dayEndHour: DEFAULT_DAY_END_HOUR,
+      timezone: DEFAULT_TIMEZONE,
       currency: DEFAULT_CURRENCY, locale: DEFAULT_LOCALE,
     },
   )
@@ -58,6 +60,7 @@ export function TenantConsoleProvider({ children }) {
       slug: t.slug ?? '',
       dayStartHour: hours.startHour,
       dayEndHour: hours.endHour,
+      timezone: t.timezone ?? DEFAULT_TIMEZONE,
       currency: t.currency ?? DEFAULT_CURRENCY,
       locale: t.locale ?? DEFAULT_LOCALE,
     })

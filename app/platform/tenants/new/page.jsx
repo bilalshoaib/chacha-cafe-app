@@ -8,6 +8,7 @@ import BrandingFields, { DEFAULT_BRANDING_FORM, LogoPicker } from '@/components/
 import { useToast } from '@/context/ToastContext.jsx'
 import { TRIAL_DAYS_DEFAULT, TRIAL_DAYS_MAX } from '@/lib/tenantAccess.js'
 import CurrencyField from '@/components/CurrencyField.jsx'
+import TimezoneField from '@/components/TimezoneField.jsx'
 
 /**
  * Creating a café.
@@ -158,11 +159,14 @@ export default function NewTenantPage() {
             />
           </div>
 
-          <label className="pf-field">
-            <span>Timezone</span>
-            <input value={timezone} onChange={(e) => setTimezone(e.target.value)} />
-            <span className="pf-hint">An IANA name, like America/Chicago or Asia/Karachi.</span>
-          </label>
+          <div className="pf-row">
+            <TimezoneField
+              timezone={timezone}
+              onTimezoneChange={setTimezone}
+              disabled={saving}
+              fieldClass="pf-field"
+            />
+          </div>
         </fieldset>
 
         <fieldset className="pf-fieldset">

@@ -1,6 +1,8 @@
 'use client'
 import { useTenantConsole } from '@/context/TenantConsoleContext.jsx'
 import { formatHour, tradingDayLabel } from '@/lib/tradingDay.js'
+import { timezoneInfo } from '@/constants/timezones.js'
+import TimezoneField from '@/components/TimezoneField.jsx'
 
 /** Every hour of the clock, named the way somebody would say it. */
 const HOURS = Array.from({ length: 24 }, (_, h) => ({ value: h, label: formatHour(h) }))
@@ -17,7 +19,9 @@ export default function TenantDetailsPage() {
   const { tenant, details, setDetails, save, saving } = useTenantConsole()
 
   const nameDirty = details.name !== (tenant.name ?? '') || details.slug !== (tenant.slug ?? '')
-  const dayDirty = details.dayStartHour !== tenant.dayStartHour || details.dayEndHour !== tenant.dayEndHour
+  const dayDirty = details.dayStartHour !== tenant.dayStartHour
+    || details.dayEndHour !== tenant.dayEndHour
+    || details.timezone !== tenant.timezone
 
   return (
     <div className="tenant-tab-stack">
@@ -87,8 +91,12 @@ export default function TenantDetailsPage() {
         onSubmit={(e) => {
           e.preventDefault()
           void save(
-            { dayStartHour: details.dayStartHour, dayEndHour: details.dayEndHour },
-            `Trading day set to ${tradingDayLabel(details)}.`,
+            {
+              dayStartHour: details.dayStartHour,
+              dayEndHour: details.dayEndHour,
+              timezone: details.timezone,
+            },
+            `Trading day set to ${tradingDayLabel(details)} ${timezoneInfo(details.timezone).city} time.`,
           )
         }}
       >
@@ -123,9 +131,26 @@ export default function TenantDetailsPage() {
           </label>
         </div>
 
+        {/* In the same card as the hours, because an hour without a zone is
+            not an answer: 6 PM in Karachi and 6 PM in Chicago are eleven hours
+            apart, and which one a sale falls before decides which day it is
+            counted against. Saved together for the same reason. */}
+        <div className="pf-row">
+          <TimezoneField
+            timezone={details.timezone}
+            onTimezoneChange={(tz) => setDetails((d) => ({ ...d, timezone: tz }))}
+            shiftStartHour={details.dayStartHour}
+            disabled={saving}
+            fieldClass="pf-field"
+            label="Where they are"
+          />
+        </div>
+
         {/* Read back in full, because "6 PM" and "5 PM" in two boxes do not by
             themselves say that the second one is tomorrow. */}
-        <p className="pf-quoted">Their day runs {tradingDayLabel(details)}.</p>
+        <p className="pf-quoted">
+          Their day runs {tradingDayLabel(details)}, {timezoneInfo(details.timezone).city} time.
+        </p>
 
         <p className="pf-hint">
           Changes three things for them: which day a sale is counted against, when the short order
@@ -147,6 +172,7 @@ export default function TenantDetailsPage() {
                 ...d,
                 dayStartHour: tenant.dayStartHour,
                 dayEndHour: tenant.dayEndHour,
+                timezone: tenant.timezone,
               }))}
             >
               Discard

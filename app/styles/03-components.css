@@ -3151,3 +3151,92 @@ button.link-add-menu-item {
   .badge-pending-sync,
   .offline-banner { display: none !important; }
 }
+
+/* ── Timezone field ──────────────────────────────────────────────────────────
+   The companion to the currency grid and deliberately its twin: the two are
+   set side by side on the same forms, and a café's region is one decision made
+   in two fields. It reuses .currency-field-head, .currency-search and
+   .locale-preview rather than restating them.
+
+   Grouped by region where the currency grid is flat, because a city list is
+   scanned by continent — nobody hunts for Chicago in an alphabetical run of
+   fifty. */
+.timezone-groups {
+  max-height: 19rem;
+  overflow-y: auto;
+  padding: 0.15rem;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  border-radius: 10px;
+}
+
+.timezone-group + .timezone-group { margin-block-start: 0.5rem; }
+
+.timezone-group-title {
+  position: sticky;
+  /* Sticky so the continent stays legible while its cities scroll under it —
+     the label is what makes the list scannable, and it is no use once it has
+     scrolled away. */
+  inset-block-start: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+  background: var(--surface, #fff);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.7rem;
+}
+
+.timezone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.3rem;
+}
+
+.timezone-option {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.timezone-option:hover { background: rgba(0, 0, 0, 0.03); }
+.timezone-option--active {
+  border-color: var(--brand-primary, #7a5c3e);
+  background: rgba(0, 0, 0, 0.04);
+}
+.timezone-option input { flex: 0 0 auto; margin: 0; }
+
+.timezone-option-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+  line-height: 1.25;
+}
+.timezone-option-city { font-size: 0.88rem; }
+.timezone-option-id {
+  font-size: 0.72rem;
+  opacity: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tabular figures so a column of clocks lines up digit under digit; without it
+   the times jitter as the minutes tick over. */
+.timezone-option-clock {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.timezone-use-local {
+  align-self: flex-start;
+  margin-block-end: 0.4rem;
+}

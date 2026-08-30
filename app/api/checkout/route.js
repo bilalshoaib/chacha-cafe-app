@@ -134,8 +134,12 @@ async function handleCheckout(request, marks, stats) {
   //
   // Free of a round trip: requireTenant() read and cached this row on the way
   // into this same request.
-  const { startHour } = await timed(marks, 'tenantDayHours', () => getTenantDayHours(ctx.tenantId))
-  const shiftDate = shiftDateForInstant(createdAt, { shiftStartHour: startHour })
+  // The zone comes with the hours, and both are needed: an opening hour is
+  // counted on some clock, and until this read it was always Karachi's. A café
+  // in Chicago closing at 6 PM had every sale after 8 AM local counted against
+  // the next trading day.
+  const { startHour, timezone } = await timed(marks, 'tenantDayHours', () => getTenantDayHours(ctx.tenantId))
+  const shiftDate = shiftDateForInstant(createdAt, { shiftStartHour: startHour, timezone })
   const shiftNumber = await timed(marks, 'nextShiftNumber', () => nextShiftNumber(ctx, shiftDate))
 
   const invoice = {
