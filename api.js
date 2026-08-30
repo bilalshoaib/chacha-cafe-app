@@ -179,6 +179,13 @@ export const api = {
     request('/api/checkout/reserve', { method: 'POST', body: JSON.stringify({ count }) }),
   syncOfflineSales: (sales) =>
     request('/api/checkout/sync', { method: 'POST', body: JSON.stringify({ sales }) }),
+
+  // End of day. `getShift` answers for one trading day — frozen if it has been
+  // closed, live if it has not — and `closeShift` records the count.
+  getShifts: () => request('/api/shifts'),
+  getShift: (shiftDate) => request(`/api/shifts/${shiftDate}`),
+  closeShift: (shiftDate, body) =>
+    request(`/api/shifts/${shiftDate}`, { method: 'POST', body: JSON.stringify(body) }),
   getInvoices: (params = {}) => {
     const q = new URLSearchParams()
     if (params.from) q.set('from', params.from)

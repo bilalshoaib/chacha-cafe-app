@@ -41,6 +41,13 @@ const SECTIONS = [
     owner: true,
   },
   {
+    href: '/settings/close',
+    icon: '🌙',
+    title: 'End of day',
+    blurb: 'Count the drawer, close the trading day, and keep the difference between what the till says and what is actually there.',
+    owner: true,
+  },
+  {
     href: '/settings/team',
     icon: '👥',
     title: 'Team & admins',
