@@ -4,6 +4,7 @@ import Link from 'next/link'
 import ItemAutocomplete from '@/components/ItemAutocomplete.jsx'
 import DealPicker from '@/components/DealPicker.jsx'
 import OfflineBanner from '@/components/OfflineBanner.jsx'
+import TabStrip from '@/components/TabStrip.jsx'
 import { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { discountPartsOf, priceLine } from '@/lib/pricing.js'
@@ -286,6 +287,7 @@ export default function OrdersPage() {
   return (
     <main className="order-flow theme-chacha">
       <OfflineBanner />
+      <TabStrip />
       <section className="card order-card">
         <div className="card-head">
           <h2>Take order</h2>

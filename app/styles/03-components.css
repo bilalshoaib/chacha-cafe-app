@@ -3358,3 +3358,92 @@ button.link-add-menu-item {
   text-align: end;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Open tabs ───────────────────────────────────────────────────────────────
+   A strip across the top of the till rather than a page of its own: a tab is
+   the one part of the till showing work done on another device, and a server
+   coming back needs to see what is open without going to look for it. */
+.tab-strip {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  margin-block-end: 0.75rem;
+  background: var(--surface);
+}
+.tab-strip--empty {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.tab-strip-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-block-end: 0.5rem;
+}
+.tab-strip-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
+.tab-strip-active {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.tab-cards {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-block-end: 0.2rem;
+}
+
+.tab-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  min-inline-size: 9.5rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.tab-card--active { border-color: var(--brand-primary); background: var(--accent-soft); }
+
+.tab-card-open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: start;
+}
+.tab-card-label { font-size: 0.92rem; }
+
+.tab-card-drop {
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  opacity: 0.45;
+}
+.tab-card-drop:hover { opacity: 1; color: var(--danger); }
+
+.tab-card-confirm { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.75rem; }
+.tab-card-confirm .danger { color: var(--danger); }
+
+.tab-card--add { cursor: pointer; justify-content: center; min-inline-size: 8rem; }
+.tab-card--new { gap: 0.35rem; }
+.tab-card--new input { inline-size: 7rem; }

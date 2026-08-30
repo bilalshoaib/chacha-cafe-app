@@ -8,6 +8,7 @@ import { buildOrderLine } from '@/lib/orderLines'
 import { invoiceBusinessTypeForLines } from '@/lib/businessTypes'
 import { shiftDateForInstant } from '@/lib/shift'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax'
+import { getTab, markTabInvoiced } from '@/lib/repositories/tabsRepository'
 
 /**
  * Every invoice draws its number from one continuous sequence, whichever
@@ -80,6 +81,21 @@ async function handleCheckout(request, marks, stats) {
   const body = await request.json().catch(() => ({}))
   const rawLines = Array.isArray(body.lines) ? body.lines : []
   if (!rawLines.length) return NextResponse.json({ error: 'Add at least one line before checkout' }, { status: 400 })
+
+  // Ringing up a tab. Checked before anything is priced so that a tab somebody
+  // else already closed is refused without an invoice number being spent on
+  // it — the sequence has no way to hand one back.
+  const tabId = body.tabId ? String(body.tabId) : null
+  if (tabId) {
+    const tab = await timed(marks, 'getTab', () => getTab(ctx, tabId))
+    if (!tab) return NextResponse.json({ error: 'That tab is not here any more.' }, { status: 404 })
+    if (tab.status !== 'open') {
+      return NextResponse.json({
+        error: `That tab has already been ${tab.status === 'invoiced' ? 'rung up' : 'closed'}.`,
+        tab,
+      }, { status: 409 })
+    }
+  }
 
   // 3 queries in parallel: SELECT * on menu_items, deals, deal_includes.
   const menu = await timed(marks, 'loadMenu', () => loadMenu(ctx))
@@ -162,5 +178,20 @@ async function handleCheckout(request, marks, stats) {
   }
 
   await timed(marks, 'saveInvoice', () => saveInvoice(ctx, invoice))
+
+  // Closed after the invoice is safely written, and guarded on the tab still
+  // being open. The order matters: an invoice with no tab closed against it is
+  // a tab somebody can close by hand, while a tab closed against an invoice
+  // that failed to save is a sale that has silently vanished.
+  //
+  // A null here means another device closed it in the moment between the check
+  // above and this write. The invoice is real and the customer has paid, so it
+  // is returned as normal — with `tabAlreadyClosed` so the till can say the
+  // other device got there first rather than pretending nothing happened.
+  if (tabId) {
+    const closed = await timed(marks, 'markTabInvoiced', () => markTabInvoiced(ctx, tabId, invoice.id))
+    if (!closed) return NextResponse.json({ invoice, tabAlreadyClosed: true }, { status: 201 })
+  }
+
   return NextResponse.json({ invoice }, { status: 201 })
 }

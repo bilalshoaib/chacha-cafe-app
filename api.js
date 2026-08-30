@@ -182,6 +182,15 @@ export const api = {
 
   // End of day. `getShift` answers for one trading day — frozen if it has been
   // closed, live if it has not — and `closeShift` records the count.
+  // Open tabs. Every edit carries the version it was based on; see
+  // lib/repositories/tabsRepository.js for why.
+  listTabs: () => request('/api/tabs'),
+  openTab: (body) => request('/api/tabs', { method: 'POST', body: JSON.stringify(body) }),
+  getTab: (id) => request(`/api/tabs/${encodeURIComponent(id)}`),
+  updateTab: (id, body) =>
+    request(`/api/tabs/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  abandonTab: (id) => request(`/api/tabs/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
   getShifts: () => request('/api/shifts'),
   getShift: (shiftDate) => request(`/api/shifts/${shiftDate}`),
   closeShift: (shiftDate, body) =>

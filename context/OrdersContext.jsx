@@ -108,6 +108,11 @@ export function OrdersProvider({ children }) {
   const [numbersLeft, setNumbersLeft] = useState(0)
   const [menuCachedAt, setMenuCachedAt] = useState(null)
   const [syncing, setSyncing] = useState(false)
+  // Tabs held on the server rather than in this browser, so a second device
+  // can pick one up. `tabSaving` is separate from `checkingOut` because saving
+  // to a tab is not a sale and must not disable the checkout button.
+  const [tabs, setTabs] = useState([])
+  const [tabSaving, setTabSaving] = useState(false)
 
   // The provider outlives the navigation, so the flag has to be dropped once
   // the invoice route has actually taken over. The timeout is the backstop for
@@ -356,6 +361,122 @@ export function OrdersProvider({ children }) {
     setDeliveryCharge('')
   }
 
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+  //
+  // A tab is a cart that lives on the server, so a second device can pick it
+  // up. It is loaded into an ordinary local order to be worked on — every
+  // existing operation on the cart then applies unchanged — and that order
+  // carries the tab's id and the version it was read at, which is what the
+  // server checks before accepting a save.
+
+  const refreshTabs = useCallback(async () => {
+    if (!hasTenant) return
+    try {
+      const { tabs: list } = await api.listTabs()
+      setTabs(list ?? [])
+    } catch (e) {
+      // A till with no connection has no tabs, and says so through the offline
+      // banner rather than by putting a second error on the screen.
+      if (!isOfflineError(e)) setError(e.message)
+    }
+  }, [hasTenant])
+
+  useEffect(() => { if (authenticated && hasTenant) void refreshTabs() }, [authenticated, hasTenant, refreshTabs])
+
+  async function startTab(label) {
+    const name = String(label ?? '').trim()
+    if (!name) { setError('Give the tab a name — a table number will do.'); return null }
+    setError('')
+    try {
+      const { tab } = await api.openTab({ label: name })
+      setTabs((prev) => [tab, ...prev])
+      loadTabIntoCart(tab)
+      return tab
+    } catch (e) {
+      setError(isOfflineError(e) ? 'Tabs need a connection — this one is held on the server so another device can pick it up.' : e.message)
+      return null
+    }
+  }
+
+  /** Opens a tab as the active order, seeded with whatever is already on it. */
+  function loadTabIntoCart(tab) {
+    const order = {
+      id: newOrderId(),
+      status: 'open',
+      createdAt: new Date().toISOString(),
+      lines: Array.isArray(tab.lines) ? tab.lines : [],
+      tabId: tab.id,
+      tabLabel: tab.label,
+      tabVersion: tab.version,
+    }
+    setOrders((prev) => [...prev, order])
+    setActiveOrderId(order.id)
+    setCustomerNote(tab.customerNote ?? '')
+    setOrderType(tab.orderType ?? 'dine_in')
+    setDeliveryCharge('')
+  }
+
+  async function openTabById(tabId) {
+    setError('')
+    // Re-read rather than trusting the list, which may be a minute old — the
+    // whole point of a tab is that somebody else may have added to it since.
+    try {
+      const { tab } = await api.getTab(tabId)
+      if (tab.status !== 'open') {
+        setError(`That tab has already been ${tab.status === 'invoiced' ? 'rung up' : 'closed'}.`)
+        await refreshTabs()
+        return
+      }
+      loadTabIntoCart(tab)
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
+  /**
+   * Pushes what is in the cart back to the tab.
+   *
+   * A conflict is surfaced rather than resolved. The server hands back what
+   * the tab actually says now, and the cashier is shown it — guessing which
+   * of two people's rounds to keep is not a decision this code can make
+   * correctly, and picking wrong loses somebody's drinks.
+   */
+  async function saveActiveTab() {
+    if (!activeOrder?.tabId || tabSaving) return false
+    setTabSaving(true)
+    setError('')
+    try {
+      const { tab } = await api.updateTab(activeOrder.tabId, {
+        version: activeOrder.tabVersion,
+        lines: activeOrder.lines,
+        orderType,
+        customerNote,
+      })
+      setOrders((prev) => prev.map((o) => (o.id === activeOrderId ? { ...o, tabVersion: tab.version } : o)))
+      setTabs((prev) => prev.map((t) => (t.id === tab.id ? tab : t)))
+      return true
+    } catch (e) {
+      setError(e.message)
+      await refreshTabs()
+      return false
+    } finally {
+      setTabSaving(false)
+    }
+  }
+
+  async function abandonTabById(tabId) {
+    setError('')
+    try {
+      await api.abandonTab(tabId)
+      setTabs((prev) => prev.filter((t) => t.id !== tabId))
+      setOrders((prev) => prev.filter((o) => o.tabId !== tabId))
+      setActiveOrderId((cur) => (orders.find((o) => o.id === cur)?.tabId === tabId ? null : cur))
+    } catch (e) {
+      setError(e.message)
+      await refreshTabs()
+    }
+  }
+
   async function addItemToOrder(itemId, qty = 1, discounts = {}) {
     if (!activeOrderId) {
       setError('Start a new order first.')
@@ -530,13 +651,23 @@ export function OrdersProvider({ children }) {
         qty: l.qty,
         ...discountPartsOf(l),
       }))
-      const { invoice } = await api.checkout({
+      const { invoice, tabAlreadyClosed } = await api.checkout({
         lines,
         customerNote,
         paymentMethod: null,
         orderType,
         deliveryCharge: dc,
+        // Closes the tab in the same request that creates the invoice, so a
+        // sale and the tab it came from cannot end up disagreeing.
+        ...(activeOrder.tabId ? { tabId: activeOrder.tabId } : {}),
       })
+      if (activeOrder.tabId) {
+        setTabs((prev) => prev.filter((t) => t.id !== activeOrder.tabId))
+        // Another device rang it up first. The invoice is real and the
+        // customer has paid, so the sale stands — but somebody should know
+        // there are now two.
+        if (tabAlreadyClosed) setError('That tab had already been rung up on another device — check for a duplicate sale.')
+      }
       clearSoldOrder(invoice.id)
     } catch (e) {
       // The connection dropped between pressing the button and the server
@@ -594,6 +725,16 @@ export function OrdersProvider({ children }) {
     loading,
     checkingOut,
     openingInvoiceId,
+    tabs,
+    tabSaving,
+    activeTab: activeOrder?.tabId
+      ? { id: activeOrder.tabId, label: activeOrder.tabLabel, version: activeOrder.tabVersion }
+      : null,
+    refreshTabs,
+    startTab,
+    openTabById,
+    saveActiveTab,
+    abandonTabById,
     online,
     queuedCount,
     numbersLeft,
@@ -614,6 +755,7 @@ export function OrdersProvider({ children }) {
     orderMenuItems, orderDeals, orderCategoryTabs, orderTotal, orderTax, orderGrandTotal,
     categoryTabs, customerNote, orderType, deliveryCharge, error, loading, checkingOut, openingInvoiceId, refreshAll,
     online, queuedCount, numbersLeft, menuCachedAt, syncing, drainQueue, tenantId,
+    tabs, tabSaving, refreshTabs,
   ])
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>
