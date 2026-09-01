@@ -149,6 +149,23 @@ export function TenantConsoleProvider({ children }) {
     }
   }, [id, adopt, toast])
 
+  const destroy = useCallback(async (confirmName) => {
+    setError(''); setMessage(''); setSaving(true)
+    try {
+      await api.deleteTenant(id, { confirmName })
+      toast.success('Café deleted.')
+      // Full load: the console chrome around this café is about to 404, and the
+      // list it lands on needs a fresh read anyway.
+      window.location.assign('/platform')
+      return true
+    } catch (e) {
+      setError(e.message || 'Could not delete this café.')
+      toast.error(e.message || 'Could not delete this café.')
+      setSaving(false)
+      return false
+    }
+  }, [id, toast])
+
   const openAs = useCallback(async (control) => {
     setError('')
     try {
@@ -169,10 +186,10 @@ export function TenantConsoleProvider({ children }) {
   const value = useMemo(() => ({
     id, tenant, error, message, saving, logoBusy, issued,
     details, setDetails, branding, setBranding,
-    adopt, patch, save, uploadLogo, removeLogo, resetPassword, openAs,
+    adopt, patch, save, uploadLogo, removeLogo, resetPassword, openAs, destroy,
   }), [
     id, tenant, error, message, saving, logoBusy, issued,
-    details, branding, adopt, patch, save, uploadLogo, removeLogo, resetPassword, openAs,
+    details, branding, adopt, patch, save, uploadLogo, removeLogo, resetPassword, openAs, destroy,
   ])
 
   return <TenantConsoleContext.Provider value={value}>{children}</TenantConsoleContext.Provider>

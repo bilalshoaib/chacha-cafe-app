@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requirePlatformOwner } from '@/lib/session'
-import { getTenant, updateTenant, getTenantOwner } from '@/lib/repositories/tenantsRepository'
+import { getTenant, updateTenant, deleteTenant, getTenantOwner } from '@/lib/repositories/tenantsRepository'
 import { listAuditForTenant, recordAudit } from '@/lib/audit'
 import { tradingDayLabel } from '@/lib/tradingDay'
 import { timezoneInfo } from '@/constants/timezones'
@@ -84,4 +84,51 @@ export async function PATCH(request, { params }) {
     })
   }
   return NextResponse.json(result.tenant)
+}
+
+/**
+ * Deletes a café and all of its data.
+ *
+ * Two locks the caller has to have opened first, because this is the one action
+ * on the console with no undo:
+ *   - the café is suspended — the deliberate first step, which has already
+ *     signed everyone out and taken the public menu down;
+ *   - the café's exact name comes back in the body, so a mis-click on the wrong
+ *     café in a list does not end it.
+ *
+ * The deletion is written to the trail before the response returns. The trail
+ * outlives the café on purpose (migration 021), so this entry stays readable in
+ * the platform-wide activity feed afterwards.
+ */
+export async function DELETE(request, { params }) {
+  const owner = await requirePlatformOwner()
+  if (!owner) return NextResponse.json({ error: 'Platform owner only' }, { status: 403 })
+  const { id } = await params
+
+  const tenant = await getTenant(id)
+  if (!tenant) return NextResponse.json({ error: 'Café not found.' }, { status: 404 })
+
+  if (tenant.status !== 'suspended') {
+    return NextResponse.json(
+      { error: 'Suspend the café first — deleting is only possible once it is suspended.' },
+      { status: 409 },
+    )
+  }
+
+  const body = await request.json().catch(() => ({}))
+  if (String(body.confirmName ?? '').trim() !== tenant.name) {
+    return NextResponse.json({ error: 'Type the café’s name exactly to confirm.' }, { status: 400 })
+  }
+
+  const result = await deleteTenant(id)
+  if (result.error) return NextResponse.json({ error: result.error }, { status: 400 })
+
+  await recordAudit({
+    actorId: owner.userId, actorEmail: owner.email,
+    tenantId: id, tenantName: result.name,
+    action: 'tenant_deleted',
+    detail: 'Deleted this café and all of its data. Payment records and this trail were kept.',
+  })
+
+  return NextResponse.json({ ok: true })
 }

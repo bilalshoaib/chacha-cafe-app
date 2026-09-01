@@ -121,6 +121,8 @@ export const api = {
     request(`/api/platform/tenants/${encodeURIComponent(id)}/owner-password`, { method: 'POST' }),
   updateTenant: (id, body) =>
     request(`/api/platform/tenants/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteTenant: (id, body) =>
+    request(`/api/platform/tenants/${encodeURIComponent(id)}`, { method: 'DELETE', body: JSON.stringify(body) }),
   uploadTenantLogo: (id, { mime, data }) =>
     request(`/api/platform/tenants/${encodeURIComponent(id)}/logo`, {
       method: 'POST',

@@ -20,9 +20,10 @@ import { formatShortDateTime } from '@/utils/formatting.js'
  * fix for it is two inches from the other two fixes.
  */
 export default function TenantAccessPage() {
-  const { tenant, patch, saving } = useTenantConsole()
+  const { tenant, patch, saving, destroy } = useTenantConsole()
   const [trialDays, setTrialDays] = useState(String(TRIAL_DAYS_DEFAULT))
   const [restrictReason, setRestrictReason] = useState('')
+  const [confirmName, setConfirmName] = useState('')
 
   const access = tenantAccess(tenant)
   const daysLeft = trialDaysLeft(tenant)
@@ -95,7 +96,8 @@ export default function TenantAccessPage() {
         ) : suspended ? (
           <p>
             <strong>Suspended.</strong> Nobody at this café can sign in, and their public menu is
-            off. Their data is untouched and comes back exactly as it was.
+            off. Their data is untouched and comes back exactly as it was — restore it below, or
+            delete it for good further down.
           </p>
         ) : !access.allowed ? (
           <p>
@@ -179,6 +181,40 @@ export default function TenantAccessPage() {
           )}
         </div>
       </div>
+
+      {/* Only once suspended. Deleting a café that can still be signed into is
+          how the wrong café gets deleted; suspension is the deliberate first
+          step, and it has already taken the café dark. */}
+      {suspended ? (
+        <div className="pf-card pf-card-danger">
+          <h2>Delete permanently</h2>
+          <p>
+            Erases this café and everything it holds — its menu, its invoices and expenses, its
+            staff logins, open tabs, tax rates and shift history. <strong>This cannot be undone.</strong>{' '}
+            What they have paid the platform stays on your books, and this trail is kept.
+          </p>
+          <label className="pf-field">
+            <span>Type <strong>{tenant.name}</strong> to confirm</span>
+            <input
+              value={confirmName}
+              disabled={saving}
+              autoComplete="off"
+              placeholder={tenant.name}
+              onChange={(e) => setConfirmName(e.target.value)}
+            />
+          </label>
+          <div className="pf-actions">
+            <button
+              type="button"
+              className="ghost danger pf-delete-confirm"
+              disabled={saving || confirmName.trim() !== tenant.name}
+              onClick={() => void destroy(confirmName.trim())}
+            >
+              Delete this café and all its data
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
