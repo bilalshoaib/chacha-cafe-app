@@ -2875,7 +2875,17 @@ button.link-add-menu-item {
    being chosen is what a price will look like and a dropdown showed one row
    at a time without saying. Scrolls at a fixed height so the form around it
    keeps its shape whether the search box has filtered to two rows or none. */
-.currency-field { display: block; }
+/* Both wrappers CurrencyField and TimezoneField render inside — .field on the
+   café's settings and .pf-field on the platform console — are themselves
+   `display: flex; flex-direction: column`. That turned the picker into a flex
+   column whose children compete for height: the scrolling grid
+   (.currency-grid / .timezone-groups, min-height:0 from its own overflow)
+   collapsed to a sliver while .locale-preview (flex: 1 0 100%, flex-shrink:0)
+   kept its space. Pin the wrapper back to block — its own layout is plain
+   block flow — so the grid keeps its max-height and the preview sits below.
+   Doubled selectors to outrank .field / .pf-field whichever loads last. */
+.currency-field.currency-field,
+.timezone-field.timezone-field { display: block; }
 /* The console styles every input inside a .pf-field with a border, a radius
    and half a rem of padding. That is right for the search box and wrong for
    23 radio buttons, which it turned into empty rounded boxes — so they are
