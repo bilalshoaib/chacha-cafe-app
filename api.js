@@ -19,21 +19,77 @@ export function isOfflineError(e) {
   return Boolean(e?.offline)
 }
 
+/**
+ * How long the till waits before it decides the server is not going to answer.
+ *
+ * There has to be a limit. A server that refuses a request fails fast, but one
+ * that accepts it and never replies — a database that has stopped answering
+ * rather than gone away — leaves fetch pending for as long as the socket
+ * lives. That is what a cashier reports as "the app is stuck": no error, no
+ * offline banner, no menu, just a spinner and nothing to do but reload. A
+ * deadline turns that into the disconnected state this till already knows how
+ * to keep selling in.
+ *
+ * Reads and writes do not get the same budget, because giving up early does
+ * not cost the same. An abandoned read costs a retry. An abandoned checkout is
+ * rung up locally by doCheckout(), so a sale that did in fact land ends up
+ * recorded twice — a trade this app makes deliberately, but not one to make
+ * over a slow reply that would have arrived.
+ */
+const READ_TIMEOUT_MS = 15_000
+const WRITE_TIMEOUT_MS = 45_000
+
+/** AbortSignal.timeout() with a fallback; the tills are not all new. */
+function deadline(ms) {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms)
+  }
+  const controller = new AbortController()
+  setTimeout(() => controller.abort(), ms)
+  return controller.signal
+}
+
 async function request(path, options = {}) {
+  const { timeoutMs, ...init } = options
+  const budget = timeoutMs ?? (init.method && init.method !== 'GET' ? WRITE_TIMEOUT_MS : READ_TIMEOUT_MS)
   let res
   try {
     res = await fetch(path, {
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...options.headers },
-      ...options,
+      ...init,
+      // After the spread rather than before it: the old order let an options
+      // object carrying its own `headers` drop the Content-Type every caller
+      // relies on.
+      headers: { 'Content-Type': 'application/json', ...init.headers },
+      signal: init.signal ?? deadline(budget),
     })
   } catch (e) {
-    const err = new Error('Could not reach the server.')
+    // A timeout is reported as unreachable rather than as its own kind of
+    // failure, because to everything upstream it is the same thing: the till
+    // asked and got no answer. isOfflineError() is what the order screen tests
+    // before it falls back to selling offline, and a server that has stopped
+    // answering is exactly when that has to work.
+    const timedOut = e?.name === 'TimeoutError' || e?.name === 'AbortError'
+    const err = new Error(timedOut ? 'The server did not answer in time.' : 'Could not reach the server.')
     err.offline = true
+    err.timedOut = timedOut
     err.cause = e
     throw err
   }
-  const text = await res.text()
+  // The deadline covers the body too, so a reply that starts and then stalls
+  // aborts here rather than in the fetch above. Same failure, same handling —
+  // reading it outside this guard would surface a bare AbortError that nothing
+  // upstream recognises as being offline.
+  let text
+  try {
+    text = await res.text()
+  } catch (e) {
+    const err = new Error('The server did not finish answering.')
+    err.offline = true
+    err.timedOut = true
+    err.cause = e
+    throw err
+  }
   let data
   try {
     data = text ? JSON.parse(text) : null
