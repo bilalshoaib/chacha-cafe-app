@@ -4,8 +4,6 @@ import { reserveInvoiceNumbers, reserveShiftNumbers } from '@/lib/repositories/i
 import { getTenantDayHours } from '@/lib/repositories/tenantsRepository'
 import { shiftDateForInstant } from '@/lib/shift'
 
-const INVOICE_SEQUENCE = 'combined'
-
 // Enough to cover a wifi outage through a lunch rush without handing out so
 // many that a café which never goes offline burns through its numbering. A
 // till tops the block up whenever it runs low, so this is a refill size rather
@@ -44,7 +42,7 @@ export async function POST(request) {
   const shiftDate = shiftDateForInstant(new Date(), { shiftStartHour: startHour, timezone })
 
   const [invoiceNumbers, shiftNumbers] = await Promise.all([
-    reserveInvoiceNumbers(INVOICE_SEQUENCE, count),
+    reserveInvoiceNumbers(ctx, count),
     reserveShiftNumbers(ctx, shiftDate, count),
   ])
 

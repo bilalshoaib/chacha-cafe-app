@@ -348,6 +348,15 @@ and its competitors queue offline and sync, and it is asked about in demos.
 - **Running out of numbers is the one hard stop.** Everything else about a sale
   the till can work out for itself. The banner counts down so a café gets
   warning rather than a refusal at the counter.
+- **Invoice numbers are per café, not per platform.** Every café draws from
+  its own counter in `invoice_counters`, so its receipts count 1, 2, 3. They
+  came off one global sequence until 030, which meant a sale at one café and a
+  sale ringing up at another in the same moment took consecutive numbers off
+  the same series — neither café's numbering was its own. The primary key on
+  `invoices` is `(tenant_id, id)` for the same reason: two cafés are each
+  allowed an `inv-1`, and before 030 the global sequence was the only thing
+  keeping ids apart. Cafés trading at the time were seeded from their own
+  highest number, so nothing already printed was renumbered.
 - **Order numbers are shift-bound and invoice numbers are not.** A till still
   selling after the café's trading day rolls over holds order numbers that
   belong to a shift that has ended, so those sales take an invoice number from

@@ -10,21 +10,18 @@ import { shiftDateForInstant } from '@/lib/shift'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax'
 import { getTab, markTabInvoiced } from '@/lib/repositories/tabsRepository'
 
-/**
- * Every invoice draws its number from one continuous sequence, whichever
- * business it belongs to.
- *
- * Which business that is lives in the business_type column, which is what the
- * reports read — encoding it in the id as well would mean three parallel
- * series, two of them starting from 1 partway through the café's life, while
- * staff look invoices up by the number printed on the receipt.
- *
- * The sequence is still named invoice_seq_combined: it is the one that has
- * been issuing numbers since June 2026 and holds the current position, and
- * renaming it on a live database would buy nothing. The multi-tenant work
- * replaces all three with a per-location counters table.
- */
-const INVOICE_SEQUENCE = 'combined'
+/* ── How an invoice is numbered ───────────────────────────────────────────────
+   Every invoice in a café draws its number from that café's own counter, in
+   one continuous series whichever of its businesses the sale belongs to.
+
+   Which business that is lives in the business_type column, which is what the
+   reports read — encoding it in the id as well would mean three parallel
+   series, two of them starting from 1 partway through the café's life, while
+   staff look invoices up by the number printed on the receipt.
+
+   Per café and not per platform: see nextInvoiceNumber and migration 030. It
+   was one global sequence until then, so a sale here and a sale ringing up in
+   another café took consecutive numbers off the same series. */
 
 // ── Timing instrumentation ───────────────────────────────────────────────────
 // Module scope runs once per lambda instance, so MODULE_LOADED_AT lets us tell
@@ -141,7 +138,7 @@ async function handleCheckout(request, marks, stats) {
   })
   const total = invoiceTotal({ subtotal, deliveryCharge, taxTotal: tax.taxTotal, inclusive: tax.inclusive })
 
-  const invoiceNum = await timed(marks, 'nextInvoiceNumber', () => nextInvoiceNumber(INVOICE_SEQUENCE))
+  const invoiceNum = await timed(marks, 'nextInvoiceNumber', () => nextInvoiceNumber(ctx))
   const createdAt = new Date()
   // Which day this sale belongs to, by this café's clock rather than by
   // Chacha's. A breakfast place opening at seven had every morning's takings
