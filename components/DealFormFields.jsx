@@ -227,7 +227,7 @@ export default function DealFormFields({
       ) : null}
       {selected.length > 0 ? (
         <div className="deal-summary">
-          <table className="deal-selected-table">
+          <table className="deal-selected-table table-cards">
             <thead>
               <tr>
                 <th scope="col">In this deal</th>
@@ -245,12 +245,12 @@ export default function DealFormFields({
                   String(raw).trim() !== '' && Number.isFinite(each) ? Math.round(each * item.qty * 100) / 100 : null
                 return (
                   <tr key={item.id}>
-                    <td>
+                    <td className="cell-card-title">
                       {item.name}
                       <span className="muted small"> · menu {money(item.price)}</span>
                     </td>
-                    <td className="num">{item.qty}</td>
-                    <td className="num">
+                    <td className="num" data-label="Qty">{item.qty}</td>
+                    <td className="num" data-label="Price each">
                       <input
                         className="input-table discount-input"
                         type="number"
@@ -264,8 +264,8 @@ export default function DealFormFields({
                         aria-label={`Price of one ${item.name} inside this deal`}
                       />
                     </td>
-                    <td className="num">{lineTotal == null ? '—' : money(lineTotal)}</td>
-                    <td>
+                    <td className="num" data-label="Line">{lineTotal == null ? '—' : money(lineTotal)}</td>
+                    <td className="cell-card-action">
                       <button
                         type="button"
                         className="deal-chip-remove"

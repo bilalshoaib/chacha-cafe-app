@@ -359,7 +359,7 @@ export default function OrdersPage() {
             )}
 
             <div className="table-scroll">
-              <table className="order-lines-table">
+              <table className="order-lines-table table-cards">
                 <thead>
                   <tr>
                     <th>Item</th>
@@ -380,14 +380,14 @@ export default function OrdersPage() {
                     const isSaving = lineQtySaving === line.id || lineDiscountSaving === line.id
                     return (
                       <tr key={line.id}>
-                        <td>
+                        <td className="cell-card-title">
                           <span className="line-cell-name">
                             {line.kind === 'deal' ? 'Deal · ' : ''}
                             {line.name}
                             {line.kind === 'item' && extras ? ` · ${extras}` : ''}
                           </span>
                         </td>
-                        <td>
+                        <td className="cell-card-field" data-label="Qty">
                           <input
                             className="input-table qty-input order-line-qty"
                             type="number"
@@ -409,16 +409,16 @@ export default function OrdersPage() {
                             aria-label={`Quantity for ${line.name}`}
                           />
                         </td>
-                        <td className="cell-readonly">{line.kind === 'item' ? line.size || '—' : '—'}</td>
-                        <td className="cell-readonly">{line.kind === 'item' ? line.flavour || '—' : '—'}</td>
-                        <td className="cell-readonly muted">
+                        <td className="cell-readonly" data-label="Size">{line.kind === 'item' ? line.size || '—' : '—'}</td>
+                        <td className="cell-readonly" data-label="Flavour">{line.kind === 'item' ? line.flavour || '—' : '—'}</td>
+                        <td className="cell-readonly muted" data-label="Category">
                           {line.kind === 'item' ? categoryLabel(line.category) : '—'}
                         </td>
-                        <td className="cell-readonly">{money(line.unitPrice)}</td>
+                        <td className="cell-readonly" data-label="Each">{money(line.unitPrice)}</td>
                         {['unitDiscount', 'lineDiscount'].map((field) => {
                           const locked = discountLockedBy(line, field)
                           return (
-                          <td key={field}>
+                          <td key={field} className="cell-card-field" data-label={field === 'unitDiscount' ? 'Disc/item' : 'Disc (row)'}>
                             <input
                               className="input-table discount-input order-line-discount"
                               type="number"
@@ -453,13 +453,13 @@ export default function OrdersPage() {
                           </td>
                           )
                         })}
-                        <td className="cell-readonly">
+                        <td className="cell-readonly" data-label="Line">
                           {money(previewLineTotal(line))}
                           {(line.discount ?? 0) > 0 ? (
                             <span className="line-discount-badge">−{money(line.discount)}</span>
                           ) : null}
                         </td>
-                        <td>
+                        <td className="cell-card-action">
                           <button
                             type="button"
                             className="ghost danger sm"
@@ -472,7 +472,7 @@ export default function OrdersPage() {
                     )
                   })}
                   <tr className="order-entry-row" ref={entryRowRef}>
-                    <td>
+                    <td className="cell-card-field" data-label="Item">
                       <ItemAutocomplete
                         items={menuItems}
                         searchValue={entrySearch}
@@ -499,7 +499,7 @@ export default function OrdersPage() {
                         inputRef={searchInputRef}
                       />
                     </td>
-                    <td>
+                    <td className="cell-card-field" data-label="Qty">
                       <input
                         ref={qtyInputRef}
                         className="input-table qty-input"
@@ -521,9 +521,9 @@ export default function OrdersPage() {
                         }}
                       />
                     </td>
-                    <td className="cell-readonly">{entryItem?.size || '—'}</td>
-                    <td className="cell-readonly">{entryItem?.flavour || '—'}</td>
-                    <td className={isCustomEntry ? 'cell-entry-cat' : 'cell-readonly muted'}>
+                    <td className="cell-readonly" data-label="Size">{entryItem?.size || '—'}</td>
+                    <td className="cell-readonly" data-label="Flavour">{entryItem?.flavour || '—'}</td>
+                    <td className={isCustomEntry ? 'cell-card-field cell-entry-cat' : 'cell-readonly muted'} data-label="Category">
                       {isCustomEntry ? (
                         <select
                           ref={categorySelectRef}
@@ -544,7 +544,7 @@ export default function OrdersPage() {
                         '—'
                       )}
                     </td>
-                    <td className={isCustomEntry ? 'cell-entry-price' : 'cell-readonly'}>
+                    <td className={isCustomEntry ? 'cell-card-field cell-entry-price' : 'cell-readonly'} data-label="Each">
                       {isCustomEntry ? (
                         <input
                           ref={customPriceRef}
@@ -570,7 +570,7 @@ export default function OrdersPage() {
                         '—'
                       )}
                     </td>
-                    <td>
+                    <td className="cell-card-field" data-label="Disc/item">
                       <input
                         ref={entryDiscountRef}
                         className="input-table discount-input"
@@ -592,7 +592,7 @@ export default function OrdersPage() {
                         aria-label="Discount per item for new line"
                       />
                     </td>
-                    <td>
+                    <td className="cell-card-field" data-label="Disc (row)">
                       <input
                         className="input-table discount-input"
                         type="number"
@@ -613,10 +613,10 @@ export default function OrdersPage() {
                         aria-label="Discount on the whole new line"
                       />
                     </td>
-                    <td className="cell-readonly">
+                    <td className="cell-readonly" data-label="Line">
                       {entryLinePreview != null ? money(entryLinePreview) : '—'}
                     </td>
-                    <td>
+                    <td className="cell-card-action">
                       <button
                         type="button"
                         className="primary sm"

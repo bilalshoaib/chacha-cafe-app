@@ -228,21 +228,21 @@ export default function ShiftClose() {
       {history.length ? (
         <section className="pf-card">
           <h3>Earlier days</h3>
-          <table className="shift-history">
+          <table className="shift-history table-cards">
             <thead>
               <tr><th>Day</th><th>Expected</th><th>Counted</th><th>Variance</th></tr>
             </thead>
             <tbody>
               {history.map((c) => (
                 <tr key={c.id}>
-                  <td>
+                  <td className="cell-card-title">
                     <button type="button" className="linklike" onClick={() => { setShiftDate(c.shiftDate); void loadShift(c.shiftDate) }}>
                       {c.shiftDate}
                     </button>
                   </td>
-                  <td>{money(c.expectedCash)}</td>
-                  <td>{money(c.countedCash)}</td>
-                  <td className={`shift-variance-cell shift-variance--${c.variance === 0 ? 'ok' : c.variance > 0 ? 'over' : 'short'}`}>
+                  <td data-label="Expected">{money(c.expectedCash)}</td>
+                  <td data-label="Counted">{money(c.countedCash)}</td>
+                  <td data-label="Variance" className={`shift-variance-cell shift-variance--${c.variance === 0 ? 'ok' : c.variance > 0 ? 'over' : 'short'}`}>
                     {c.variance === 0 ? '—' : money(c.variance)}
                   </td>
                 </tr>

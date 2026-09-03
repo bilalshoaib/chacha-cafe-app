@@ -82,7 +82,7 @@ export default function PlatformBooksReportPage() {
           <p>What each one paid in this period, against what they are priced at.</p>
           {perCafe.length === 0 ? <p className="pf-hint">No cafés yet.</p> : (
             <div className="table-scroll">
-              <table className="data-table">
+              <table className="data-table table-cards">
                 <thead>
                   <tr>
                     <th>Café</th>
@@ -94,16 +94,16 @@ export default function PlatformBooksReportPage() {
                 <tbody>
                   {perCafe.map((c) => (
                     <tr key={c.tenantId} className={c.paid === 0 && c.monthlyPrice > 0 && c.status !== 'trial' ? 'row-quiet' : undefined}>
-                      <td>
+                      <td className="cell-card-title">
                         <Link href={`/platform/tenants/${c.tenantId}/billing`} className="cafe-name block">{c.name}</Link>
                         <span className="cafe-slug">{c.plan}{c.status !== 'active' ? ` · ${c.status}` : ''}</span>
                       </td>
-                      <td className="num">{c.monthlyPrice > 0 ? `${formatMoney(c.monthlyPrice)}/mo` : '—'}</td>
-                      <td className="num">
+                      <td className="num" data-label="Priced at">{c.monthlyPrice > 0 ? `${formatMoney(c.monthlyPrice)}/mo` : '—'}</td>
+                      <td className="num" data-label="Paid">
                         {formatMoney(c.paid)}
                         <Bar value={c.paid} max={maxPaid} />
                       </td>
-                      <td>{c.lastPaidAt ? formatShortDateTime(c.lastPaidAt) : <span className="cell-idle">never</span>}</td>
+                      <td data-label="Last paid">{c.lastPaidAt ? formatShortDateTime(c.lastPaidAt) : <span className="cell-idle">never</span>}</td>
                     </tr>
                   ))}
                 </tbody>

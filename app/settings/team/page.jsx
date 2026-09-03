@@ -62,7 +62,7 @@ export default function TeamListPage() {
             />
           ) : (
             <div className="table-scroll">
-              <table className="staff-accounts-table team-list-table">
+              <table className="staff-accounts-table team-list-table table-cards">
                 <thead>
                   <tr>
                     <th scope="col">Email</th>
@@ -75,11 +75,11 @@ export default function TeamListPage() {
                 <tbody>
                   {list.map((u) => (
                     <tr key={u.id} className="team-list-row">
-                      <td><Link href={`/settings/team/${u.id}`} className="team-row-link">{u.email}</Link></td>
-                      <td className="muted">{u.displayName || '—'}</td>
-                      <td><RoleBadge role={u.role} /></td>
-                      <td className="muted">{u.createdAt ? formatDateTime(u.createdAt) : '—'}</td>
-                      <td className="team-col-action"><Link href={`/settings/team/${u.id}`} className="inline-link">View</Link></td>
+                      <td className="cell-card-title"><Link href={`/settings/team/${u.id}`} className="team-row-link">{u.email}</Link></td>
+                      <td className="muted" data-label="Name">{u.displayName || '—'}</td>
+                      <td data-label="Role"><RoleBadge role={u.role} /></td>
+                      <td className="muted" data-label="Created">{u.createdAt ? formatDateTime(u.createdAt) : '—'}</td>
+                      <td className="team-col-action cell-card-action"><Link href={`/settings/team/${u.id}`} className="inline-link">View</Link></td>
                     </tr>
                   ))}
                 </tbody>

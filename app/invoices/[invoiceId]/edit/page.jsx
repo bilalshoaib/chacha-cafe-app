@@ -232,14 +232,14 @@ export default function InvoiceEditPage() {
         <p className="muted small order-table-hint invoice-edit-table-hint"><strong>Items:</strong> search below, set quantity, then <strong>Add line</strong>. Deals use the dropdown above.</p>
 
         <div className="table-scroll">
-          <table className="inv-table inv-table-edit">
+          <table className="inv-table inv-table-edit table-cards">
             <thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Disc/item</th><th>Disc (row)</th><th>Line</th><th aria-label="Actions" /></tr></thead>
             <tbody>
               {editedLines.map((line) => {
                 const extras = formatItemExtras(line)
                 return (
                   <tr key={line.id}>
-                    <td>
+                    <td className="cell-card-title">
                       <div>{line.kind === 'deal' ? 'Deal · ' : ''}{line.name}{extras ? ` · ${extras}` : ''}</div>
                       {line.kind === 'item' ? <div className="muted small">{categoryLabel(line.category)}</div> : null}
                       {line.kind === 'deal' && line.dealIncludes?.length ? (
@@ -248,16 +248,16 @@ export default function InvoiceEditPage() {
                         </ul>
                       ) : null}
                     </td>
-                    <td>
+                    <td className="cell-card-field" data-label="Qty">
                       <input className="input-table inv-qty-input" type="number" min={1} step={1} value={line.qty}
                         onChange={(e) => setEditedLines((prev) => updateLineQty(prev, line.id, e.target.value))}
                         aria-label="Quantity" />
                     </td>
-                    <td>{money(line.unitPrice)}</td>
+                    <td data-label="Each">{money(line.unitPrice)}</td>
                     {['unitDiscount', 'lineDiscount'].map((field) => {
                       const locked = discountLockedBy(line, field)
                       return (
-                        <td key={field}>
+                        <td key={field} className="cell-card-field" data-label={field === 'unitDiscount' ? 'Disc/item' : 'Disc (row)'}>
                           <input className="input-table discount-input" type="number" min={0} step={1} inputMode="decimal"
                             placeholder={locked ? '—' : '0'}
                             value={lineDiscountDisplay(line, field)}
@@ -272,16 +272,16 @@ export default function InvoiceEditPage() {
                         </td>
                       )
                     })}
-                    <td>
+                    <td data-label="Line">
                       {money(line.lineTotal)}
                       {(line.discount ?? 0) > 0 ? <span className="line-discount-badge">−{money(line.discount)}</span> : null}
                     </td>
-                    <td><button type="button" className="ghost danger sm" onClick={() => setEditedLines((prev) => removeLineById(prev, line.id))}>Remove</button></td>
+                    <td className="cell-card-action"><button type="button" className="ghost danger sm" onClick={() => setEditedLines((prev) => removeLineById(prev, line.id))}>Remove</button></td>
                   </tr>
                 )
               })}
               <tr className="order-entry-row invoice-add-line-row">
-                <td>
+                <td className="cell-card-field" data-label="Item">
                   <ItemAutocomplete
                     items={menu.items}
                     searchValue={entrySearch}
@@ -292,14 +292,14 @@ export default function InvoiceEditPage() {
                     inputRef={searchInputRef}
                   />
                 </td>
-                <td>
+                <td className="cell-card-field" data-label="Qty">
                   <input ref={qtyInputRef} className="input-table inv-qty-input" type="number" min={1} step={1} value={entryQty} disabled={!entryItem}
                     onChange={(e) => setEntryQty(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEntryLine() } }}
                     aria-label="Quantity for new line" />
                 </td>
-                <td className="cell-readonly">{entryItem ? money(entryItem.price) : '—'}</td>
-                <td>
+                <td className="cell-readonly" data-label="Each">{entryItem ? money(entryItem.price) : '—'}</td>
+                <td className="cell-card-field" data-label="Disc/item">
                   <input className="input-table discount-input" type="number" min={0} step={1} inputMode="decimal" placeholder="0"
                     value={entryUnitDiscount} disabled={!entryItem || entryUnitLocked}
                     title={entryUnitLocked ? 'Clear the row discount to use a per-item discount instead.' : undefined}
@@ -307,7 +307,7 @@ export default function InvoiceEditPage() {
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEntryLine() } }}
                     aria-label="Discount per item for new line" />
                 </td>
-                <td>
+                <td className="cell-card-field" data-label="Disc (row)">
                   <input className="input-table discount-input" type="number" min={0} step={1} inputMode="decimal" placeholder="0"
                     value={entryLineDiscount} disabled={!entryItem || entryLineLocked}
                     title={entryLineLocked ? 'Clear the per-item discount to use a row discount instead.' : undefined}
@@ -315,8 +315,8 @@ export default function InvoiceEditPage() {
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitEntryLine() } }}
                     aria-label="Discount on the whole new line" />
                 </td>
-                <td className="cell-readonly">{entryLinePreview != null ? money(entryLinePreview) : '—'}</td>
-                <td><button type="button" className="primary sm" disabled={!canAddLine} onClick={commitEntryLine}>Add line</button></td>
+                <td className="cell-readonly" data-label="Line">{entryLinePreview != null ? money(entryLinePreview) : '—'}</td>
+                <td className="cell-card-action"><button type="button" className="primary sm" disabled={!canAddLine} onClick={commitEntryLine}>Add line</button></td>
               </tr>
             </tbody>
           </table>

@@ -226,7 +226,7 @@ export default function InvoicesListPage() {
           />
         ) : (
           <div className="table-scroll invoices-table-wrap">
-            <table className="invoices-table">
+            <table className="invoices-table table-cards">
               <thead>
                   <tr>
                     <th scope="col">Order #</th>
@@ -255,13 +255,13 @@ export default function InvoicesListPage() {
                       }
                     }}
                   >
-                    <td className="invoices-table-shift-num">{inv.shiftNumber != null ? `#${inv.shiftNumber}` : <span className="muted">—</span>}</td>
-                    {hasCounters ? <td><BusinessTypeBadge type={invoiceBusinessType(inv)} /></td> : null}
-                    <td className="invoices-table-id">{inv.id}</td>
-                    <td><OrderTypeBadge type={inv.orderType} /></td>
-                    <td className="muted">{formatDateTime(inv.createdAt)}</td>
-                    <td className="num invoices-table-total">{money(inv.total)}</td>
-                    <td className="num invoices-table-discount">
+                    <td className="invoices-table-shift-num cell-card-title">{inv.shiftNumber != null ? `#${inv.shiftNumber}` : <span className="muted">—</span>}</td>
+                    {hasCounters ? <td data-label="Counter"><BusinessTypeBadge type={invoiceBusinessType(inv)} /></td> : null}
+                    <td className="invoices-table-id" data-label="Invoice">{inv.id}</td>
+                    <td data-label="Type"><OrderTypeBadge type={inv.orderType} /></td>
+                    <td className="muted" data-label="Date">{formatDateTime(inv.createdAt)}</td>
+                    <td className="num invoices-table-total" data-label="Total">{money(inv.total)}</td>
+                    <td className="num invoices-table-discount" data-label="Discount">
                       {(() => {
                         const d = Array.isArray(inv.lines)
                           ? inv.lines.reduce((s, l) => s + (l.discount ?? 0), 0)
@@ -271,7 +271,7 @@ export default function InvoicesListPage() {
                           : <span className="muted">—</span>
                       })()}
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <span className="inv-badge-group invoices-table-badges">
                         {inv.paid ? <span className="badge-paid">Paid</span> : <span className="badge-unpaid">Unpaid</span>}
                         {inv.returned ? <span className="badge-returned">Returned</span> : null}

@@ -690,7 +690,7 @@ export default function ReportsWorkbench({
               tableClassName="staff-accounts-table reports-invoice-table"
               columns={[
                 { key: 'business', label: 'Business' },
-                { key: 'invoice', label: 'Invoice' },
+                { key: 'invoice', label: 'Invoice', title: true },
                 { key: 'issued', label: 'Issued' },
                 { key: 'ordertype', label: 'Order type' },
                 { key: 'total', label: 'Total', num: true },
@@ -704,21 +704,21 @@ export default function ReportsWorkbench({
           ) : (
             <>
               <div className="table-scroll">
-                <table className="staff-accounts-table reports-invoice-table">
+                <table className="staff-accounts-table reports-invoice-table table-cards">
                   <thead><tr><th scope="col">Business</th><th scope="col">Invoice</th><th scope="col">Issued</th><th scope="col">Order type</th><th scope="col" className="num">Total</th><th scope="col" className="num">Delivery</th><th scope="col">Status</th><th scope="col">Payment</th></tr></thead>
                   <tbody>
                     {invoiceData.invoices.map((inv) => {
                       const orderTypeLabels = { dine_in: '🍽️ Dine In', takeaway: '🛍️ Takeaway', delivery: '🛵 Delivery' }
                       return (
                         <tr key={inv.id}>
-                          <td><BusinessTypeBadge type={inv.businessType} /></td>
-                          <td>{linkRows ? <Link href={`/invoices/${inv.id}`} className="team-row-link">{inv.id}</Link> : inv.id}</td>
-                          <td className="muted">{formatDateTime(inv.createdAt)}</td>
-                          <td className="muted small">{inv.orderType ? (orderTypeLabels[inv.orderType] ?? inv.orderType) : '—'}</td>
-                          <td className="num">{money(inv.total)}</td>
-                          <td className="num muted small">{(inv.deliveryCharge ?? 0) > 0 ? money(inv.deliveryCharge) : '—'}</td>
-                          <td>{inv.returned ? <span className="badge-role badge-role-returned">Returned</span> : inv.paid ? <span className="badge-role badge-role-super">Paid</span> : <span className="badge-role badge-role-staff">Unpaid</span>}</td>
-                          <td className="muted small">{inv.paymentMethod === 'cash' ? '💵 Cash' : inv.paymentMethod === 'online' ? '💳 Online' : '—'}</td>
+                          <td data-label="Business"><BusinessTypeBadge type={inv.businessType} /></td>
+                          <td className="cell-card-title">{linkRows ? <Link href={`/invoices/${inv.id}`} className="team-row-link">{inv.id}</Link> : inv.id}</td>
+                          <td className="muted" data-label="Issued">{formatDateTime(inv.createdAt)}</td>
+                          <td className="muted small" data-label="Order type">{inv.orderType ? (orderTypeLabels[inv.orderType] ?? inv.orderType) : '—'}</td>
+                          <td className="num" data-label="Total">{money(inv.total)}</td>
+                          <td className="num muted small" data-label="Delivery">{(inv.deliveryCharge ?? 0) > 0 ? money(inv.deliveryCharge) : '—'}</td>
+                          <td data-label="Status">{inv.returned ? <span className="badge-role badge-role-returned">Returned</span> : inv.paid ? <span className="badge-role badge-role-super">Paid</span> : <span className="badge-role badge-role-staff">Unpaid</span>}</td>
+                          <td className="muted small" data-label="Payment">{inv.paymentMethod === 'cash' ? '💵 Cash' : inv.paymentMethod === 'online' ? '💳 Online' : '—'}</td>
                         </tr>
                       )
                     })}
@@ -805,7 +805,7 @@ export default function ReportsWorkbench({
                   </p>
                   {selectedItem.deals.length > 0 ? (
                     <div className="table-scroll">
-                      <table className="staff-accounts-table reports-invoice-table">
+                      <table className="staff-accounts-table reports-invoice-table table-cards">
                         <thead>
                           <tr>
                             <th scope="col">Sold inside deal</th>
@@ -817,9 +817,9 @@ export default function ReportsWorkbench({
                         <tbody>
                           {selectedItem.deals.map((d) => (
                             <tr key={d.label}>
-                              <td>{d.label}</td>
-                              <td className="num"><strong>{d.qty}</strong></td>
-                              <td className="num">{money(d.revenue)}</td>
+                              <td className="cell-card-title">{d.label}</td>
+                              <td className="num" data-label="Units of this item"><strong>{d.qty}</strong></td>
+                              <td className="num" data-label="Revenue from this item">{money(d.revenue)}</td>
                               <td className="num">
                                 {breakdownProfit ? (
                                   (() => {
@@ -833,9 +833,9 @@ export default function ReportsWorkbench({
                         </tbody>
                         <tfoot>
                           <tr>
-                            <td><strong>Total from deals</strong></td>
-                            <td className="num"><strong>{selectedItem.inDealQty}</strong></td>
-                            <td className="num"><strong>{money(selectedItem.inDealRevenue)}</strong></td>
+                            <td className="cell-card-title"><strong>Total from deals</strong></td>
+                            <td className="num" data-label="Units of this item"><strong>{selectedItem.inDealQty}</strong></td>
+                            <td className="num" data-label="Revenue from this item"><strong>{money(selectedItem.inDealRevenue)}</strong></td>
                             <td className="num">
                               {breakdownProfit
                                 ? <strong className={breakdownProfit.inDeals < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{money(breakdownProfit.inDeals)}</strong>
@@ -858,7 +858,7 @@ export default function ReportsWorkbench({
               tableClassName="staff-accounts-table reports-invoice-table"
               columns={[
                 { key: 'rank', label: '#', num: true },
-                { key: 'label', label: 'Item / Deal' },
+                { key: 'label', label: 'Item / Deal', title: true },
                 { key: 'type', label: 'Type' },
                 { key: 'qty', label: 'Qty sold', num: true },
                 { key: 'revenue', label: 'Revenue', num: true },
@@ -870,22 +870,22 @@ export default function ReportsWorkbench({
             <p className="muted">No sales in this period.</p>
           ) : (
             <div className="table-scroll">
-              <table className="staff-accounts-table reports-invoice-table">
+              <table className="staff-accounts-table reports-invoice-table table-cards">
                 <thead><tr><th scope="col" className="num">#</th><th scope="col">Item / Deal</th><th scope="col">Type</th><th scope="col" className="num">Qty sold</th><th scope="col" className="num">Revenue</th><th scope="col" className="num">Profit</th><th scope="col" className="num">Orders</th></tr></thead>
                 <tbody>
                   {sellers.map((row, i) => (
                     <tr key={row.key}>
-                      <td className="num muted">{i + 1}</td>
-                      <td>{row.label}</td>
-                      <td>{row.kind === 'deal' ? <span className="badge-role badge-role-super">Deal</span> : <span className="badge-role badge-role-staff">Item</span>}</td>
-                      <td className="num"><strong>{row.qty}</strong></td>
-                      <td className="num">{money(row.revenue)}</td>
-                      <td className="num">
+                      <td className="num muted" data-label="#">{i + 1}</td>
+                      <td className="cell-card-title">{row.label}</td>
+                      <td data-label="Type">{row.kind === 'deal' ? <span className="badge-role badge-role-super">Deal</span> : <span className="badge-role badge-role-staff">Item</span>}</td>
+                      <td className="num" data-label="Qty sold"><strong>{row.qty}</strong></td>
+                      <td className="num" data-label="Revenue">{money(row.revenue)}</td>
+                      <td className="num" data-label="Profit">
                         {row.profit == null
                           ? <span className="muted" title="No cost price set for this item">—</span>
                           : <span className={row.profit < 0 ? 'menu-margin-bad' : 'menu-margin-good'}>{money(row.profit)}</span>}
                       </td>
-                      <td className="num muted small">{row.orderCount}</td>
+                      <td className="num muted small" data-label="Orders">{row.orderCount}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -905,7 +905,7 @@ export default function ReportsWorkbench({
               tableClassName="staff-accounts-table reports-invoice-table reports-expense-table"
               columns={[
                 { key: 'spent', label: 'Spent' },
-                { key: 'title', label: 'Title' },
+                { key: 'title', label: 'Title', title: true },
                 { key: 'business', label: 'Business' },
                 { key: 'category', label: 'Category' },
                 { key: 'amount', label: 'Amount', num: true },
@@ -916,17 +916,17 @@ export default function ReportsWorkbench({
             <p className="muted">No expenses with date spent in this period.</p>
           ) : (
             <div className="table-scroll">
-              <table className="staff-accounts-table reports-invoice-table reports-expense-table">
+              <table className="staff-accounts-table reports-invoice-table reports-expense-table table-cards">
                 <thead><tr><th scope="col">Spent</th><th scope="col">Title</th><th scope="col">Business</th><th scope="col">Category</th><th scope="col" className="num">Amount</th><th scope="col">Note</th></tr></thead>
                 <tbody>
                   {expenseData.expenses.map((ex) => (
                     <tr key={ex.id}>
-                      <td className="muted">{formatDateTime(ex.spentAt)}</td>
-                      <td>{linkRows ? <Link href={`/expenses/${ex.id}`} className="team-row-link">{ex.title || '—'}</Link> : (ex.title || '—')}</td>
-                      <td><BusinessTypeBadge type={ex.businessType ?? 'cafe'} /></td>
-                      <td>{expenseCategoryLabel(ex.category)}</td>
-                      <td className="num">{money(ex.amount)}</td>
-                      <td className="muted small reports-expense-note">{ex.note?.trim() ? ex.note : '—'}</td>
+                      <td className="muted" data-label="Spent">{formatDateTime(ex.spentAt)}</td>
+                      <td className="cell-card-title">{linkRows ? <Link href={`/expenses/${ex.id}`} className="team-row-link">{ex.title || '—'}</Link> : (ex.title || '—')}</td>
+                      <td data-label="Business"><BusinessTypeBadge type={ex.businessType ?? 'cafe'} /></td>
+                      <td data-label="Category">{expenseCategoryLabel(ex.category)}</td>
+                      <td className="num" data-label="Amount">{money(ex.amount)}</td>
+                      <td className="muted small reports-expense-note" data-label="Note">{ex.note?.trim() ? ex.note : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

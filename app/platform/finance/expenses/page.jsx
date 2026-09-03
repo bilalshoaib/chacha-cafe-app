@@ -101,20 +101,20 @@ export default function PlatformExpensesPage() {
         {!loading && expenses.length === 0 ? <p className="pf-hint">Nothing recorded in this period.</p> : null}
         {expenses.length > 0 ? (
           <div className="table-scroll">
-            <table className="data-table">
+            <table className="data-table table-cards">
               <thead>
                 <tr><th>What</th><th className="num">Amount</th><th>When</th><th aria-label="Remove" /></tr>
               </thead>
               <tbody>
                 {expenses.map((x) => (
                   <tr key={x.id}>
-                    <td>
+                    <td className="cell-card-title">
                       <span className="block">{x.title}{x.recurring ? <span className="pill books-pill-repeat">monthly</span> : null}</span>
                       <span className="cafe-slug">{x.category}{x.note ? ` · ${x.note}` : ''}</span>
                     </td>
-                    <td className="num">{formatMoney(x.amount)}</td>
-                    <td>{formatShortDateTime(x.spentAt)}</td>
-                    <td className="num">
+                    <td className="num" data-label="Amount">{formatMoney(x.amount)}</td>
+                    <td data-label="When">{formatShortDateTime(x.spentAt)}</td>
+                    <td className="num cell-card-action">
                       {pendingDelete === x.id ? (
                         <span className="books-confirm">
                           <button type="button" className="ghost danger sm" onClick={() => { setPendingDelete(null); void removeExpense(x.id) }}>Remove</button>

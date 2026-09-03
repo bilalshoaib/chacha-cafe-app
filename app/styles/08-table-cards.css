@@ -1,0 +1,296 @@
+/* 08-table-cards.css — the tables that stop being tables on a phone
+   Loads last on purpose: every rule here has to beat the per-table styling in
+   the files above, and doing that by cascade order keeps the selectors plain
+   instead of a stack of !important. */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   A table is a grid because the columns are worth comparing down the page.
+   On a 390px screen there is no page to compare down — the row runs off the
+   right edge, and reading one café's takings means scrolling sideways and
+   losing the name that said whose takings they were.
+
+   So below 640px a `.table-cards` table stops laying out as a grid and each
+   row becomes a card: the whole record on screen at once, every value next to
+   the column heading that names it.
+
+   Opting in takes two things in the markup:
+
+     • `table-cards` on the <table>, alongside whatever it already has;
+     • `data-label="Takings"` on each <td>, repeating its column heading —
+       that string is what the card shows in place of the hidden <thead>.
+
+   A <td> with no `data-label` becomes a plain full-width block instead of a
+   labelled row. That is the right shape for the cells that never had a
+   heading worth repeating: the trailing "View" link, the Remove button.
+
+   Three classes shape the card beyond that:
+
+     • `cell-card-title` — the cell that says which record this is (the café's
+       name, the invoice id). It loses its label and leads the card, wherever
+       its column happens to sit in the table.
+     • `cell-card-action` — the buttons, pushed below a divider at the foot.
+     • `cell-card-field` — a cell holding an input rather than a value, as the
+       till's order table and the invoice editor do. The label goes above and
+       the control takes the full width, because a number box sized to fit
+       nine columns is a smaller target than a fingertip.
+
+   SkeletonTable (components/Skeleton.jsx) does all of this from its `columns`,
+   so a table's placeholder is the same stack of cards its rows will be. Mark
+   the column that names the record with `title: true` if it is not the first.
+
+   The generated receipt and the printed report keep real tables. They are
+   separate documents with their own stylesheets, and a printed report on
+   paper has the width a table wants.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* The wrappers exist to scroll a wide table and to draw a frame around it.
+     Neither is wanted once the rows are cards: the frame would box a stack of
+     boxes, and there is nothing left to scroll sideways to. */
+  .table-scroll:has(> table.table-cards),
+  .invoices-table-wrap:has(> table.table-cards) {
+    overflow-x: visible;
+    border: 0;
+    border-radius: 0;
+    margin-bottom: 0;
+  }
+
+  .platform-table-wrap:has(table.table-cards) {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  table.table-cards {
+    display: block;
+    width: 100%;
+    /* The min-widths that kept the columns readable are what forced the
+       sideways scroll. With no columns left they only clip the cards. */
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.92rem;
+  }
+
+  /* Every heading is repeated on the cell that needs it, so the real header
+     row would only be read out twice. */
+  table.table-cards thead {
+    display: none;
+  }
+
+  table.table-cards tbody,
+  table.table-cards tfoot {
+    display: block;
+  }
+
+  /* A flex column rather than a plain block, so `order` can lift the cell that
+     names the record to the top of the card and drop the buttons to the
+     bottom. Without it a table would have to put its identifying column first
+     to read correctly as a card — and on a leaderboard the first column is
+     rightly the rank, not the name. */
+  table.table-cards tr {
+    display: flex;
+    flex-direction: column;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+
+  table.table-cards tr + tr {
+    margin-top: 0.6rem;
+  }
+
+  /* Inside a white panel a white card is invisible, so it takes the page's
+     own cream instead and the border does the separating. */
+  .card table.table-cards tr,
+  .pf-card table.table-cards tr {
+    background: var(--bg);
+  }
+
+  table.table-cards td {
+    display: block;
+    width: auto;
+    max-width: none;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  /* ── A labelled row: heading left, value right of it ────────────────────
+     Grid rather than flex because a cell can hold more than one child — a
+     café's name above its slug, a total with a discount badge after it — and
+     they need to stack under each other in the value column rather than
+     lining up beside the heading. */
+  table.table-cards td[data-label] {
+    display: grid;
+    grid-template-columns: minmax(4.5rem, 7.5rem) minmax(0, 1fr);
+    gap: 0.1rem 0.85rem;
+    align-items: baseline;
+    padding: 0.3rem 0;
+    /* Undoes the desktop cells that align right, clip to one line, or refuse
+       to wrap. A card has the width they were rationing. */
+    text-align: left;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  table.table-cards td[data-label] + td[data-label] {
+    border-top: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
+  }
+
+  table.table-cards td[data-label]::before {
+    content: attr(data-label);
+    grid-column: 1;
+    grid-row: 1;
+    /* Named rather than inherited: a theme may set a display face on the cell
+       to make a price read as a price (05-menu-board.css does), and a heading
+       in condensed display type beside a value in it is two shouts and no
+       label. This is the body stack from 01-base.css. */
+    font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.6;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  /* `start` and not the grid default, which would stretch a status pill or a
+     badge to the full width of the value column and turn it into a bar. */
+  table.table-cards td[data-label] > * {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  /* ── The cell that names the record ─────────────────────────────────── */
+  table.table-cards td.cell-card-title {
+    order: -1;
+    margin-bottom: 0.45rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text-h);
+  }
+
+  table.table-cards td.cell-card-title a {
+    font-weight: 600;
+  }
+
+  /* ── A cell holding a control rather than a value ───────────────────────
+     The till's order table and the invoice editor are tables of inputs, and
+     an input squeezed into the value column of a labelled row is both hard to
+     read and hard to hit with a thumb. So the label goes above and the control
+     takes the width of the card, which is the shape every other form in the
+     app already has on a phone. */
+  table.table-cards td.cell-card-field {
+    display: block;
+    padding: 0.35rem 0;
+  }
+
+  table.table-cards td.cell-card-field::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.2rem;
+    font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  /* The desktop widths are there to keep nine columns on one line. There is
+     one column now, and a 4.5rem number box in it is a smaller target than a
+     fingertip. */
+  table.table-cards td.cell-card-field .input-table,
+  table.table-cards td.cell-card-field .select,
+  table.table-cards td.cell-card-field .item-autocomplete,
+  table.table-cards td.cell-card-field .item-autocomplete input {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* ── The buttons, at the foot ───────────────────────────────────────── */
+  table.table-cards td.cell-card-action {
+    order: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.55rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--border);
+  }
+
+  table.table-cards td.cell-card-action:empty {
+    display: none;
+  }
+
+  /* ── Rows that were already saying something with their styling ─────── */
+
+  /* The whole card is the tap target now, so the press has to be visible on
+     the card and not on a cell inside it. */
+  table.table-cards tr.invoices-table-row:hover,
+  table.table-cards tr.invoices-table-row:active {
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  }
+
+  table.table-cards tr.invoices-table-row:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 2px;
+  }
+
+  table.table-cards tr.invoices-table-row:hover td,
+  table.table-cards tr.invoices-table-row:focus-visible td {
+    background: none;
+    box-shadow: none;
+  }
+
+  /* One theme picks the till's price columns out of a wide row by tinting the
+     sixth and eighth cells (see 05-menu-board.css). Nothing is a column any
+     more, so that lands as two grey bands part-way down every card. The
+     display face it also sets is kept — a price should still read as a price.
+
+     Both class names are in the selector to outrank the theme's, which is a
+     descendant selector and so specific by construction. */
+  table.order-lines-table.table-cards td:nth-child(6),
+  table.order-lines-table.table-cards td:nth-child(8) {
+    background: none;
+  }
+
+  /* The till's entry row is tinted cell by cell on desktop, which is right
+     when the cells sit side by side and wrong the moment they stack: it paints
+     a stack of grey bands down the card. The card wears the tint instead, so
+     the line being built still reads as the one that is not yet on the order. */
+  table.table-cards tr.order-entry-row {
+    background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  }
+
+  table.table-cards tr.order-entry-row td {
+    background: none;
+  }
+
+  /* A café gone quiet was marked by an edge on its first cell. On a card the
+     edge belongs to the card. */
+  table.table-cards tr.row-quiet {
+    border-left: 3px solid var(--pf-warn);
+  }
+
+  table.table-cards tr.row-quiet td:first-child {
+    box-shadow: none;
+  }
+
+  /* A totals row is still a total: it keeps the tint and the heavier rule
+     that separated it from the rows it sums. */
+  table.table-cards tfoot tr {
+    margin-top: 0.6rem;
+    border-width: 2px;
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  }
+}

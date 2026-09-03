@@ -167,7 +167,7 @@ export default function PlatformPage() {
           </div>
         ) : (
           <div className="table-scroll">
-            <table className="data-table">
+            <table className="data-table table-cards">
               <thead>
                 <tr>
                   <th scope="col">Café</th>
@@ -185,16 +185,16 @@ export default function PlatformPage() {
                   const idle = daysSince(c.lastOrderAt)
                   return (
                     <tr key={c.id} className={quiet ? 'row-quiet' : undefined}>
-                      <td>
+                      <td className="cell-card-title">
                         <PendingLink href={`/platform/tenants/${c.id}`} className="cafe-name">{c.name}</PendingLink>
                         <span className="cafe-slug block">{c.slug}</span>
                       </td>
-                      <td><span className={`pill pill-${c.status}`}>{c.status}</span></td>
-                      <td className="num">{c.periodInvoices.toLocaleString()}</td>
-                      <td className="num">{formatMoney(c.periodRevenue, { currency: c.currency })}</td>
-                      <td className="num">{c.locationCount}</td>
-                      <td className="num">{c.userCount}</td>
-                      <td>
+                      <td data-label="Status"><span className={`pill pill-${c.status}`}>{c.status}</span></td>
+                      <td className="num" data-label="Orders">{c.periodInvoices.toLocaleString()}</td>
+                      <td className="num" data-label="Takings">{formatMoney(c.periodRevenue, { currency: c.currency })}</td>
+                      <td className="num" data-label="Branches">{c.locationCount}</td>
+                      <td className="num" data-label="Staff">{c.userCount}</td>
+                      <td data-label="Last order">
                         {c.lastOrderAt ? (
                           <>
                             <span className="cafe-slug block">{formatShortDateTime(c.lastOrderAt)}</span>

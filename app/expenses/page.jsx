@@ -118,9 +118,9 @@ export default function ExpensesListPage() {
             rows={5}
             tableClassName="invoices-table expenses-table"
             columns={[
+              { key: 'title', label: 'Title' },
               ...(hasCounters ? [{ key: 'counter', label: 'Counter' }] : []),
               { key: 'date', label: 'Date' },
-              { key: 'title', label: 'Title' },
               { key: 'category', label: 'Category' },
               { key: 'amount', label: 'Amount', num: true },
               { key: 'note', label: 'Note' },
@@ -129,12 +129,12 @@ export default function ExpensesListPage() {
           />
         ) : expenses.length === 0 ? <p className="muted">No expenses in this range.</p> : (
           <div className="table-scroll">
-            <table className="invoices-table expenses-table">
+            <table className="invoices-table expenses-table table-cards">
               <thead>
                 <tr>
+                  <th scope="col">Title</th>
                   {hasCounters ? <th scope="col">Counter</th> : null}
                   <th scope="col">Date</th>
-                  <th scope="col">Title</th>
                   <th scope="col">Category</th>
                   <th scope="col" className="num">Amount</th>
                   <th scope="col">Note</th>
@@ -144,13 +144,13 @@ export default function ExpensesListPage() {
               <tbody>
                 {expenses.map((row) => (
                   <tr key={row.id}>
-                    {hasCounters ? <td><BusinessTypeBadge type={expenseBusinessType(row)} /></td> : null}
-                    <td className="muted">{formatDateTime(row.spentAt || row.createdAt)}</td>
-                    <td><Link href={`/expenses/${row.id}`} className="team-row-link">{row.title}</Link></td>
-                    <td>{expenseCategoryLabel(row.category)}</td>
-                    <td className="num">{money(row.amount)}</td>
-                    <td className="muted small expenses-note-cell">{row.note || '—'}</td>
-                    <td className="expenses-actions-cell"><Link href={`/expenses/${row.id}`} className="inline-link">View</Link></td>
+                    <td className="cell-card-title"><Link href={`/expenses/${row.id}`} className="team-row-link">{row.title}</Link></td>
+                    {hasCounters ? <td data-label="Counter"><BusinessTypeBadge type={expenseBusinessType(row)} /></td> : null}
+                    <td className="muted" data-label="Date">{formatDateTime(row.spentAt || row.createdAt)}</td>
+                    <td data-label="Category">{expenseCategoryLabel(row.category)}</td>
+                    <td className="num" data-label="Amount">{money(row.amount)}</td>
+                    <td className="muted small expenses-note-cell" data-label="Note">{row.note || '—'}</td>
+                    <td className="expenses-actions-cell cell-card-action"><Link href={`/expenses/${row.id}`} className="inline-link">View</Link></td>
                   </tr>
                 ))}
               </tbody>

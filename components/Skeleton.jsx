@@ -35,6 +35,12 @@ function jitter(seed, min, spread) {
  * nothing jumps sideways when the data lands — the reason this is worth having
  * over a line of text, which is replaced by a full table and moves everything
  * below it down the page.
+ *
+ * That promise is why it carries `table-cards` and the per-cell `data-label`
+ * too: below 640px the real table is a stack of cards (see
+ * app/styles/08-table-cards.css), so a placeholder still shaped like a table
+ * would be the sideways jump this exists to prevent. Pass `cards={false}` for
+ * the rare table that stays a table on a phone.
  */
 export function SkeletonTable({
   columns,
@@ -42,11 +48,13 @@ export function SkeletonTable({
   label = 'Loading…',
   tableClassName = 'data-table',
   wrapClassName = '',
+  cards = true,
 }) {
+  const titleIndex = columns.findIndex((c) => c.title)
   return (
     <div className={`table-scroll${wrapClassName ? ` ${wrapClassName}` : ''}`} aria-busy="true">
       <SkeletonStatus label={label} />
-      <table className={tableClassName}>
+      <table className={`${tableClassName}${cards ? ' table-cards' : ''}`}>
         <thead>
           <tr>
             {columns.map((c) => (
@@ -57,15 +65,27 @@ export function SkeletonTable({
         <tbody>
           {Array.from({ length: rows }, (_, r) => (
             <tr key={r} className="skeleton-table-row">
-              {columns.map((c, i) => (
-                <td key={c.key} className={c.num ? 'num' : undefined}>
-                  <Skeleton
-                    width={c.num ? '2.5rem' : jitter(r * 5 + i, 45, 40)}
-                    height="0.95rem"
-                    className={c.num ? 'skeleton-num' : undefined}
-                  />
-                </td>
-              ))}
+              {columns.map((c, i) => {
+                /* Whichever column names the record leads the card — the same
+                   cell the real table marks up as the title. That is normally
+                   the first, but a leaderboard leads with the rank and names
+                   the record in the second, so a column can say so itself. A
+                   spacer column has no heading worth repeating. */
+                const isTitle = cards && (titleIndex === -1 ? i === 0 : i === titleIndex)
+                return (
+                  <td
+                    key={c.key}
+                    className={[c.num ? 'num' : '', isTitle ? 'cell-card-title' : ''].filter(Boolean).join(' ') || undefined}
+                    data-label={cards && !isTitle && c.label?.trim() ? c.label : undefined}
+                  >
+                    <Skeleton
+                      width={c.num ? '2.5rem' : jitter(r * 5 + i, 45, 40)}
+                      height="0.95rem"
+                      className={c.num ? 'skeleton-num' : undefined}
+                    />
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>

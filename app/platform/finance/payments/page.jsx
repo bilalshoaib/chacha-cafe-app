@@ -117,22 +117,22 @@ export default function PlatformPaymentsPage() {
         {!loading && payments.length === 0 ? <p className="pf-hint">Nothing received in this period.</p> : null}
         {payments.length > 0 ? (
           <div className="table-scroll">
-            <table className="data-table">
+            <table className="data-table table-cards">
               <thead>
                 <tr><th>Café</th><th className="num">Amount</th><th>Received</th><th aria-label="Remove" /></tr>
               </thead>
               <tbody>
                 {payments.map((p) => (
                   <tr key={p.id}>
-                    <td>
+                    <td className="cell-card-title">
                       <span className="block">{p.tenantName}</span>
                       <span className="cafe-slug">
                         {p.period ? `for ${p.period.slice(0, 7)}` : 'one-off'} · {p.method}{p.note ? ` · ${p.note}` : ''}
                       </span>
                     </td>
-                    <td className="num">{formatMoney(p.amount)}</td>
-                    <td>{formatShortDateTime(p.receivedAt)}</td>
-                    <td className="num">
+                    <td className="num" data-label="Amount">{formatMoney(p.amount)}</td>
+                    <td data-label="Received">{formatShortDateTime(p.receivedAt)}</td>
+                    <td className="num cell-card-action">
                       {pendingDelete === p.id ? (
                         <span className="books-confirm">
                           <button type="button" className="ghost danger sm" onClick={() => { setPendingDelete(null); void removePayment(p.id) }}>Remove</button>

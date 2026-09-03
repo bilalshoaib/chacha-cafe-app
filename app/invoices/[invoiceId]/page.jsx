@@ -352,7 +352,7 @@ export default function InvoiceDetailPage() {
             return (
               <>
                 <div className="table-scroll invoice-view-table-wrap">
-                  <table className="inv-table inv-table-view">
+                  <table className="inv-table inv-table-view table-cards">
                     <thead>
                       <tr>
                         <th>Description</th>
@@ -368,7 +368,7 @@ export default function InvoiceDetailPage() {
                         const isCombinedInvoice = invoiceBusinessType(invoice) === 'combined'
                         return (
                           <tr key={line.id}>
-                            <td>
+                            <td className="cell-card-title">
                               <div className="invoice-line-title">
                                 {line.kind === 'deal' ? 'Deal · ' : ''}
                                 {line.name}
@@ -389,16 +389,16 @@ export default function InvoiceDetailPage() {
                                 </ul>
                               ) : null}
                             </td>
-                            <td>{line.qty}</td>
-                            <td>{money(line.unitPrice)}</td>
+                            <td data-label="Qty">{line.qty}</td>
+                            <td data-label="Each">{money(line.unitPrice)}</td>
                             {hasLineDiscount ? (
-                              <td className="num invoice-discount-cell">
+                              <td className="num invoice-discount-cell" data-label="Discount">
                                 {(line.discount ?? 0) > 0 ? (
                                   <span className="invoice-line-discount-badge">−{money(line.discount)}</span>
                                 ) : '—'}
                               </td>
                             ) : null}
-                            <td>{money(line.lineTotal)}</td>
+                            <td data-label="Amount">{money(line.lineTotal)}</td>
                           </tr>
                         )
                       })}
