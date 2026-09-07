@@ -110,11 +110,40 @@ function buildReceiptHtml(invoice, itemLabelById, branding) {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Receipt ${invoice.id}</title><style>${RECEIPT_STYLES}</style></head><body>${body}</body></html>`
 }
 
+/**
+ * Which sale this screen is showing, taken from the address bar.
+ *
+ * Normally identical to the route parameter, and deliberately not the same
+ * source. Offline, the service worker answers this route with its saved copy
+ * of the invoice screen — one copy, reused for every sale, which is what lets
+ * a receipt open on a till that has never loaded that URL. The route data
+ * baked into that copy names whichever invoice happened to be cached, so the
+ * parameter can be a different sale's number entirely. The address is the only
+ * thing that names the sale the cashier actually asked for.
+ *
+ * The parameter is still the fallback, because on the server there is no
+ * address bar to read. Both agree on the first render — the screen is a
+ * skeleton until the sale loads, and the skeleton names no invoice — so
+ * hydration has nothing to disagree about.
+ */
+function useInvoiceIdFromAddress(fromRoute) {
+  return useMemo(() => {
+    if (typeof window === 'undefined') return fromRoute
+    const last = window.location.pathname.split('/').filter(Boolean).pop()
+    if (!last) return fromRoute
+    try {
+      return decodeURIComponent(last)
+    } catch {
+      return last
+    }
+  }, [fromRoute])
+}
+
 export default function InvoiceDetailPage() {
   const branding = useBranding()
   const money = useMoney()
   const { formatDateTime } = useLocale()
-  const { invoiceId } = useParams()
+  const invoiceId = useInvoiceIdFromAddress(useParams().invoiceId)
   const { menu } = useOrders()
   const { user } = useAuth()
   const toast = useToast()

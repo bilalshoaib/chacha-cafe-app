@@ -600,6 +600,110 @@ has had a manual browser pass, and `next build` was not run.
 
 ---
 
+### 2.8 Done — the app stays on screen when the network goes (2026-09-07)
+
+The manual test §2.4 asked for was finally done, on a real machine with the
+wifi switched off, and offline mode failed at the last step.
+
+**The problem it fixed.** Everything §2.4 built worked: the disconnect was
+noticed in about two seconds, the cached menu sold, the sale was priced on the
+device and queued. Then the cashier pressed **Create invoice** and the app
+vanished, replaced by Chrome's dinosaur and `ERR_INTERNET_DISCONNECTED`.
+
+Nothing was lost — the sale was already in IndexedDB and synced later — but a
+till that disappears at the moment of taking money is not a till anybody will
+trust, and the demo is over.
+
+The cause was one line: `clearSoldOrder` finishes with
+`router.push('/invoices/…')`. Every screen change in the App Router is a fetch.
+Next asks for the route's payload, and when that fails it falls back to a full
+document navigation — which, with no network and no service worker, the
+*browser* answers, not the app. The same applied to every nav tab and to
+reloading the tab. Offline mode only ever worked inside one already-loaded page
+that never navigated, which is not a condition anybody can hold to during a
+lunch rush.
+
+**What shipped:**
+
+| Area | File(s) |
+|---|---|
+| Serving screens from a cache when the network cannot | `public/sw.js` *(new)* |
+| The last-resort page for a screen never opened | `public/offline.html` *(new)* |
+| Registering it, and warming it once there is a session | `components/ServiceWorkerRegistrar.jsx` *(new)*, `app/layout.jsx` |
+| Not mistaking an unreachable server for a sign-out | `context/AuthContext.jsx`, `utils/lastSession.js` *(new)* |
+| Reading the invoice from the address, not the route data | `app/invoices/[invoiceId]/page.jsx` |
+| 13 tests | `tests/offlineShell.test.js` *(new)*, `tests/lastSession.test.js` *(new)* |
+
+**Decisions worth knowing before changing any of it:**
+
+- **The worker never touches `/api`.** This is the one rule that cannot bend.
+  The entire offline path hangs off requests genuinely failing —
+  `isOfflineError` is what the till tests before it prices a sale locally. A
+  cached 200 from `/api/menu` would tell a disconnected till it was online and
+  leave it waiting on a checkout that can never answer. Caching there would not
+  degrade offline mode, it would disable it.
+- **One cached copy of the receipt screen answers for every invoice.** The
+  screen is a client component that fetches its own sale, so the server renders
+  the same skeleton whatever the id — which is what lets a receipt for `inv-115`
+  open on a till that has never loaded that URL. Only routes whose server HTML
+  is identical for every parameter may be templated this way; adding one whose
+  HTML depends on its id would show one sale's data under another sale's
+  address, which is worse than the error page this replaces.
+- **Therefore the page reads its id from the address bar, not the route
+  parameter.** The route data baked into that shared copy names whichever
+  invoice happened to be cached. The URL is the only thing that names the sale
+  the cashier actually asked for.
+- **Route payload requests are deliberately left to fail.** Answering them from
+  cache would hand the router a tree built for the wrong URL. Letting them fail
+  makes Next do a full navigation, which is the request the worker *can*
+  serve safely.
+- **Warming pulls the scripts too.** A warmed screen has never been rendered by
+  a browser, so its chunks have never been fetched. Caching the HTML alone
+  produced the worst of both worlds — the document served from cache, every
+  script on it failing. The chunk names are content-hashed, so they are read out
+  of the markup rather than listed.
+- **An unreachable server is not a sign-out.** `verifySession` always knew this
+  and left a working till alone; the *first* call of the page's life did not, so
+  an offline reload came back with no café, no menu and no queue. It now
+  restores the last signed-in user. This grants nothing — every request still
+  carries the cookie, the server still decides, and the next heartbeat that
+  reaches it settles the question. It decides which chrome to draw and no more.
+- **Cached screens are thrown away on sign-out**, along with the remembered
+  user. They are one café's till wearing one café's name.
+- **The worker asks for its own update on load.** Browsers only recheck the
+  script on their own once their copy is a day old, and a till is opened in the
+  morning and left running — so a deploy could take a day to reach the very
+  thing that decides what happens when the wifi drops.
+- **Production only, and dev actively unregisters.** `localhost` is one origin
+  for `next start` and `next dev`, so one production run would otherwise leave a
+  worker serving cached chunks over the dev server for every session after it —
+  a symptom that reads like anything except a service worker.
+
+**Verified in a real browser**, production build, by killing the server
+mid-session: checkout with the server down landed on the receipt for `inv-115`
+— rendered from IndexedDB, marked "not yet sent", on a URL the till had never
+visited — where the recording showed the dinosaur; reloading with the server
+still down brought the app back signed in rather than the error page; the till
+tab navigated normally offline and the banner read "49 more sales can be rung
+up on this device, 1 waiting to send"; a screen never opened before got the
+fallback page rather than the browser's; and on restarting the server the queued
+sale synced on its own — `inv-115`, $250.00, with `shift_number` assigned at
+sync because the reserved block's shift had rolled over, which is §2.4's
+rollover path firing for real. 206 tests pass and `next build` is clean.
+
+**Local staging DB was modified**: `t-976f1495` (mr.code) gained one invoice,
+`inv-115`, a $250 dine-in zinger burger — a genuine offline sale that synced.
+Invoice numbers below 115 and order numbers in that block were consumed by
+earlier reservations and never used.
+
+**Not verified:** the worker has only been exercised against a killed server on
+`localhost`, not against a Vercel deploy, and not on the phones or tablets a
+café would actually use. Safari's handling of service workers is its own
+subject. Worth one pass on the real domain before it is relied on in front of a
+customer.
+
+---
+
 ## 3. ⬜ LEFT — not done, the backlog
 
 Ordered by what will actually cost an American demo. Items 1 and 2 are the ones

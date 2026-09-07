@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+  The last resort, and it should be rare.
+
+  A screen the till has opened before is served from the cache and works
+  normally; the receipt screen works for any sale because one cached copy
+  answers for every invoice id. This is what is left: a screen this device has
+  genuinely never loaded, asked for while the network is down. Plain HTML with
+  nothing to fetch, so it cannot fail the way the page behind it just did.
+
+  What it must not do is imply the sale went missing. Anything rung up offline
+  is already in this browser's queue and is sent the moment the connection is
+  back, so the wording says so.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>No connection</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: #f4f5f7;
+        color: #1d2129;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.06);
+        max-width: 26rem;
+        width: 100%;
+        padding: 1.75rem;
+        text-align: center;
+      }
+      .dot {
+        display: inline-block;
+        width: 0.6rem;
+        height: 0.6rem;
+        border-radius: 50%;
+        background: #d9822b;
+        margin-inline-end: 0.45rem;
+        vertical-align: middle;
+      }
+      h1 { font-size: 1.15rem; margin: 0 0 0.6rem; }
+      p { margin: 0 0 0.9rem; line-height: 1.5; font-size: 0.92rem; color: #47525d; }
+      .actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 1.2rem; }
+      a.btn, button.btn {
+        font: inherit;
+        font-size: 0.9rem;
+        border-radius: 8px;
+        padding: 0.55rem 1rem;
+        cursor: pointer;
+        text-decoration: none;
+        border: 1px solid #c9ced4;
+        background: #fff;
+        color: #1d2129;
+      }
+      a.btn.primary { background: #0f766e; border-color: #0f766e; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1><span class="dot"></span>No connection</h1>
+      <p>This screen has not been opened on this device before, so there is no saved copy to show while the network is down.</p>
+      <p><strong>Nothing has been lost.</strong> Any sale rung up offline is saved on this device and sent automatically as soon as the connection is back.</p>
+      <div class="actions">
+        <a class="btn primary" href="/orders">Back to the till</a>
+        <button class="btn" type="button" onclick="location.reload()">Try again</button>
+      </div>
+    </main>
+  </body>
+</html>
