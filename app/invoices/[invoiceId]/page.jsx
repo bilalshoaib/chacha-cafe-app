@@ -124,7 +124,7 @@ function buildReceiptHtml(invoice, itemLabelById, branding) {
 }
 
 /**
- * Which sale this screen is showing, taken from the address bar.
+ * Which sale this screen is showing, taken from the address.
  *
  * Normally identical to the route parameter, and deliberately not the same
  * source. Offline, the service worker answers this route with its saved copy
@@ -134,26 +134,23 @@ function buildReceiptHtml(invoice, itemLabelById, branding) {
  * parameter can be a different sale's number entirely. The address is the only
  * thing that names the sale the cashier actually asked for.
  *
- * The parameter is still the fallback, because on the server there is no
- * address bar to read. Both agree on the first render — the screen is a
- * skeleton until the sale loads, and the skeleton names no invoice — so
- * hydration has nothing to disagree about.
+ * The source is `usePathname()`, not `window.location`. During a client-side
+ * navigation — clicking a row in the list, or the redirect out of checkout —
+ * the router state (and so `usePathname()`) flips to the new URL a beat
+ * before `window.location` catches up. A memo that read `window.location`
+ * then would capture the *previous* page's last segment — `invoices`,
+ * `orders` — and, keyed only on the route param, never recompute once the
+ * param stopped changing. That was the "No invoice with id orders" a reload
+ * cleared. `usePathname()` is both correct here and the right value offline,
+ * where it reflects the real requested URL rather than the cached copy's.
  *
- * `usePathname()` is a dependency, not the source: it is the client route as
- * React sees it, so the memo recomputes once a client-side navigation has
- * settled. Without it the memo is keyed only on the route param, and a
- * navigation from the list to a sale — clicking a row, or landing here from
- * checkout — can compute while `window.location` still reads `/invoices`,
- * capture `invoices` as the id, and never recompute because the param never
- * changed again. That is the "Invoice not found / No invoice with id invoices"
- * that a reload clears. The `invoices` guard is the belt to that braces: the
- * collection segment is never a real invoice id, so fall back to the param.
+ * The parameter stays the fallback for the brief render where `usePathname()`
+ * is null, and whenever the last segment is the collection itself.
  */
 function useInvoiceIdFromAddress(fromRoute) {
   const routePath = usePathname()
   return useMemo(() => {
-    if (typeof window === 'undefined') return fromRoute
-    const last = window.location.pathname.split('/').filter(Boolean).pop()
+    const last = routePath?.split('/').filter(Boolean).pop()
     if (!last || last === 'invoices') return fromRoute
     try {
       return decodeURIComponent(last)
