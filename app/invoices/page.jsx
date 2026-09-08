@@ -132,16 +132,16 @@ export default function InvoicesListPage() {
         </p>
 
         <div className="invoices-search-row">
-          <label className="invoices-search-label" htmlFor="invoice-id-search">Search by Invoice ID or Order #</label>
+          <label className="invoices-search-label" htmlFor="invoice-id-search">Search by Invoice ID, Order # or Table</label>
           <div className="invoices-search-field">
             <input
               id="invoice-id-search"
               type="search"
               className="input invoices-search-input"
-              placeholder="e.g. inv-4340 or 12"
+              placeholder="e.g. inv-4340, 12 or 4A"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
-              aria-label="Search invoices by ID"
+              aria-label="Search invoices by ID, order number or table"
             />
             {searchId ? (
               <button type="button" className="ghost sm invoices-search-clear" onClick={() => setSearchId('')} aria-label="Clear search">✕</button>
@@ -258,7 +258,12 @@ export default function InvoicesListPage() {
                     <td className="invoices-table-shift-num cell-card-title">{inv.shiftNumber != null ? `#${inv.shiftNumber}` : <span className="muted">—</span>}</td>
                     {hasCounters ? <td data-label="Counter"><BusinessTypeBadge type={invoiceBusinessType(inv)} /></td> : null}
                     <td className="invoices-table-id" data-label="Invoice">{inv.id}</td>
-                    <td data-label="Type"><OrderTypeBadge type={inv.orderType} /></td>
+                    <td data-label="Type">
+                      <span className="inv-badge-group">
+                        <OrderTypeBadge type={inv.orderType} />
+                        {inv.tableNumber ? <span className="badge-table-number">🪑 {inv.tableNumber}</span> : null}
+                      </span>
+                    </td>
                     <td className="muted" data-label="Date">{formatDateTime(inv.createdAt)}</td>
                     <td className="num invoices-table-total" data-label="Total">{money(inv.total)}</td>
                     <td className="num invoices-table-discount" data-label="Discount">

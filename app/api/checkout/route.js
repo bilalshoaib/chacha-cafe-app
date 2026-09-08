@@ -8,6 +8,7 @@ import { buildOrderLine } from '@/lib/orderLines'
 import { invoiceBusinessTypeForLines } from '@/lib/businessTypes'
 import { shiftDateForInstant } from '@/lib/shift'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax'
+import { tableNumberForOrderType } from '@/lib/tableNumber'
 import { getTab, markTabInvoiced } from '@/lib/repositories/tabsRepository'
 
 /* ── How an invoice is numbered ───────────────────────────────────────────────
@@ -116,6 +117,10 @@ async function handleCheckout(request, marks, stats) {
   const VALID_ORDER_TYPES = ['takeaway', 'dine_in', 'delivery']
   const orderType = VALID_ORDER_TYPES.includes(body.orderType) ? body.orderType : null
 
+  // Which table the food is going to. Kept for every order type but delivery,
+  // where there is no table to go to — see lib/tableNumber.js.
+  const tableNumber = tableNumberForOrderType(body.tableNumber, orderType)
+
   const rawDeliveryCharge = Number(body.deliveryCharge)
   const deliveryCharge = orderType === 'delivery' && Number.isFinite(rawDeliveryCharge) && rawDeliveryCharge > 0
     ? Math.round(rawDeliveryCharge * 100) / 100
@@ -172,6 +177,7 @@ async function handleCheckout(request, marks, stats) {
     shiftNumber,
     ...(paymentMethod ? { paymentMethod } : {}),
     ...(orderType ? { orderType } : {}),
+    ...(tableNumber ? { tableNumber } : {}),
   }
 
   await timed(marks, 'saveInvoice', () => saveInvoice(ctx, invoice))

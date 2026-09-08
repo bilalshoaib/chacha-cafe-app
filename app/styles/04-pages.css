@@ -792,6 +792,27 @@ a.danger-ghost:hover {
   border: 1px solid color-mix(in srgb, #059669 28%, transparent);
 }
 
+/* ── Table number badge (invoices list + detail) ─────────── */
+/* Sized and shaped like the order type badge it sits beside — the two are
+   read as one phrase, "Dine In · Table 4" — but outlined rather than filled,
+   because the table is a detail of the order type and not a fourth kind of
+   it. */
+.badge-table-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  background: var(--surface);
+  color: var(--text-h);
+  border: 1px solid var(--border);
+}
+
 @media (max-width: 600px) {
   .order-type-options {
     flex-direction: column;

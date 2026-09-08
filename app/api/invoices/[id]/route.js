@@ -5,6 +5,7 @@ import { loadMenu } from '@/lib/repositories/menuRepository'
 import { buildOrderLine } from '@/lib/orderLines'
 import { applyPricing, priceLine } from '@/lib/pricing'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax'
+import { tableNumberForOrderType } from '@/lib/tableNumber'
 
 /** Re-prices a line whose product is no longer on the menu, using the price the
  *  invoice already recorded — never one supplied by the request. */
@@ -77,11 +78,12 @@ export async function PATCH(request, { params }) {
   const { id } = await params
   const inv = await getInvoiceById(ctx, id)
   if (!inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
-  const { customerNote, paid, returned, returnNote, lines, paymentMethod } = await request.json().catch(() => ({}))
+  const { customerNote, paid, returned, returnNote, lines, paymentMethod, tableNumber } = await request.json().catch(() => ({}))
 
   if (inv.returned) {
     if (lines !== undefined) return NextResponse.json({ error: 'Cannot change lines on a returned invoice.' }, { status: 400 })
     if (customerNote !== undefined) return NextResponse.json({ error: 'Cannot edit the customer note on a returned invoice.' }, { status: 400 })
+    if (tableNumber !== undefined) return NextResponse.json({ error: 'Cannot change the table on a returned invoice.' }, { status: 400 })
   }
 
   if (lines !== undefined) {
@@ -116,6 +118,15 @@ export async function PATCH(request, { params }) {
     })
   }
   if (customerNote !== undefined) inv.customerNote = String(customerNote).slice(0, 200)
+  // Editable because a table number is keyed in a hurry, and a sale filed
+  // against the wrong table is a plate that goes to the wrong customer. The
+  // order type is the invoice's own, not the request's — nothing here can
+  // change it, so a delivery cannot acquire a table by way of an edit.
+  if (tableNumber !== undefined) {
+    const next = tableNumberForOrderType(tableNumber, inv.orderType ?? null)
+    if (next) inv.tableNumber = next
+    else delete inv.tableNumber
+  }
   if (paid !== undefined) {
     if (!Boolean(paid) && ctx.role === 'counter_cashier') {
       return NextResponse.json({ error: 'Counter cashier accounts cannot mark an invoice as unpaid.' }, { status: 403 })

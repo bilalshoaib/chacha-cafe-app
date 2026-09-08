@@ -90,3 +90,20 @@ test('without a tenant no tenant predicate is emitted', () => {
   const { whereSql } = buildInvoiceWhere({ from: 'A' })
   assert.doesNotMatch(whereSql, /tenant_id/)
 })
+
+test('one search term is matched against the id, the order number and the table', () => {
+  // All three off the same placeholder — a second value would put the count
+  // and the page one apart on their numbering.
+  const { whereSql, values } = buildInvoiceWhere({ tenantId: 't1', search: '4a' })
+  assert.deepEqual(values, ['t1', '4a'])
+  assert.match(whereSql, /position\(\$2 IN lower\(id\)\)/)
+  assert.match(whereSql, /shift_number::text = \$2/)
+  assert.match(whereSql, /lower\(table_number\) = \$2/)
+  assert.doesNotMatch(whereSql, /\$3/)
+})
+
+test('the table is matched whole, not as a substring', () => {
+  // Searching "4" must not drag in tables 14, 24 and 41.
+  const { whereSql } = buildInvoiceWhere({ search: '4' })
+  assert.doesNotMatch(whereSql, /position\(\$1 IN lower\(table_number\)\)/)
+})

@@ -24,6 +24,8 @@ in it, and none of the eight backlog items has been started.
 | ✅ | Timezone picker, and the shift-date bug it fixes | §2.5 |
 | ✅ | End-of-day close / Z-report | §2.6 |
 | ✅ | Open tabs and table service | §2.7 |
+| ✅ | The app stays on screen when the network goes | §2.8 |
+| ✅ | Table numbers on an invoice | §2.9 |
 | ⬜ | 1. Tipping — *blocker* | §3 |
 | ⬜ | 2. Card payments — *blocker* | §3 |
 | ⬜ | 3. Menu modifiers — *largest build* | §3 |
@@ -35,7 +37,8 @@ in it, and none of the eight backlog items has been started.
 
 §2.1 is commit `1ca8bb2`; §2.2 and §2.3 are commit `95d97f9`; §2.4 is commit
 `52eafaa`; §2.5 is commit `077e155`; §2.6 is commit `d8fa265`; §2.7 is commit
-`f6d7912`. Nothing is left uncommitted.
+`f6d7912`; §2.8 is commit `7822be0`. §2.9 is the commit this line ships in.
+Nothing is left uncommitted.
 
 ---
 
@@ -704,6 +707,88 @@ customer.
 
 ---
 
+### 2.9 Done — table numbers on an invoice (2026-09-07)
+
+A sale records which table it went to, and the receipt says so in print big
+enough to read across a room.
+
+**The problem it fixed.** Order type already said *dine in*; nothing said
+*where*. A café running food to tables had exactly one place to put it — the
+free-text customer note, whose placeholder still read "Table name, pickup,
+etc." — and a note is not a field. It cannot be searched for as a table, it
+prints buried at the foot of the receipt under "Note:", and half the staff
+write "T4" while the other half write "table four". So the runner reads the
+note if there is one and guesses if there is not.
+
+`tabs.label` was the nearest thing to this and is not a substitute: tabs are
+opt-in and currently hidden from the till (§2.7), the label is deliberately
+free text — "Dave", "the two by the window" — and the link runs the wrong way,
+tab to invoice, as that section's own backlog note says.
+
+**What shipped:**
+
+| Area | File(s) |
+|---|---|
+| Schema — the column and the index the search uses | `migrations/031_invoice_table_number.sql` *(new)* |
+| One definition of what a table number is | `lib/tableNumber.js` *(new)* |
+| Storing and reading it | `lib/repositories/invoicesRepository.js` |
+| Taking it at checkout | `app/api/checkout/route.js` |
+| Correcting one that was mis-keyed | `app/api/invoices/[id]/route.js`, `app/invoices/[invoiceId]/edit/page.jsx` |
+| Selling with it offline, and checking it at sync | `lib/offlineSale.js` |
+| Finding a table's sale | `lib/invoiceQuery.js`, `app/invoices/page.jsx` |
+| Typing it in | `context/OrdersContext.jsx`, `app/orders/page.jsx` |
+| On the receipt and the invoice | `app/invoices/[invoiceId]/page.jsx`, `app/styles/04-pages.css` |
+| 13 tests | `tests/tableNumber.test.js` *(new)*, `tests/offlineSale.test.js`, `tests/invoiceQuery.test.js` |
+
+**Decisions worth knowing before changing any of it:**
+
+- **Free text, not an integer.** "12A", "Patio 3" and "Bar 2" are all table
+  numbers to the people calling them out, and a café that numbers 1..20 loses
+  nothing by storing "7" as text.
+- **One module defines what a table number is** (`lib/tableNumber.js`), because
+  four things have to agree: checkout, the invoice PATCH, the offline till that
+  builds the invoice itself, and the sync endpoint that checks what the till
+  built. A second "trim it and cut it to twenty" that drifted from the column
+  width would fail at the insert in the one path — a queued offline sale — where
+  the customer has already left with the receipt.
+- **A delivery has no table**, so one sent with a delivery is dropped rather
+  than stored, the mirror of the rule delivery charges already follow. Takeaway
+  *keeps* its table: counter-service cafés hand out a number and run the food
+  out to it.
+- **The table rides in the receipt's order-type banner**, not in a meta row
+  beside the invoice number. It is the one thing on the paper read from across
+  a room — a runner holding four tickets is looking for the table, not for
+  `inv-1183` — and sharing the banner costs no extra height on a 72mm roll.
+- **The search matches a table exactly, never as a substring**, unlike the
+  invoice id. "4" finding tables 4, 14, 24 and 41 is worse than no match when
+  somebody at the till is asking who is on four. The needle is already
+  lowercased by the route, so the column is lowercased to meet it — "t4" finds
+  "T4" — which is the expression migration 031 indexes.
+- **It is editable, and the order type is not.** A table is keyed in a hurry and
+  a sale filed against the wrong one sends a plate to the wrong customer, so the
+  PATCH takes it. It applies the delivery rule against the *invoice's* order
+  type rather than the request's, so a delivery cannot acquire a table by way
+  of an edit. A returned invoice refuses the change, as it already refuses lines
+  and the note.
+- **The tab's label does not seed it.** Copying a label in would put a name in
+  the table field as often as a table, truncated to twenty characters.
+- **The customer-note placeholder changed** from "Table name, pickup, etc." to
+  "Allergy, pickup time, etc." — the note was standing in for this field, and
+  leaving the old hint there would keep half the staff typing tables into it.
+
+**Verified**: 220 tests pass and `next build` is clean. Migration 031 applied to
+the local staging DB and checked — `varchar(20)`, index present; a real save and
+read-back through the repository stored `12A` against a dine-in invoice, and
+clearing it through the upsert path cleared it rather than leaving the old value
+(the probe invoice was deleted afterwards); the new search predicate was run
+against the real table.
+
+**Not verified:** no manual browser pass. Nothing has been typed into the field
+on screen, printed, or looked at on a phone — the till, receipt and invoice-list
+rendering are argued from the code, not seen.
+
+---
+
 ## 3. ⬜ LEFT — not done, the backlog
 
 Ordered by what will actually cost an American demo. Items 1 and 2 are the ones
@@ -855,4 +940,7 @@ Items 5 and 8 are cleanup that can happen whenever.
   wanted, it needs a merge story, not just a queue.
 - `invoices` has no `tab_id`. The link is one-directional — the tab knows its
   invoice. Reporting "which table did this sale come from" would need the
-  reverse, and `order_id` is taken by the legacy table.
+  reverse, and `order_id` is taken by the legacy table. **Partly answered by
+  §2.9**: the invoice now carries a `table_number` of its own, so the question
+  "which table" has an answer that does not depend on a tab having been opened.
+  What is still missing is the link to the *tab*, which is a different question.

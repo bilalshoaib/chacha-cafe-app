@@ -32,9 +32,22 @@ function OrderTypeBadge({ type }) {
 
 const RECEIPT_STYLES = `@page{size:72mm auto;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:bold;color:#000;width:72mm;padding:2mm 5mm;background:#fff}.center{text-align:center}.right{text-align:right}.bold{font-weight:bold}.dashed{border-top:1px dashed #000;margin:4px 0}.solid{border-top:1px solid #000;margin:4px 0}.order-num-banner{text-align:center;font-size:22px;font-weight:bold;letter-spacing:1px;border:2px solid #000;padding:3px 0;margin-bottom:4px}.shop-name{font-size:16px;font-weight:bold;text-align:center;letter-spacing:1px;margin-bottom:2px}.shop-sub{text-align:center;font-size:10px;margin-bottom:3px}.meta-row{display:flex;justify-content:space-between;font-size:10px;margin:1.5px 0}.order-type-banner{text-align:center;font-size:14px;font-weight:bold;letter-spacing:1.5px;margin:5px 0;padding:4px 0;border-top:2px solid #000;border-bottom:2px solid #000}table{width:100%;border-collapse:collapse;margin:2px 0}th{font-size:10px;font-weight:bold;text-align:left;border-bottom:1px solid #000;padding:1px 0}th.amt-col{text-align:right}td{vertical-align:top;padding:2px 0;font-size:11px}.item-col{width:80%}.amt-col{width:20%;text-align:right;white-space:nowrap}.item-name{font-weight:bold}.item-each{font-size:10px;font-weight:bold;color:#000}.item-disc{font-size:10px;font-weight:bold;color:#000}.inc-line{font-size:10px;font-weight:bold;color:#000}.total-row{display:flex;justify-content:space-between;font-size:13px;font-weight:bold;margin:3px 0}.status-row{text-align:center;font-size:10px;margin:2px 0}.footer{text-align:center;font-size:9px;margin-top:6px}.note-box{font-size:9px;margin:2px 0}.returned-notice{text-align:center;font-weight:bold;font-size:11px;border:1px solid #000;padding:2px 4px;margin:3px 0}`
 
+/**
+ * The bordered line across the middle of the receipt: how the order is going
+ * out, and where to.
+ *
+ * The table rides in this banner rather than in a meta row with the invoice
+ * number, because it is the one thing on the paper that is read from across a
+ * room — a runner holding four tickets is looking for the table, not for
+ * inv-1183. Kept on the same line as the order type so it costs no extra
+ * height on a 72mm roll, and printed even when the order type is missing,
+ * which is the one case that used to render a bare dashed rule.
+ */
 const orderTypeBanner = (invoice) => {
   const orderTypeLabels = { dine_in: '*** DINE IN ***', takeaway: '*** TAKEAWAY ***', delivery: '*** DELIVERY ***' }
-  const line = invoice.orderType ? (orderTypeLabels[invoice.orderType] ?? invoice.orderType.toUpperCase()) : ''
+  const typeLine = invoice.orderType ? (orderTypeLabels[invoice.orderType] ?? invoice.orderType.toUpperCase()) : ''
+  const tableLine = invoice.tableNumber ? `*** TABLE ${String(invoice.tableNumber).toUpperCase()} ***` : ''
+  const line = [typeLine, tableLine].filter(Boolean).join('<br>')
   return line ? `<div class="order-type-banner">${line}</div>` : '<div class="dashed"></div>'
 }
 
@@ -335,6 +348,7 @@ export default function InvoiceDetailPage() {
               <div className="invoice-status-badges">
                 <BusinessTypeBadge type={invoiceBusinessType(invoice)} />
                 <OrderTypeBadge type={invoice.orderType} />
+                {invoice.tableNumber ? <span className="badge-table-number">🪑 Table {invoice.tableNumber}</span> : null}
                 {invoice.paid ? <span className="badge-paid">Paid</span> : <span className="badge-unpaid">Unpaid</span>}
                 {invoice.returned ? <span className="badge-returned">Returned</span> : null}
                 {/* Rung up offline and still only on this device. The number

@@ -194,3 +194,50 @@ test('a delivery total the charge does not account for is refused', () => {
   const { error } = validateOfflineInvoice(sale)
   assert.match(error, /total is not the subtotal/)
 })
+
+// ── The table a sale went to ────────────────────────────────────────────────
+
+test('an offline sale carries its table number, normalized', () => {
+  const inv = buildOfflineInvoice({
+    lines: [line()], reservation, rates: [], pricesIncludeTax: true,
+    orderType: 'dine_in', tableNumber: '  12A ', now: duringShift,
+  })
+  assert.equal(inv.tableNumber, '12A')
+})
+
+test('a sale with no table carries no table field at all', () => {
+  const inv = buildOfflineInvoice({
+    lines: [line()], reservation, rates: [], pricesIncludeTax: true,
+    orderType: 'dine_in', tableNumber: '   ', now: duringShift,
+  })
+  assert.equal('tableNumber' in inv, false)
+})
+
+test('a delivery rung up offline drops any table it was given', () => {
+  const inv = buildOfflineInvoice({
+    lines: [line()], reservation, rates: [], pricesIncludeTax: true,
+    orderType: 'delivery', tableNumber: '4', now: duringShift,
+  })
+  assert.equal('tableNumber' in inv, false)
+})
+
+test('a queued sale is stored with the table it was rung up on', () => {
+  const built = buildOfflineInvoice({
+    lines: [line()], reservation, rates: [], pricesIncludeTax: true,
+    orderType: 'dine_in', tableNumber: '4', now: duringShift,
+  })
+  const { invoice, error } = validateOfflineInvoice(built)
+  assert.equal(error, undefined)
+  assert.equal(invoice.tableNumber, '4')
+})
+
+test('sync re-normalizes a table number rather than trusting the queue', () => {
+  // A queue entry is client-written text and the column is twenty wide, so a
+  // hand-edited one must not reach the insert as it stands.
+  const built = buildOfflineInvoice({
+    lines: [line()], reservation, rates: [], pricesIncludeTax: true,
+    orderType: 'dine_in', now: duringShift,
+  })
+  const { invoice } = validateOfflineInvoice({ ...built, tableNumber: `  ${'z'.repeat(40)}  ` })
+  assert.equal(invoice.tableNumber.length, 20)
+})
