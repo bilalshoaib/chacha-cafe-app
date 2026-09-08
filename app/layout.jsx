@@ -5,6 +5,7 @@ import { ToastProvider } from '@/context/ToastContext.jsx'
 import { BrandingProvider } from '@/context/BrandingContext.jsx'
 import AppShell from '@/components/AppShell.jsx'
 import Toaster from '@/components/Toaster.jsx'
+import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar.jsx'
 import { getSession } from '@/lib/session'
 import { getTenantBranding, brandingCssVars, DEFAULT_BRANDING } from '@/lib/tenantBranding'
 
@@ -78,6 +79,9 @@ export default async function RootLayout({ children }) {
         <BrandingProvider branding={branding}>
           <AuthProvider>
             <ToastProvider>
+              {/* Inside AuthProvider because the screens worth caching are the
+                  signed-in ones, so it waits to be told there is a session. */}
+              <ServiceWorkerRegistrar />
               <AppShell>{children}</AppShell>
               <Toaster />
             </ToastProvider>

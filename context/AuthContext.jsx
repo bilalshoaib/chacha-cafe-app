@@ -1,7 +1,8 @@
 'use client'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { api, setUnauthorizedHandler } from '@/api.js'
+import { api, isOfflineError, setUnauthorizedHandler } from '@/api.js'
 import { rememberSignedOutNotice } from '@/utils/signedOutNotice.js'
+import { forgetSession, readRememberedSession, rememberSession } from '@/utils/lastSession.js'
 
 const AuthContext = createContext(null)
 
@@ -35,6 +36,24 @@ function onPublicMenu() {
   )
 }
 
+/**
+ * Throws away the cached screens on the way out.
+ *
+ * Those documents are one café's till wearing one café's name and colours.
+ * Left behind, the next person to open this browser offline would be shown
+ * them — empty of data, since every figure on them comes from an API call that
+ * will now fail, but still the wrong café's chrome for somebody who is not
+ * signed into it.
+ */
+function clearOfflineShell() {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
+  try {
+    navigator.serviceWorker.controller?.postMessage({ type: 'clear' })
+  } catch {
+    // Sign-out must not be held up by housekeeping.
+  }
+}
+
 export function AuthProvider({ children }) {
   const [authenticated, setAuthenticated] = useState(false)
   const [user, setUser] = useState(null)
@@ -59,6 +78,8 @@ export function AuthProvider({ children }) {
   const signOutTo = useCallback((message) => {
     if (leaving.current || typeof window === 'undefined') return
     leaving.current = true
+    forgetSession()
+    clearOfflineShell()
     rememberSignedOutNotice(message)
     window.location.assign('/login')
   }, [])
@@ -81,7 +102,16 @@ export function AuthProvider({ children }) {
     const ok = Boolean(r?.authenticated)
     setAuthenticated(ok)
     setUser(ok && r?.user ? r.user : null)
-    if (ok) return true
+    if (ok) {
+      // Kept so a reload with no network knows whose till this is; see
+      // utils/lastSession.js for why that is a display decision and not a
+      // permission one.
+      rememberSession(r.user)
+      return true
+    }
+    // A definite no from the server, which is the one answer that should
+    // outlive the connection dropping.
+    forgetSession()
 
     if (r?.blockedMessage || r?.blocked) {
       signOutTo(r.blockedMessage || '')
@@ -89,12 +119,28 @@ export function AuthProvider({ children }) {
     return false
   }, [signOutTo])
 
+  /**
+   * The first call of the page's life, and the one that used to throw a
+   * working till onto a signed-out screen.
+   *
+   * verifySession() below has always known that "could not reach the server"
+   * is not "you are signed out", and leaves the screen alone when a request
+   * fails. This did not, so a disconnected till that reloaded or navigated
+   * came back with no café, no menu and no queue — while the sale it had just
+   * rung up sat in IndexedDB with no screen left that would show it.
+   *
+   * Now an unreachable server restores the user this browser last had, and
+   * anything else — a 401, an account that is gone — is still a sign-out.
+   * Nothing is trusted that was not already: the cookie is what the server
+   * reads, and the next heartbeat that reaches it settles the question.
+   */
   const refreshAuth = useCallback(async () => {
     try {
       applySession(await api.me())
-    } catch {
-      setAuthenticated(false)
-      setUser(null)
+    } catch (e) {
+      const remembered = isOfflineError(e) ? readRememberedSession() : null
+      setAuthenticated(Boolean(remembered))
+      setUser(remembered)
     } finally {
       setAuthLoading(false)
     }
@@ -184,6 +230,8 @@ export function AuthProvider({ children }) {
     } finally {
       setAuthenticated(false)
       setUser(null)
+      forgetSession()
+      clearOfflineShell()
     }
   }, [])
 

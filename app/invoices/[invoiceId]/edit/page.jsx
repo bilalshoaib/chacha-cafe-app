@@ -9,6 +9,7 @@ import { categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { cloneInvoiceLines, lineFromDeal, lineFromMenuItem, removeLineById, updateLineDiscount, updateLineQty } from '@/utils/invoiceLines.js'
 import { discountPartsOf, priceLine } from '@/lib/pricing.js'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax.js'
+import { MAX_TABLE_NUMBER } from '@/lib/tableNumber.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useMoney } from '@/context/BrandingContext.jsx'
 import { useToast } from '@/context/ToastContext.jsx'
@@ -23,6 +24,7 @@ export default function InvoiceEditPage() {
   const [invoice, setInvoice] = useState(null)
   const [invoiceLoading, setInvoiceLoading] = useState(true)
   const [noteDraft, setNoteDraft] = useState('')
+  const [tableDraft, setTableDraft] = useState('')
   const [editedLines, setEditedLines] = useState([])
   const [saving, setSaving] = useState(false)
   const [entrySearch, setEntrySearch] = useState('')
@@ -46,7 +48,7 @@ export default function InvoiceEditPage() {
   }, [invoiceId])
 
   useEffect(() => { void loadInvoice() }, [loadInvoice])
-  useEffect(() => { if (!invoice) return; setNoteDraft(invoice.customerNote ?? ''); setEditedLines(cloneInvoiceLines(invoice.lines)); setDiscountDraftByLine({}) }, [invoice])
+  useEffect(() => { if (!invoice) return; setNoteDraft(invoice.customerNote ?? ''); setTableDraft(invoice.tableNumber ?? ''); setEditedLines(cloneInvoiceLines(invoice.lines)); setDiscountDraftByLine({}) }, [invoice])
   useEffect(() => { setEntrySearch(''); setEntryItem(null); setEntryQty('1'); setEntryUnitDiscount(''); setEntryLineDiscount('') }, [invoiceId])
 
   const itemLabelById = useMemo(() => {
@@ -90,7 +92,10 @@ export default function InvoiceEditPage() {
   )
   const linesDirty = invoice != null && JSON.stringify(editedLines) !== JSON.stringify(invoice.lines)
   const noteDirty = invoice != null && (invoice.customerNote ?? '') !== noteDraft
-  const saveDirty = (linesDirty || noteDirty) && invoice && !invoice.returned
+  // Compared trimmed, because the server stores it trimmed — otherwise typing
+  // a space and deleting it would leave Save enabled against no real change.
+  const tableDirty = invoice != null && (invoice.tableNumber ?? '') !== tableDraft.trim()
+  const saveDirty = (linesDirty || noteDirty || tableDirty) && invoice && !invoice.returned
 
   const entryLinePreview = (() => {
     if (!entryItem) return null
@@ -162,7 +167,7 @@ export default function InvoiceEditPage() {
     if (!invoice || invoice.returned) return
     setSaving(true)
     try {
-      await api.updateInvoice(invoice.id, { customerNote: noteDraft, lines: editedLines })
+      await api.updateInvoice(invoice.id, { customerNote: noteDraft, tableNumber: tableDraft, lines: editedLines })
       toast.success('Invoice saved')
       router.push(`/invoices/${invoice.id}`)
     } catch (e) { toast.error(e.message || 'Could not save invoice') }
@@ -347,16 +352,25 @@ export default function InvoiceEditPage() {
           <strong>{money(draftTotal)}</strong>
         </div>
 
+        {/* A delivery has no table, so there is nothing to correct on one —
+            and the server would drop whatever was typed here anyway. */}
+        {invoice.orderType !== 'delivery' ? (
+          <label className="field invoice-table-edit">
+            <span>🪑 Table number</span>
+            <input value={tableDraft} onChange={(e) => setTableDraft(e.target.value)} placeholder="e.g. 4, 12A, Patio 3" maxLength={MAX_TABLE_NUMBER} autoComplete="off" />
+          </label>
+        ) : null}
+
         <label className="field invoice-note-edit">
           <span>Note (shown on invoice)</span>
-          <textarea rows={3} value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Table name, pickup, payment reference…" maxLength={200} />
+          <textarea rows={3} value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Allergy, pickup time, payment reference…" maxLength={200} />
         </label>
 
         <div className="invoice-edit-save-row">
           <button type="button" className="primary" disabled={saving || !saveDirty || editedLines.length === 0} onClick={() => void saveInvoiceEdits()}>
             {saving ? 'Saving…' : 'Save and return to invoice'}
           </button>
-          {!saveDirty ? <span className="muted small invoice-save-hint">Change lines or note to enable save.</span> : null}
+          {!saveDirty ? <span className="muted small invoice-save-hint">Change lines, table or note to enable save.</span> : null}
         </div>
       </section>
     </main>

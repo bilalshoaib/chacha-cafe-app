@@ -9,6 +9,7 @@ import OfflineBanner from '@/components/OfflineBanner.jsx'
 import { SkeletonStatus } from '@/components/Skeleton.jsx'
 import { categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { discountPartsOf, priceLine } from '@/lib/pricing.js'
+import { MAX_TABLE_NUMBER } from '@/lib/tableNumber.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useMoney } from '@/context/BrandingContext.jsx'
 
@@ -30,6 +31,8 @@ export default function OrdersPage() {
     setCustomerNote,
     orderType,
     setOrderType,
+    tableNumber,
+    setTableNumber,
     deliveryCharge,
     setDeliveryCharge,
     checkingOut,
@@ -690,6 +693,24 @@ export default function OrdersPage() {
               </div>
             </div>
 
+            {/* No table on a delivery, so the field goes away with it — and
+                the server drops a table number sent with one, so a cashier who
+                keys a table and then switches to Delivery does not leave a
+                stale one behind. Takeaway keeps it: counter-service cafés hand
+                out a number and run the food out to it. */}
+            {orderType !== 'delivery' ? (
+              <label className="field table-number-field">
+                <span>🪑 Table number (optional)</span>
+                <input
+                  value={tableNumber}
+                  onChange={(e) => setTableNumber(e.target.value)}
+                  placeholder="e.g. 4, 12A, Patio 3"
+                  maxLength={MAX_TABLE_NUMBER}
+                  autoComplete="off"
+                />
+              </label>
+            ) : null}
+
             {orderType === 'delivery' ? (
               <label className="field delivery-charge-field">
                 <span>🛵 Delivery charge</span>
@@ -710,7 +731,7 @@ export default function OrdersPage() {
               <input
                 value={customerNote}
                 onChange={(e) => setCustomerNote(e.target.value)}
-                placeholder="Table name, pickup, etc."
+                placeholder="Allergy, pickup time, etc."
                 maxLength={200}
               />
             </label>

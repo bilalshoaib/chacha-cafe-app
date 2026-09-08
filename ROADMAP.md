@@ -24,6 +24,8 @@ in it, and none of the eight backlog items has been started.
 | ✅ | Timezone picker, and the shift-date bug it fixes | §2.5 |
 | ✅ | End-of-day close / Z-report | §2.6 |
 | ✅ | Open tabs and table service | §2.7 |
+| ✅ | The app stays on screen when the network goes | §2.8 |
+| ✅ | Table numbers on an invoice | §2.9 |
 | ⬜ | 1. Tipping — *blocker* | §3 |
 | ⬜ | 2. Card payments — *blocker* | §3 |
 | ⬜ | 3. Menu modifiers — *largest build* | §3 |
@@ -35,7 +37,8 @@ in it, and none of the eight backlog items has been started.
 
 §2.1 is commit `1ca8bb2`; §2.2 and §2.3 are commit `95d97f9`; §2.4 is commit
 `52eafaa`; §2.5 is commit `077e155`; §2.6 is commit `d8fa265`; §2.7 is commit
-`f6d7912`. Nothing is left uncommitted.
+`f6d7912`; §2.8 is commit `7822be0`. §2.9 is the commit this line ships in.
+Nothing is left uncommitted.
 
 ---
 
@@ -600,6 +603,192 @@ has had a manual browser pass, and `next build` was not run.
 
 ---
 
+### 2.8 Done — the app stays on screen when the network goes (2026-09-07)
+
+The manual test §2.4 asked for was finally done, on a real machine with the
+wifi switched off, and offline mode failed at the last step.
+
+**The problem it fixed.** Everything §2.4 built worked: the disconnect was
+noticed in about two seconds, the cached menu sold, the sale was priced on the
+device and queued. Then the cashier pressed **Create invoice** and the app
+vanished, replaced by Chrome's dinosaur and `ERR_INTERNET_DISCONNECTED`.
+
+Nothing was lost — the sale was already in IndexedDB and synced later — but a
+till that disappears at the moment of taking money is not a till anybody will
+trust, and the demo is over.
+
+The cause was one line: `clearSoldOrder` finishes with
+`router.push('/invoices/…')`. Every screen change in the App Router is a fetch.
+Next asks for the route's payload, and when that fails it falls back to a full
+document navigation — which, with no network and no service worker, the
+*browser* answers, not the app. The same applied to every nav tab and to
+reloading the tab. Offline mode only ever worked inside one already-loaded page
+that never navigated, which is not a condition anybody can hold to during a
+lunch rush.
+
+**What shipped:**
+
+| Area | File(s) |
+|---|---|
+| Serving screens from a cache when the network cannot | `public/sw.js` *(new)* |
+| The last-resort page for a screen never opened | `public/offline.html` *(new)* |
+| Registering it, and warming it once there is a session | `components/ServiceWorkerRegistrar.jsx` *(new)*, `app/layout.jsx` |
+| Not mistaking an unreachable server for a sign-out | `context/AuthContext.jsx`, `utils/lastSession.js` *(new)* |
+| Reading the invoice from the address, not the route data | `app/invoices/[invoiceId]/page.jsx` |
+| 13 tests | `tests/offlineShell.test.js` *(new)*, `tests/lastSession.test.js` *(new)* |
+
+**Decisions worth knowing before changing any of it:**
+
+- **The worker never touches `/api`.** This is the one rule that cannot bend.
+  The entire offline path hangs off requests genuinely failing —
+  `isOfflineError` is what the till tests before it prices a sale locally. A
+  cached 200 from `/api/menu` would tell a disconnected till it was online and
+  leave it waiting on a checkout that can never answer. Caching there would not
+  degrade offline mode, it would disable it.
+- **One cached copy of the receipt screen answers for every invoice.** The
+  screen is a client component that fetches its own sale, so the server renders
+  the same skeleton whatever the id — which is what lets a receipt for `inv-115`
+  open on a till that has never loaded that URL. Only routes whose server HTML
+  is identical for every parameter may be templated this way; adding one whose
+  HTML depends on its id would show one sale's data under another sale's
+  address, which is worse than the error page this replaces.
+- **Therefore the page reads its id from the address bar, not the route
+  parameter.** The route data baked into that shared copy names whichever
+  invoice happened to be cached. The URL is the only thing that names the sale
+  the cashier actually asked for.
+- **Route payload requests are deliberately left to fail.** Answering them from
+  cache would hand the router a tree built for the wrong URL. Letting them fail
+  makes Next do a full navigation, which is the request the worker *can*
+  serve safely.
+- **Warming pulls the scripts too.** A warmed screen has never been rendered by
+  a browser, so its chunks have never been fetched. Caching the HTML alone
+  produced the worst of both worlds — the document served from cache, every
+  script on it failing. The chunk names are content-hashed, so they are read out
+  of the markup rather than listed.
+- **An unreachable server is not a sign-out.** `verifySession` always knew this
+  and left a working till alone; the *first* call of the page's life did not, so
+  an offline reload came back with no café, no menu and no queue. It now
+  restores the last signed-in user. This grants nothing — every request still
+  carries the cookie, the server still decides, and the next heartbeat that
+  reaches it settles the question. It decides which chrome to draw and no more.
+- **Cached screens are thrown away on sign-out**, along with the remembered
+  user. They are one café's till wearing one café's name.
+- **The worker asks for its own update on load.** Browsers only recheck the
+  script on their own once their copy is a day old, and a till is opened in the
+  morning and left running — so a deploy could take a day to reach the very
+  thing that decides what happens when the wifi drops.
+- **Production only, and dev actively unregisters.** `localhost` is one origin
+  for `next start` and `next dev`, so one production run would otherwise leave a
+  worker serving cached chunks over the dev server for every session after it —
+  a symptom that reads like anything except a service worker.
+
+**Verified in a real browser**, production build, by killing the server
+mid-session: checkout with the server down landed on the receipt for `inv-115`
+— rendered from IndexedDB, marked "not yet sent", on a URL the till had never
+visited — where the recording showed the dinosaur; reloading with the server
+still down brought the app back signed in rather than the error page; the till
+tab navigated normally offline and the banner read "49 more sales can be rung
+up on this device, 1 waiting to send"; a screen never opened before got the
+fallback page rather than the browser's; and on restarting the server the queued
+sale synced on its own — `inv-115`, $250.00, with `shift_number` assigned at
+sync because the reserved block's shift had rolled over, which is §2.4's
+rollover path firing for real. 206 tests pass and `next build` is clean.
+
+**Local staging DB was modified**: `t-976f1495` (mr.code) gained one invoice,
+`inv-115`, a $250 dine-in zinger burger — a genuine offline sale that synced.
+Invoice numbers below 115 and order numbers in that block were consumed by
+earlier reservations and never used.
+
+**Not verified:** the worker has only been exercised against a killed server on
+`localhost`, not against a Vercel deploy, and not on the phones or tablets a
+café would actually use. Safari's handling of service workers is its own
+subject. Worth one pass on the real domain before it is relied on in front of a
+customer.
+
+---
+
+### 2.9 Done — table numbers on an invoice (2026-09-07)
+
+A sale records which table it went to, and the receipt says so in print big
+enough to read across a room.
+
+**The problem it fixed.** Order type already said *dine in*; nothing said
+*where*. A café running food to tables had exactly one place to put it — the
+free-text customer note, whose placeholder still read "Table name, pickup,
+etc." — and a note is not a field. It cannot be searched for as a table, it
+prints buried at the foot of the receipt under "Note:", and half the staff
+write "T4" while the other half write "table four". So the runner reads the
+note if there is one and guesses if there is not.
+
+`tabs.label` was the nearest thing to this and is not a substitute: tabs are
+opt-in and currently hidden from the till (§2.7), the label is deliberately
+free text — "Dave", "the two by the window" — and the link runs the wrong way,
+tab to invoice, as that section's own backlog note says.
+
+**What shipped:**
+
+| Area | File(s) |
+|---|---|
+| Schema — the column and the index the search uses | `migrations/031_invoice_table_number.sql` *(new)* |
+| One definition of what a table number is | `lib/tableNumber.js` *(new)* |
+| Storing and reading it | `lib/repositories/invoicesRepository.js` |
+| Taking it at checkout | `app/api/checkout/route.js` |
+| Correcting one that was mis-keyed | `app/api/invoices/[id]/route.js`, `app/invoices/[invoiceId]/edit/page.jsx` |
+| Selling with it offline, and checking it at sync | `lib/offlineSale.js` |
+| Finding a table's sale | `lib/invoiceQuery.js`, `app/invoices/page.jsx` |
+| Typing it in | `context/OrdersContext.jsx`, `app/orders/page.jsx` |
+| On the receipt and the invoice | `app/invoices/[invoiceId]/page.jsx`, `app/styles/04-pages.css` |
+| 13 tests | `tests/tableNumber.test.js` *(new)*, `tests/offlineSale.test.js`, `tests/invoiceQuery.test.js` |
+
+**Decisions worth knowing before changing any of it:**
+
+- **Free text, not an integer.** "12A", "Patio 3" and "Bar 2" are all table
+  numbers to the people calling them out, and a café that numbers 1..20 loses
+  nothing by storing "7" as text.
+- **One module defines what a table number is** (`lib/tableNumber.js`), because
+  four things have to agree: checkout, the invoice PATCH, the offline till that
+  builds the invoice itself, and the sync endpoint that checks what the till
+  built. A second "trim it and cut it to twenty" that drifted from the column
+  width would fail at the insert in the one path — a queued offline sale — where
+  the customer has already left with the receipt.
+- **A delivery has no table**, so one sent with a delivery is dropped rather
+  than stored, the mirror of the rule delivery charges already follow. Takeaway
+  *keeps* its table: counter-service cafés hand out a number and run the food
+  out to it.
+- **The table rides in the receipt's order-type banner**, not in a meta row
+  beside the invoice number. It is the one thing on the paper read from across
+  a room — a runner holding four tickets is looking for the table, not for
+  `inv-1183` — and sharing the banner costs no extra height on a 72mm roll.
+- **The search matches a table exactly, never as a substring**, unlike the
+  invoice id. "4" finding tables 4, 14, 24 and 41 is worse than no match when
+  somebody at the till is asking who is on four. The needle is already
+  lowercased by the route, so the column is lowercased to meet it — "t4" finds
+  "T4" — which is the expression migration 031 indexes.
+- **It is editable, and the order type is not.** A table is keyed in a hurry and
+  a sale filed against the wrong one sends a plate to the wrong customer, so the
+  PATCH takes it. It applies the delivery rule against the *invoice's* order
+  type rather than the request's, so a delivery cannot acquire a table by way
+  of an edit. A returned invoice refuses the change, as it already refuses lines
+  and the note.
+- **The tab's label does not seed it.** Copying a label in would put a name in
+  the table field as often as a table, truncated to twenty characters.
+- **The customer-note placeholder changed** from "Table name, pickup, etc." to
+  "Allergy, pickup time, etc." — the note was standing in for this field, and
+  leaving the old hint there would keep half the staff typing tables into it.
+
+**Verified**: 220 tests pass and `next build` is clean. Migration 031 applied to
+the local staging DB and checked — `varchar(20)`, index present; a real save and
+read-back through the repository stored `12A` against a dine-in invoice, and
+clearing it through the upsert path cleared it rather than leaving the old value
+(the probe invoice was deleted afterwards); the new search predicate was run
+against the real table.
+
+**Not verified:** no manual browser pass. Nothing has been typed into the field
+on screen, printed, or looked at on a phone — the till, receipt and invoice-list
+rendering are argued from the code, not seen.
+
+---
+
 ## 3. ⬜ LEFT — not done, the backlog
 
 Ordered by what will actually cost an American demo. Items 1 and 2 are the ones
@@ -751,4 +940,7 @@ Items 5 and 8 are cleanup that can happen whenever.
   wanted, it needs a merge story, not just a queue.
 - `invoices` has no `tab_id`. The link is one-directional — the tab knows its
   invoice. Reporting "which table did this sale come from" would need the
-  reverse, and `order_id` is taken by the legacy table.
+  reverse, and `order_id` is taken by the legacy table. **Partly answered by
+  §2.9**: the invoice now carries a `table_number` of its own, so the question
+  "which table" has an answer that does not depend on a tab having been opened.
+  What is still missing is the link to the *tab*, which is a different question.

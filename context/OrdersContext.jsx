@@ -90,6 +90,10 @@ export function OrdersProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [customerNote, setCustomerNote] = useState('')
   const [orderType, setOrderType] = useState('dine_in')
+  // Which table the order is going to. Free text — "4", "12A", "Patio 3" —
+  // because that is what staff call out. Deliveries have no table, and the
+  // server drops one sent with a delivery rather than storing a leftover.
+  const [tableNumber, setTableNumber] = useState('')
   const [deliveryCharge, setDeliveryCharge] = useState('')
   const [checkingOut, setCheckingOut] = useState(false)
   // Set the moment checkout succeeds and held until the invoice page is on
@@ -358,6 +362,7 @@ export function OrdersProvider({ children }) {
     setActiveOrderId(order.id)
     setCustomerNote('')
     setOrderType('dine_in')
+    setTableNumber('')
     setDeliveryCharge('')
   }
 
@@ -413,6 +418,11 @@ export function OrdersProvider({ children }) {
     setActiveOrderId(order.id)
     setCustomerNote(tab.customerNote ?? '')
     setOrderType(tab.orderType ?? 'dine_in')
+    // Deliberately not seeded from the tab's label. A label is free text of
+    // its own — "Dave", "the two by the window" — so copying it in would put
+    // a name in the table field as often as a table, truncated to twenty
+    // characters. The server types the table in when the tab is rung up.
+    setTableNumber('')
     setDeliveryCharge('')
   }
 
@@ -606,6 +616,7 @@ export function OrdersProvider({ children }) {
       orderType,
       deliveryCharge: dc,
       customerNote,
+      tableNumber,
       dayStartHour: reservation.dayStartHour,
       timezone: reservation.timezone,
     })
@@ -620,6 +631,7 @@ export function OrdersProvider({ children }) {
     setActiveOrderId(null)
     setCustomerNote('')
     setOrderType('dine_in')
+    setTableNumber('')
     setDeliveryCharge('')
     router.push(`/invoices/${invoiceId}`)
   }
@@ -656,6 +668,7 @@ export function OrdersProvider({ children }) {
         customerNote,
         paymentMethod: null,
         orderType,
+        tableNumber,
         deliveryCharge: dc,
         // Closes the tab in the same request that creates the invoice, so a
         // sale and the tab it came from cannot end up disagreeing.
@@ -718,6 +731,8 @@ export function OrdersProvider({ children }) {
     setCustomerNote,
     orderType,
     setOrderType,
+    tableNumber,
+    setTableNumber,
     deliveryCharge,
     setDeliveryCharge,
     error,
@@ -753,7 +768,7 @@ export function OrdersProvider({ children }) {
   }), [
     menu, orders, activeOrderId, activeOrder,
     orderMenuItems, orderDeals, orderCategoryTabs, orderTotal, orderTax, orderGrandTotal,
-    categoryTabs, customerNote, orderType, deliveryCharge, error, loading, checkingOut, openingInvoiceId, refreshAll,
+    categoryTabs, customerNote, orderType, tableNumber, deliveryCharge, error, loading, checkingOut, openingInvoiceId, refreshAll,
     online, queuedCount, numbersLeft, menuCachedAt, syncing, drainQueue, tenantId,
     tabs, tabSaving, refreshTabs,
   ])
