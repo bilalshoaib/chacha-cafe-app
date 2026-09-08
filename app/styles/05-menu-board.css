@@ -564,10 +564,12 @@
   letter-spacing: 0.04em;
 }
 
-/* Deal add strip — a light raised panel, not a coloured one */
+/* Deal add strip — a plain white panel, same as every other card on the app,
+   rather than the tinted one that read as "cream" against the surrounding
+   white. */
 .theme-chacha .deal-add-field-top {
   max-width: 560px;
-  background: var(--surface-raised);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.1rem;

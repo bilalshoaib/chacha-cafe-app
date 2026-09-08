@@ -259,8 +259,11 @@ button.danger-solid:disabled {
   border-bottom: none;
 }
 
+/* The "add a line" row — white like every other row, marked by a heavier
+   rule above it rather than a fill. */
 .order-entry-row td {
-  background: var(--surface-raised);
+  background: var(--surface);
+  border-top: 2px solid var(--border);
 }
 
 .cell-readonly {
@@ -284,13 +287,15 @@ button.danger-solid:disabled {
 }
 
 /* A discount box greys out while the other kind of discount is in use, so it
-   reads as unavailable rather than merely empty. */
+   reads as unavailable rather than merely empty. The dashed border and the
+   dimmed text carry that on their own — no fill, so it stays white with the
+   rest of the row. */
 .input-table:disabled {
-  background: var(--bg);
+  background: var(--surface);
   color: var(--text-muted);
   border-style: dashed;
   cursor: not-allowed;
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
 .deal-split-fields {

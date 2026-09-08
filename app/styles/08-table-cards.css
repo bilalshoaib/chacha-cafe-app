@@ -263,13 +263,12 @@
     background: none;
   }
 
-  /* The till's entry row is tinted cell by cell on desktop, which is right
-     when the cells sit side by side and wrong the moment they stack: it paints
-     a stack of grey bands down the card. The card wears the tint instead, so
-     the line being built still reads as the one that is not yet on the order. */
+  /* The entry row stays white like the rest; a heavier border marks it as the
+     line not yet on the order (matching the desktop treatment). */
   table.table-cards tr.order-entry-row {
-    background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+    background: var(--surface);
     border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    border-width: 2px;
   }
 
   table.table-cards tr.order-entry-row td {
