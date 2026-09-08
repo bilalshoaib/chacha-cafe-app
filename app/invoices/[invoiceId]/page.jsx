@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, usePathname } from 'next/navigation'
 import { api, isOfflineError } from '@/api.js'
 import { findQueuedSale } from '@/lib/offline/store.js'
 import Modal, { ConfirmActions } from '@/components/Modal.jsx'
@@ -138,18 +138,29 @@ function buildReceiptHtml(invoice, itemLabelById, branding) {
  * address bar to read. Both agree on the first render — the screen is a
  * skeleton until the sale loads, and the skeleton names no invoice — so
  * hydration has nothing to disagree about.
+ *
+ * `usePathname()` is a dependency, not the source: it is the client route as
+ * React sees it, so the memo recomputes once a client-side navigation has
+ * settled. Without it the memo is keyed only on the route param, and a
+ * navigation from the list to a sale — clicking a row, or landing here from
+ * checkout — can compute while `window.location` still reads `/invoices`,
+ * capture `invoices` as the id, and never recompute because the param never
+ * changed again. That is the "Invoice not found / No invoice with id invoices"
+ * that a reload clears. The `invoices` guard is the belt to that braces: the
+ * collection segment is never a real invoice id, so fall back to the param.
  */
 function useInvoiceIdFromAddress(fromRoute) {
+  const routePath = usePathname()
   return useMemo(() => {
     if (typeof window === 'undefined') return fromRoute
     const last = window.location.pathname.split('/').filter(Boolean).pop()
-    if (!last) return fromRoute
+    if (!last || last === 'invoices') return fromRoute
     try {
       return decodeURIComponent(last)
     } catch {
       return last
     }
-  }, [fromRoute])
+  }, [fromRoute, routePath])
 }
 
 export default function InvoiceDetailPage() {
