@@ -51,15 +51,19 @@
   --cream-dim: color-mix(in srgb, var(--brand-secondary) 16%, #fff);
 
   /* ── Semantic tokens — what the rest of the app actually uses ──
-     Derivation retuned to the "White Label" design: softer surfaces, a
-     warmer near-white ground, gentler borders. */
+     Derivation retuned to the "White Label" design: near-white surfaces,
+     gentle borders. The ground and the raised fill are tinted from the
+     PRIMARY, not the secondary — a bright secondary (a lemon gold, say)
+     mixed into white reads as "cream" against a white card, which it was
+     doing on the till. A trace of the primary keeps them from going cold
+     without that. */
   --text: color-mix(in srgb, var(--brand-primary) 25%, #17120d);
   --text-muted: color-mix(in srgb, var(--brand-primary) 20%, #6b6b6b);
   --text-h: color-mix(in srgb, var(--brand-primary) 55%, #14100c);
   --text-heading: var(--text-h);
-  --bg: color-mix(in srgb, var(--brand-secondary) 6%, #fff);
+  --bg: color-mix(in srgb, var(--brand-primary) 3%, #fff);
   --surface: #ffffff;
-  --surface-raised: color-mix(in srgb, var(--brand-secondary) 4%, #fff);
+  --surface-raised: color-mix(in srgb, var(--brand-primary) 5%, #fff);
   --border: color-mix(in srgb, var(--brand-primary) 16%, transparent);
   --accent: var(--brand-primary);
   --accent-hover: var(--brand-dark);
@@ -131,8 +135,8 @@
 html {
   background-color: var(--bg);
   background-image:
-    radial-gradient(1100px 600px at 15% 0%, color-mix(in srgb, var(--brand-primary) 8%, transparent) 0%, transparent 60%),
-    radial-gradient(900px 560px at 100% 10%, color-mix(in srgb, var(--brand-secondary) 14%, transparent) 0%, transparent 55%);
+    radial-gradient(1100px 600px at 15% 0%, color-mix(in srgb, var(--brand-primary) 5%, transparent) 0%, transparent 60%),
+    radial-gradient(900px 560px at 100% 10%, color-mix(in srgb, var(--brand-primary) 4%, transparent) 0%, transparent 55%);
   background-repeat: no-repeat, no-repeat;
   background-attachment: fixed, fixed;
 }
