@@ -255,7 +255,7 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sel
   h2 { font-size: 14px; margin: 20px 0 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
   p.sub { color: #666; font-size: 11px; margin-bottom: 16px; }
   .stats { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
-  .stat { border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 14px; min-width: 130px; }
+  .stat { border: 1px solid #e5e7eb; border-radius: 4px; padding: 10px 14px; min-width: 130px; }
   .stat-label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
   .stat-value { font-size: 18px; font-weight: 700; display: block; margin: 2px 0; }
   .stat-sub { font-size: 10px; color: #6b7280; }

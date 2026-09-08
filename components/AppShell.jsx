@@ -7,6 +7,7 @@ import { useBranding } from '@/context/BrandingContext.jsx'
 import { OrdersProvider } from '@/context/OrdersContext.jsx'
 import ImpersonationBanner from '@/components/ImpersonationBanner.jsx'
 import BrandMark from '@/components/BrandMark.jsx'
+import ThemeToggle from '@/components/ThemeToggle.jsx'
 import NavPending from '@/components/NavPending.jsx'
 import Skeleton from '@/components/Skeleton.jsx'
 import RouteSkeleton from '@/components/RouteSkeleton.jsx'
@@ -81,38 +82,39 @@ function AppNav({ user, onLogout }) {
   const expensesActive = pathname === '/expenses' || pathname.startsWith('/expenses/')
   const settingsActive = pathname.startsWith('/settings') && !pathname.startsWith('/settings/reports')
 
+  // One list, rendered twice — in the fixed sidebar and in the mobile drawer.
+  // `onNavigate` closes the drawer; the sidebar passes nothing.
+  //
+  // The platform-console link the design's prototype shows in this sidebar is
+  // deliberately absent: it exists only in the prototype. A platform owner
+  // signs in like anyone else and AppShell's `runningPlatform` branch hands
+  // them the console; there is no café nav for them to see this from.
+  const renderLinks = (onNavigate) => (
+    <>
+      <NavLink href="/" end onClick={onNavigate}>Home</NavLink>
+      <NavLink href="/orders" end onClick={onNavigate}>Take order</NavLink>
+      <NavLink href="/deals" onClick={onNavigate}>Create deal</NavLink>
+      <NavLink href="/menu" onClick={onNavigate}>Menu items</NavLink>
+      <NavLink href="/invoices" active={invoicesActive} onClick={onNavigate}>Invoices</NavLink>
+      {user?.role !== 'counter_cashier' ? (
+        <NavLink href="/expenses" active={expensesActive} onClick={onNavigate}>Expenses</NavLink>
+      ) : null}
+      <NavLink href="/settings" active={settingsActive} onClick={onNavigate}>Settings</NavLink>
+      {user?.role === 'super_admin' ? (
+        <NavLink href="/settings/reports" onClick={onNavigate}>Reports</NavLink>
+      ) : null}
+    </>
+  )
+
   return (
     <>
-      <header className="top">
+      {/* Mobile-only strip: brand on the left, hamburger on the right. The
+          fixed sidebar takes its place from 900px up. */}
+      <div className="mobile-topbar">
         <div className="brand">
           <BrandMark />
-          <div>
-            <h1>{branding?.name}</h1>
-            {branding?.tagline ? <p className="tagline">{branding.tagline}</p> : null}
-          </div>
+          <h1>{branding?.name}</h1>
         </div>
-
-        <div className="top-header-right top-header-desktop">
-          <nav className="tabs" aria-label="Main">
-            <NavLink href="/" end>Home</NavLink>
-            <NavLink href="/orders" end>Take order</NavLink>
-            <NavLink href="/deals">Create deal</NavLink>
-            <NavLink href="/menu">Menu items</NavLink>
-            <NavLink href="/invoices" active={invoicesActive}>Invoices</NavLink>
-            {user?.role !== 'counter_cashier' ? (
-              <NavLink href="/expenses" active={expensesActive}>Expenses</NavLink>
-            ) : null}
-            <NavLink href="/settings" active={settingsActive}>Settings</NavLink>
-            {user?.role === 'super_admin' ? (
-              <NavLink href="/settings/reports">Reports</NavLink>
-            ) : null}
-            {user?.platformOwner ? <NavLink href="/platform">Cafés</NavLink> : null}
-          </nav>
-          <button type="button" className="ghost sm header-logout" onClick={onLogout}>
-            Log out
-          </button>
-        </div>
-
         <button
           type="button"
           className="hamburger-btn"
@@ -124,7 +126,33 @@ function AppNav({ user, onLogout }) {
           <span className="hamburger-bar" />
           <span className="hamburger-bar" />
         </button>
-      </header>
+      </div>
+
+      <aside className="side-nav">
+        <div className="side-nav-brand">
+          <BrandMark />
+          <div className="side-nav-brand-text">
+            <div className="side-nav-name">{branding?.name}</div>
+            {branding?.tagline ? (
+              <div className="side-nav-sub">{branding.tagline}</div>
+            ) : (
+              <div className="side-nav-sub">Point of sale</div>
+            )}
+          </div>
+        </div>
+        <nav className="side-nav-links" aria-label="Main">{renderLinks()}</nav>
+        <div className="side-nav-footer">
+          {/* No "Platform console" link here on purpose. A platform owner with
+              no café is routed straight to the console by middleware and never
+              renders this nav; one who has opened a café is impersonating, and
+              the ImpersonationBanner's "Exit" is their way back. The prototype's
+              always-on link was a prototype convenience. */}
+          <ThemeToggle />
+          <button type="button" className="side-nav-logout" onClick={onLogout}>
+            Log out
+          </button>
+        </div>
+      </aside>
 
       {navOpen && (
         <div className="mobile-nav-overlay" onClick={closeNav} aria-hidden="true" />
@@ -139,22 +167,9 @@ function AppNav({ user, onLogout }) {
             ✕
           </button>
         </div>
-        <div className="mobile-nav-links">
-          <NavLink href="/" end onClick={closeNav}>Home</NavLink>
-          <NavLink href="/orders" end onClick={closeNav}>Take order</NavLink>
-          <NavLink href="/deals" onClick={closeNav}>Create deal</NavLink>
-          <NavLink href="/menu" onClick={closeNav}>Menu items</NavLink>
-          <NavLink href="/invoices" active={invoicesActive} onClick={closeNav}>Invoices</NavLink>
-          {user?.role !== 'counter_cashier' ? (
-            <NavLink href="/expenses" active={expensesActive} onClick={closeNav}>Expenses</NavLink>
-          ) : null}
-          <NavLink href="/settings" active={settingsActive} onClick={closeNav}>Settings</NavLink>
-          {user?.role === 'super_admin' ? (
-            <NavLink href="/settings/reports" onClick={closeNav}>Reports</NavLink>
-          ) : null}
-          {user?.platformOwner ? <NavLink href="/platform" onClick={closeNav}>Cafés</NavLink> : null}
-        </div>
+        <div className="mobile-nav-links">{renderLinks(closeNav)}</div>
         <div className="mobile-nav-footer">
+          <ThemeToggle />
           <button type="button" className="mobile-nav-logout" onClick={() => { closeNav(); onLogout() }}>
             Log out
           </button>
@@ -193,24 +208,24 @@ export default function AppShell({ children }) {
     // about what is coming.
     if (pathname === '/login') return <div className="app" />
     return (
-      <div className="app shell">
-        <header className="top" aria-hidden="true">
-          <div className="brand">
-            <Skeleton width="2.6rem" height="2.6rem" className="skeleton-brand-mark" />
+      <div className="app-shell">
+        <aside className="side-nav" aria-hidden="true">
+          <div className="side-nav-brand">
+            <Skeleton width="2.1rem" height="2.1rem" className="skeleton-brand-mark" />
             <div className="skeleton-brand-lines">
-              <Skeleton width="9rem" height="1.15rem" />
-              <Skeleton width="6rem" height="0.7rem" />
+              <Skeleton width="7rem" height="1rem" />
+              <Skeleton width="4.5rem" height="0.65rem" />
             </div>
           </div>
-          <div className="top-header-right top-header-desktop">
-            <div className="tabs">
-              {Array.from({ length: 6 }, (_, i) => (
-                <Skeleton key={i} width={`${3.5 + ((i * 3) % 3)}rem`} height="0.95rem" />
-              ))}
-            </div>
+          <div className="side-nav-links">
+            {Array.from({ length: 7 }, (_, i) => (
+              <Skeleton key={i} width="100%" height="2rem" />
+            ))}
           </div>
-        </header>
-        <RouteSkeleton />
+        </aside>
+        <div className="app-main">
+          <RouteSkeleton />
+        </div>
       </div>
     )
   }
@@ -231,7 +246,7 @@ export default function AppShell({ children }) {
 
   if (runningPlatform) {
     return (
-      <div className="app">
+      <div className="app app--platform">
         <ImpersonationBanner />
         <PlatformNav onLogout={() => void handleLogout()} />
         {children}
@@ -241,19 +256,21 @@ export default function AppShell({ children }) {
 
   return (
     <OrdersProvider key={tenantKey}>
-      <div className="app">
-        <ImpersonationBanner />
+      <div className="app-shell">
         <AppNav user={user} onLogout={() => void handleLogout()} />
-        {children}
-        {pathname !== '/' ? (
-          <footer className="foot">
-            <span>
-              <Link href={`/menu${ADD_MENU_ITEM_HASH}`} className="foot-link">
-                Add menu item
-              </Link>
-            </span>
-          </footer>
-        ) : null}
+        <div className="app-main">
+          <ImpersonationBanner />
+          {children}
+          {pathname !== '/' ? (
+            <footer className="foot">
+              <span>
+                <Link href={`/menu${ADD_MENU_ITEM_HASH}`} className="foot-link">
+                  Add menu item
+                </Link>
+              </span>
+            </footer>
+          ) : null}
+        </div>
       </div>
     </OrdersProvider>
   )

@@ -69,6 +69,28 @@ second query and a second provider on every navigation. **Neon round trips are
 ~261ms from Pakistan** — that is why this pattern exists. Any write that touches
 these columns must call `forgetTenantBranding(tenantId)`.
 
+**The look is the "White Label UI Redesign"** (applied 2026-09-08). Manrope
+body / Bricolage Grotesque display, loaded in `app/globals.css` and referenced
+only as `--font-body` / `--font-display`. Every colour still derives from the
+two brand custom properties — the derivation lives in `app/styles/01-base.css`,
+which also carries an opt-in dark surface mode under
+`:root[data-theme="dark"]`. The dark choice is a per-device localStorage flag
+(`pos-theme`) set by `components/ThemeToggle.jsx` in the sidebar footer and
+pre-applied by an inline script in `app/layout.jsx` (hence
+`suppressHydrationWarning` on `<html>`). The café app is a fixed left sidebar
+(`.side-nav` / `.app-shell` / `.app-main` in `AppShell.jsx` + `03-components.css`),
+collapsing to the existing hamburger drawer below 900px. The **sign-in page
+shows no café identity** — the tenant is only resolved after the session
+exists. The **platform console** keeps its own brand-independent neutral
+palette, set by re-pointing the semantic tokens on `.app--platform` at the top
+of `app/styles/07-platform.css`.
+
+**Take order keeps its single-column entry-row flow** — a two-column
+"catalogue + sticky cart" rebuild was tried and reverted as harder to use at
+the counter. The page is only re-skinned: same `ItemAutocomplete` entry row,
+`DealPicker` dropdown and editable lines table, now on the redesign's neutral
+surfaces (`.theme-chacha` in `app/styles/05-menu-board.css`).
+
 **Money and dates are never formatted directly.** Use `useMoney()` and
 `useLocale()` from `context/BrandingContext.jsx`. Only reach for
 `moneyFormatter()` / `formatShortDateTime()` in `utils/formatting.js` when a

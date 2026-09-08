@@ -69,8 +69,21 @@ export default async function RootLayout({ children }) {
     // sixty places, and each of those stays on the wrong side until it becomes
     // a logical property. Correct for every left-to-right language, which is
     // all of them bar three in constants/locales.js.
-    <html lang={branding.locale} dir={branding.direction}>
+    // suppressHydrationWarning on <html>: the inline script below sets
+    // data-theme before React hydrates, so the client tree carries an
+    // attribute the server render did not. That one-attribute difference is
+    // expected and must not be reported as a mismatch.
+    <html lang={branding.locale} dir={branding.direction} suppressHydrationWarning>
       <body suppressHydrationWarning>
+        {/* Applies the saved light/dark choice to <html> before first paint,
+            so a dark-mode device never flashes the light theme on the way in.
+            The control that writes this back is components/ThemeToggle.jsx. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('pos-theme');if(t==='dark')document.documentElement.dataset.theme='dark';}catch(e){}",
+          }}
+        />
         {/* The stylesheets derive every colour from these two custom
             properties, so a re-skin is these two values and nothing else. They
             now come from the tenants table rather than constants/theme.js,

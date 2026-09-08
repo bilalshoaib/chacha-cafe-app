@@ -13,17 +13,18 @@
 .hp-staff-shell {
   display: flex;
   flex-direction: column;
-  /* Break out of the .app horizontal padding so the hero is full-width */
-  margin-left: -8.5rem;
-  margin-right: -8.5rem;
-  margin-top: -1.25rem;
+  /* Break out of the .app-main padding (see 03-components.css) so the hero
+     runs full-width of the content column. */
+  margin-left: -2rem;
+  margin-right: -2rem;
+  margin-top: -1.75rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .hp-staff-shell {
     margin-left: -1rem;
     margin-right: -1rem;
-    margin-top: -1rem;
+    margin-top: -1.25rem;
   }
 }
 
@@ -116,13 +117,12 @@
    --name-chars. A fixed clamp was tuned for a six-letter name and left every
    longer one either overflowing the hero or wrapping mid-word. */
 .hp-logo-name {
-  font-family: 'Anton', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(2rem, min(13vw, calc(72rem / var(--name-chars, 8))), 7rem);
-  font-weight: 400;
-  letter-spacing: 0.01em;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   line-height: 1.05;
   margin: 0 0 0.5rem;
-  text-transform: uppercase;
   overflow-wrap: break-word;
   color: var(--brand-gold);
   -webkit-text-stroke: 2px var(--brand-deep);
@@ -162,7 +162,7 @@
   font-weight: 800;
   font-size: 0.95rem;
   letter-spacing: 0.04em;
-  border-radius: 999px;
+  border-radius: var(--radius);
   text-decoration: none;
   box-shadow: 0 8px 22px color-mix(in srgb, var(--brand-gold) 40%, transparent);
   transition: filter 0.15s, transform 0.12s;
@@ -182,7 +182,7 @@
   font-weight: 600;
   font-size: 0.95rem;
   letter-spacing: 0.04em;
-  border-radius: 999px;
+  border-radius: var(--radius);
   text-decoration: none;
   border: 2px solid rgba(255, 255, 255, 0.55);
   transition: border-color 0.15s, background 0.15s;
@@ -209,7 +209,7 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.45rem 1rem;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
@@ -246,8 +246,14 @@
 
 .hp-main--staff {
   max-width: none;
-  --page-pad: 8.5rem;
+  --page-pad: 2rem;
   padding: 2rem var(--page-pad) 3rem;
+}
+
+@media (max-width: 900px) {
+  .hp-main--staff {
+    --page-pad: 1rem;
+  }
 }
 
 .hp-loading-text {
@@ -269,11 +275,10 @@
 
 .hp-section-title {
   margin: 0 0 0.25rem;
-  font-family: 'Anton', system-ui, sans-serif;
-  font-size: 1.9rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--text-h);
   display: flex;
   align-items: center;
@@ -298,7 +303,7 @@
   position: relative;
   background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-primary) 65%, var(--brand-deep) 100%);
   border: none;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   padding: 1.2rem 1.25rem 1.25rem;
   box-shadow: 0 16px 34px color-mix(in srgb, var(--brand-deep) 22%, transparent);
   transition: transform 0.15s, box-shadow 0.15s;
@@ -320,7 +325,7 @@
   font-weight: 800;
   letter-spacing: 0.1em;
   padding: 0.28rem 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--radius);
 }
 
 .hp-deal-head {
@@ -332,17 +337,16 @@
 }
 
 .hp-deal-name {
-  font-family: 'Anton', system-ui, sans-serif;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  font-size: 1.15rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-size: 1.1rem;
   color: #ffffff;
   max-width: 80%;
 }
 
 .hp-deal-price {
-  font-family: 'Anton', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 2.2rem;
   font-weight: 400;
   color: var(--brand-gold);
@@ -381,14 +385,14 @@
 .hp-menu-cat {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 1.1rem 1.2rem 1.25rem;
   box-shadow: var(--shadow);
 }
 
 .hp-menu-cat-title {
   margin: 0 0 0.85rem;
-  font-family: 'Anton', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 400;
   text-transform: uppercase;
@@ -428,12 +432,12 @@
 }
 
 .hp-menu-price {
-  font-family: 'Anton', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-weight: 400;
   color: var(--text-h);
   background: var(--yellow);
   padding: 0.28rem 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   font-size: 0.92rem;
@@ -457,11 +461,10 @@
 }
 
 .hp-about-title {
-  font-family: 'Anton', system-ui, sans-serif;
-  font-size: 1.9rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: #ffffff;
   margin: 0 0 0.75rem;
 }
@@ -486,7 +489,7 @@
   padding: 0.4rem 0.9rem;
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-size: 0.8rem;
   font-weight: 600;
   color: #ffffff;
@@ -535,11 +538,10 @@
 }
 
 .hp-footer-name {
-  font-family: 'Anton', system-ui, sans-serif;
-  font-size: 1.6rem;
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--brand-gold);
 }
 
@@ -592,13 +594,13 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-primary) 60%, var(--brand-deep) 100%);
-  border-radius: var(--radius);
+  background: linear-gradient(120deg, var(--primary-deep) 0%, var(--brand-primary) 100%);
+  border-radius: var(--radius-lg);
   padding: 1.5rem 1.75rem 1.6rem;
   margin-bottom: 1.5rem;
   overflow: hidden;
   border: none;
-  box-shadow: 0 14px 30px color-mix(in srgb, var(--brand-deep) 20%, transparent);
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--brand-primary) 20%, transparent);
 }
 
 .page-hero-action {
@@ -609,7 +611,7 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.55rem 1rem;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
@@ -640,7 +642,7 @@
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-weight: 600;
 }
 
@@ -668,19 +670,25 @@
 }
 
 .page-hero-icon {
-  font-size: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 1.3rem;
   line-height: 1;
   flex-shrink: 0;
 }
 
 .page-hero-title {
   margin: 0 0 0.2rem;
-  font-family: 'Anton', system-ui, sans-serif;
-  font-size: 1.9rem;
-  font-weight: 400;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: #ffffff;
-  letter-spacing: 0.4px;
   line-height: 1.15;
 }
 
@@ -712,7 +720,7 @@
     display: none;
   }
   .page-hero-title {
-    font-size: 1.35rem;
+    font-size: 1.2rem;
   }
 }
 

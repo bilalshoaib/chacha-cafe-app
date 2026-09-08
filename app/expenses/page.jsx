@@ -74,27 +74,48 @@ export default function ExpensesListPage() {
         </div>
       </div>
 
-      <section className="card expenses-filters-card">
-        <h3 className="sub">Date range</h3>
-        <div className="expenses-presets">
+      <div className="list-filter-group">
+        <div className="list-filter-label">Date range</div>
+        <div className="filter-chip-row">
           {EXPENSE_RANGE_PRESETS.map((p) => (
-            <button key={p.id} type="button" className={presetId === p.id ? 'primary sm' : 'ghost sm'} onClick={() => setPresetId(p.id)}>{p.label}</button>
+            <button
+              key={p.id}
+              type="button"
+              className={`filter-chip${presetId === p.id ? ' active' : ''}`}
+              onClick={() => setPresetId(p.id)}
+            >
+              {p.label}
+            </button>
           ))}
         </div>
         {rangeSummary ? <p className="muted small expenses-range-line">{rangeSummary}</p> : null}
-        {/* Heading and all, only where the café has counters to tell apart. */}
-        {hasCounters ? (
-          <>
-            <h3 className="sub invoices-business-heading">Counter</h3>
-            <div className="invoices-filter-tabs">
-              <button type="button" className={filterType === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType('all')}>All</button>
-              {menu.brands.map((b) => (
-                <button key={b.id} type="button" className={filterType === b.slug ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType(b.slug)}>{b.name}</button>
-              ))}
-            </div>
-          </>
-        ) : null}
-      </section>
+      </div>
+
+      {/* Heading and all, only where the café has counters to tell apart. */}
+      {hasCounters ? (
+        <div className="list-filter-group">
+          <div className="list-filter-label">Counter</div>
+          <div className="filter-chip-row">
+            <button
+              type="button"
+              className={`filter-chip${filterType === 'all' ? ' active' : ''}`}
+              onClick={() => setFilterType('all')}
+            >
+              All
+            </button>
+            {menu.brands.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                className={`filter-chip${filterType === b.slug ? ' active' : ''}`}
+                onClick={() => setFilterType(b.slug)}
+              >
+                {b.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {error ? (
         <p className="banner error" role="alert">
@@ -111,7 +132,6 @@ export default function ExpensesListPage() {
       </section>
 
       <section className="card expenses-table-card">
-        <h3 className="sub">Recorded expenses</h3>
         {loading ? (
           <SkeletonTable
             label="Loading expenses…"

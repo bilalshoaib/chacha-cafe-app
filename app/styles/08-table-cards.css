@@ -94,7 +94,7 @@
     flex-direction: column;
     padding: 0.7rem 0.85rem;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius);
     background: var(--surface);
   }
 
@@ -149,7 +149,7 @@
        to make a price read as a price (05-menu-board.css does), and a heading
        in condensed display type beside a value in it is two shouts and no
        label. This is the body stack from 01-base.css. */
-    font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.68rem;
     font-weight: 600;
     line-height: 1.6;
@@ -196,7 +196,7 @@
     content: attr(data-label);
     display: block;
     margin-bottom: 0.2rem;
-    font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-body);
     font-size: 0.68rem;
     font-weight: 600;
     text-transform: uppercase;

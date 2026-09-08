@@ -19,28 +19,48 @@
    Edit these only to change how the theme is *built*, not to change the
    theme itself. */
 :root {
+  /* The two typefaces. Manrope carries the body; Bricolage Grotesque is the
+     display face for headings and prices. Swap these two lines and the
+     @import in globals.css to re-face the whole app. */
+  --font-body: 'Manrope', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Manrope', system-ui, sans-serif;
+
   /* Primary, dark → light. Mixed toward black so the hue is preserved. */
   --brand-deepest: color-mix(in srgb, var(--brand-primary) 30%, #000);
   --brand-deep: color-mix(in srgb, var(--brand-primary) 43%, #000);
   --brand-dark: color-mix(in srgb, var(--brand-primary) 67%, #000);
 
+  /* The "White Label" design's primary ramp, by its own recipe:
+     primaryDeep = 78% primary (the dark end of a header gradient),
+     primaryDark = 60% primary (text weight on a soft fill),
+     primarySoft = a pale wash for active nav rows and chips. */
+  --primary-deep: color-mix(in srgb, var(--brand-primary) 78%, #000);
+  --primary-dark: color-mix(in srgb, var(--brand-primary) 60%, #000);
+  --primary-soft: color-mix(in srgb, var(--brand-primary) 12%, #fff);
+
   /* Secondary, dark → light. */
   --brand-gold: var(--brand-secondary);
   --brand-gold-deep: color-mix(in srgb, var(--brand-secondary) 78%, #000);
   --brand-gold-pale: color-mix(in srgb, var(--brand-secondary) 35%, #fff);
+  --accent-deep: color-mix(in srgb, var(--brand-secondary) 25%, #000);
+  --accent-pale: color-mix(in srgb, var(--brand-secondary) 30%, #fff);
 
   /* Near-whites carrying a trace of the secondary, for text on dark panels
      and for the page background — keeps "white" from going cold. */
   --cream: color-mix(in srgb, var(--brand-secondary) 10%, #fff);
   --cream-dim: color-mix(in srgb, var(--brand-secondary) 16%, #fff);
 
-  /* ── Semantic tokens — what the rest of the app actually uses ── */
-  --text: color-mix(in srgb, var(--brand-primary) 25%, #120c08);
-  --text-muted: color-mix(in srgb, var(--brand-primary) 40%, #7a7a7a);
-  --text-h: var(--brand-deep);
-  --bg: color-mix(in srgb, var(--brand-secondary) 7%, #fff);
+  /* ── Semantic tokens — what the rest of the app actually uses ──
+     Derivation retuned to the "White Label" design: softer surfaces, a
+     warmer near-white ground, gentler borders. */
+  --text: color-mix(in srgb, var(--brand-primary) 25%, #17120d);
+  --text-muted: color-mix(in srgb, var(--brand-primary) 20%, #6b6b6b);
+  --text-h: color-mix(in srgb, var(--brand-primary) 55%, #14100c);
+  --text-heading: var(--text-h);
+  --bg: color-mix(in srgb, var(--brand-secondary) 6%, #fff);
   --surface: #ffffff;
-  --border: color-mix(in srgb, var(--brand-deep) 14%, transparent);
+  --surface-raised: color-mix(in srgb, var(--brand-secondary) 4%, #fff);
+  --border: color-mix(in srgb, var(--brand-primary) 16%, transparent);
   --accent: var(--brand-primary);
   --accent-hover: var(--brand-dark);
   --accent-soft: color-mix(in srgb, var(--brand-primary) 12%, #fff);
@@ -56,9 +76,18 @@
   --ribbon: #c42626;
   --ribbon-deep: #8a1f1f;
   --espresso-deep: var(--brand-deepest);
-  --radius: 14px;
-  --shadow: 0 14px 30px color-mix(in srgb, var(--brand-deep) 12%, transparent);
-  font-family: 'Work Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* One tight radius scale, used everywhere. The app deliberately reads
+     square-ish — nothing is a pill or a circle bar a real spinner / status
+     dot. Almost everything is --radius; the other two are a hair off it.
+     --radius-sm: badges, tags, tiny controls.
+     --radius:    buttons, inputs, tabs, chips, list rows, cards — the default.
+     --radius-lg: only the big focal surfaces — hero banners, the sign-in
+                  card, modals. */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 16px 32px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+  font-family: var(--font-body);
   line-height: 1.55;
   color: var(--text);
   font-synthesis: none;
@@ -67,32 +96,51 @@
   color-scheme: light;
 }
 
+/* ── Dark surface mode ─────────────────────────────────────────────────────
+   Opt-in, set as data-theme="dark" on <html> by components/ThemeToggle.jsx
+   and by the inline script in app/layout.jsx (so there is no light flash).
+   Only the tokens whose recipe changes are restated; the brand ramps and the
+   fixed danger/ribbon hues carry through unchanged. */
+:root[data-theme='dark'] {
+  --primary-soft: color-mix(in srgb, var(--brand-primary) 25%, #000);
+  --accent-pale: color-mix(in srgb, var(--brand-secondary) 35%, #000);
+  --bg: color-mix(in srgb, var(--brand-primary) 35%, #0b0d10);
+  --surface: color-mix(in srgb, var(--brand-primary) 20%, #16181c);
+  --surface-raised: color-mix(in srgb, var(--brand-primary) 26%, #1c1f24);
+  --border: color-mix(in srgb, var(--brand-secondary) 22%, transparent);
+  --text: color-mix(in srgb, var(--brand-secondary) 6%, #f3f1ee);
+  --text-muted: color-mix(in srgb, #fff 55%, transparent);
+  --text-h: color-mix(in srgb, var(--brand-secondary) 40%, #fff);
+  --text-heading: var(--text-h);
+  --accent-soft: color-mix(in srgb, var(--brand-primary) 25%, #000);
+  --cream: var(--surface-raised);
+  --cream-dim: var(--surface-raised);
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }
 
 /*
- * Page backdrop: a soft gradient wash on <html>, with a faint tiled food
- * pattern (burger, cup, fries, star) over it from body::before.
- *
- * The wash sits on <html> and not on <body> on purpose. body::before has to
- * paint *behind* the page content, which means z-index: -1 — and a negative
- * z-index child paints behind its parent's own background. With the wash on
- * body, body's opaque background covered the pattern completely. On <html>
- * the pattern lands between the two, which is where it belongs.
- *
- * The pattern is a mask rather than a background-image because a colour
- * inside a data: URI is opaque to CSS variables — tinting it directly would
- * mean re-encoding the SVG on every re-skin. As a mask, the colour comes from
- * background-color, so it is a token like everything else.
+ * Page backdrop: a quiet radial wash on <html>. The "White Label" design
+ * drops the tiled food pattern the app used to carry — the ground is now
+ * plain, and the two soft light pools are all that separates it from flat
+ * white. The wash sits on <html> so it survives an opaque body background.
  */
 html {
   background-color: var(--bg);
   background-image:
-    radial-gradient(1200px 620px at 12% -8%, color-mix(in srgb, var(--yellow) 22%, transparent) 0%, transparent 62%),
-    radial-gradient(1000px 560px at 96% 4%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 58%);
+    radial-gradient(1100px 600px at 15% 0%, color-mix(in srgb, var(--brand-primary) 8%, transparent) 0%, transparent 60%),
+    radial-gradient(900px 560px at 100% 10%, color-mix(in srgb, var(--brand-secondary) 14%, transparent) 0%, transparent 55%);
   background-repeat: no-repeat, no-repeat;
   background-attachment: fixed, fixed;
+}
+
+:root[data-theme='dark'] html {
+  background-image:
+    radial-gradient(1100px 600px at 15% 0%, color-mix(in srgb, var(--brand-primary) 22%, transparent) 0%, transparent 60%),
+    radial-gradient(900px 560px at 100% 10%, color-mix(in srgb, var(--brand-primary) 14%, transparent) 0%, transparent 55%);
 }
 
 body {
@@ -101,30 +149,14 @@ body {
   background: transparent;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-color: var(--brand-deep);
-  opacity: 0.05;
-  --food-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 30h20a10 10 0 0 0-20 0Z'/%3E%3Cpath d='M13 34h22'/%3E%3Cpath d='M15 38h18a5 5 0 0 1-18 0Z'/%3E%3Cpath d='M74 22h14l-2 18a5 5 0 0 1-10 0Z'/%3E%3Cpath d='M88 26h4a4 4 0 0 1 0 8h-3'/%3E%3Cpath d='M26 78h16l-2 16H28Z'/%3E%3Cpath d='M29 78l2-8m5 8l1-8m5 8l3-8'/%3E%3Cpath d='M86 74l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.8Z'/%3E%3C/g%3E%3C/svg%3E");
-  -webkit-mask-image: var(--food-pattern);
-  mask-image: var(--food-pattern);
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-}
-
-/* Brand display type — Anton, uppercase, espresso */
+/* Brand display type — Bricolage Grotesque, sentence case, heavy */
 h1,
 h2,
 h3,
 .sub {
-  font-family: 'Anton', system-ui, sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-h);
   line-height: 1.1;
 }
@@ -135,10 +167,19 @@ select {
   font: inherit;
 }
 
+/* The generic outer wrapper — used by the platform console, the public menu
+   and the sign-in page. The signed-in café app uses .app-shell instead
+   (a sidebar + content column; see 03-components.css). */
 .app {
   width: 100%;
   padding: 1.25rem 8.5rem 3rem;
   box-sizing: border-box;
+}
+
+@media (max-width: 1100px) {
+  .app {
+    padding: 1.25rem 2rem 3rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -175,27 +216,69 @@ select {
   flex-shrink: 0;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   SIGN IN — a single centered card on the radial wash. No café
+   identity appears here: the tenant is only resolved after the
+   session exists.
+   ═══════════════════════════════════════════════════════════ */
 .login-page {
-  max-width: 420px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
+
+.login-inner {
+  width: 100%;
+  max-width: 26rem;
+  animation: login-rise 0.4s ease both;
+}
+
+@keyframes login-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-inner { animation: none; }
 }
 
 .login-brand {
-  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.login-brand h1 {
+  margin: 0;
+  font-size: 1.2rem;
 }
 
 .login-card {
-  padding: 1.15rem 1.25rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow);
 }
 
 .login-heading {
   margin: 0 0 0.35rem;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
 }
 
-.login-lede {
-  margin: 0 0 1rem;
+.login-lede,
+.login-lede-sub {
+  margin: 0 0 1.25rem;
+}
+
+.login-lede-sub {
+  margin-bottom: 0.5rem;
 }
 
 .login-form {
@@ -211,7 +294,7 @@ select {
 .field .password-input-with-toggle {
   width: 100%;
   padding: 0.5rem 2.75rem 0.5rem 0.65rem;
-  border-radius: 10px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-h);
@@ -229,7 +312,7 @@ select {
   justify-content: center;
   padding: 0.35rem;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
@@ -252,7 +335,7 @@ select {
 }
 
 .login-back-home {
-  margin: 0 0 0.85rem;
+  margin: 1.25rem 0 0;
   text-align: center;
 }
 

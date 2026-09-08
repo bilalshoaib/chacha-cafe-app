@@ -3,12 +3,10 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext.jsx'
-import { useBranding } from '@/context/BrandingContext.jsx'
 import BrandMark from '@/components/BrandMark.jsx'
 import { takeSignedOutNotice } from '@/utils/signedOutNotice.js'
 
 export default function LoginPage() {
-  const branding = useBranding()
   const { authenticated, login } = useAuth()
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -77,22 +75,20 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
-      <div className="brand login-brand">
-        <BrandMark />
-        <div>
-          <h1>{branding?.name}</h1>
-          <p className="tagline">Sign in to continue</p>
+      <div className="login-inner">
+        {/* No café name, initial or colour here on purpose: the tenant is only
+            resolved once a session exists. BrandMark falls back to the
+            product's own neutral mark while signed out. */}
+        <div className="brand login-brand">
+          <BrandMark />
+          <div>
+            <h1>Point of sale</h1>
+          </div>
         </div>
-      </div>
 
-      <p className="login-back-home">
-        <Link href="/" className="foot-link">
-          ← View menu &amp; deals
-        </Link>
-      </p>
-
-      <section className="card login-card">
-        <h2 className="login-heading">Sign in</h2>
+      <section className="login-card">
+        <h2 className="login-heading">Welcome back</h2>
+        <p className="login-lede-sub muted small">Sign in to run the counter.</p>
         {/* Above the form, not beside the button: whoever is reading it was
             working a second ago and has just been stopped, and the first
             question is what happened rather than what to type. It is dropped
@@ -170,6 +166,13 @@ export default function LoginPage() {
           </button>
         </form>
       </section>
+
+        <p className="login-back-home">
+          <Link href="/" className="foot-link">
+            ← View menu &amp; deals
+          </Link>
+        </p>
+      </div>
     </main>
   )
 }

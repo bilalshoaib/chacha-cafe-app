@@ -10,10 +10,64 @@
    used to decide who needs a phone call. So it is denser, quieter, and
    leans on alignment and weight rather than on colour and artwork.
 
-   It stays inside the product's vocabulary — the same two brand custom
-   properties, the same Anton headings and Work Sans body — so it does not
-   feel like a different application bolted on.
+   The "White Label" redesign gives it its own brand-independent palette: a
+   cool slate on a grey ground, rather than whatever colour the last café to
+   sign in happened to choose. Rather than rewrite ~900 lines, the semantic
+   tokens are re-pointed on the console's own wrapper (.app--platform, set in
+   components/AppShell.jsx) and every rule below follows — as do the shared
+   .card, .tabs and button skins. Headings and body use the same two typefaces
+   as the rest of the app.
    ══════════════════════════════════════════════════════════════════════════ */
+
+.app.app--platform {
+  --brand-primary: #3d4a6b;
+  --brand-secondary: #8a94ad;
+  --brand-deep: #262f47;
+  --brand-deepest: #1c2335;
+  --brand-dark: #2f3a56;
+  --primary-deep: #262f47;
+  --primary-dark: #2f3a56;
+  --primary-soft: #e7e9f2;
+  --accent: #3d4a6b;
+  --accent-hover: #2f3a56;
+  --accent-soft: #e7e9f2;
+  --bg: #eef0f4;
+  --surface: #ffffff;
+  --surface-raised: #f6f7fa;
+  --border: #e0e3ea;
+  --text: #2b2f3a;
+  --text-muted: #727889;
+  --text-h: #14161f;
+  --text-heading: #14161f;
+  --shadow: 0 10px 26px rgba(20, 22, 32, 0.07);
+
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* The console's top bar: a plain white strip with a hairline under it,
+   pulled out to the full width of the .app padding box. */
+.app--platform .top {
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  margin: -1.25rem -8.5rem 1.75rem;
+  padding: 0.9rem 8.5rem;
+}
+
+@media (max-width: 1100px) {
+  .app--platform .top {
+    margin: -1.25rem -2rem 1.5rem;
+    padding: 0.9rem 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .app--platform .top {
+    margin: -1rem -1rem 1.25rem;
+    padding: 0.85rem 1rem;
+  }
+}
 
 .platform-page {
   --pf-line: color-mix(in srgb, var(--brand-primary) 14%, transparent);
@@ -72,7 +126,7 @@
 .window-picker {
   display: inline-flex;
   border: 1px solid var(--pf-line-strong);
-  border-radius: 7px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 .window-picker button {
@@ -103,7 +157,7 @@
   width: 100%;
   padding: 0.45rem 0.7rem 0.45rem 2rem;
   border: 1px solid var(--pf-line-strong);
-  border-radius: 7px;
+  border-radius: var(--radius);
   font: inherit;
   font-size: 0.9rem;
   background: #fff;
@@ -132,7 +186,7 @@
   padding: 0.85rem 1rem;
   background: #fff;
   border: 1px solid var(--pf-line);
-  border-radius: 9px;
+  border-radius: var(--radius);
 }
 .platform-stat-label {
   font-size: 0.72rem;
@@ -161,7 +215,7 @@
 .platform-table-wrap {
   background: #fff;
   border: 1px solid var(--pf-line);
-  border-radius: 9px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 .table-scroll { overflow-x: auto; }
@@ -232,7 +286,7 @@
 .pill {
   display: inline-block;
   padding: 0.1em 0.6em;
-  border-radius: 999px;
+  border-radius: var(--radius);
   font-size: 0.74rem;
   font-weight: 600;
   text-transform: capitalize;
@@ -255,7 +309,7 @@
 .pf-card {
   background: #fff;
   border: 1px solid var(--pf-line);
-  border-radius: 9px;
+  border-radius: var(--radius);
   padding: 1.1rem 1.25rem;
 }
 .pf-card > h2 {
@@ -292,7 +346,7 @@
   padding: 0.6rem 0.8rem;
   border-left: 3px solid var(--pf-warn);
   background: color-mix(in srgb, var(--pf-warn) 7%, transparent);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-style: italic;
 }
 
@@ -310,7 +364,7 @@
 .plan-picker {
   display: inline-flex;
   border: 1px solid var(--pf-line-strong);
-  border-radius: 7px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 .plan-picker button {
@@ -380,7 +434,7 @@
 .pf-field select {
   padding: 0.5rem 0.65rem;
   border: 1px solid var(--pf-line-strong);
-  border-radius: 7px;
+  border-radius: var(--radius);
   font: inherit;
   font-size: 0.95rem;
   background: #fff;
@@ -400,7 +454,7 @@
   padding: 0.45rem 0.65rem;
   border-left: 3px solid var(--brand-primary);
   background: color-mix(in srgb, var(--brand-primary) 5%, transparent);
-  border-radius: 0 7px 7px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 0.88rem;
 }
 .pf-row { display: flex; gap: 0.85rem; flex-wrap: wrap; }
@@ -415,7 +469,7 @@
   align-items: flex-start;
   padding: 0.7rem 0.8rem;
   border: 1px solid var(--pf-line-strong);
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 .radio-row:hover { background: color-mix(in srgb, var(--brand-primary) 5%, transparent); }
@@ -436,7 +490,7 @@
 .counter-names input {
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--pf-line-strong);
-  border-radius: 6px;
+  border-radius: var(--radius);
   font: inherit;
 }
 
@@ -468,7 +522,7 @@
   letter-spacing: 0.06em;
   padding: 0.25em 0.6em;
   background: color-mix(in srgb, var(--brand-secondary) 26%, transparent);
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-weight: 700;
 }
 
@@ -492,13 +546,13 @@
   height: 2.3rem;
   padding: 0;
   border: 1px solid var(--pf-line-strong);
-  border-radius: 7px;
+  border-radius: var(--radius);
   background: none;
   cursor: pointer;
 }
 .pf-swatch::-webkit-color-swatch-wrapper { padding: 3px; }
-.pf-swatch::-webkit-color-swatch { border: 0; border-radius: 4px; }
-.pf-swatch::-moz-color-swatch { border: 0; border-radius: 4px; }
+.pf-swatch::-webkit-color-swatch { border: 0; border-radius: var(--radius-sm); }
+.pf-swatch::-moz-color-swatch { border: 0; border-radius: var(--radius-sm); }
 
 .pf-hex {
   flex: 1 1 6rem;
@@ -513,7 +567,7 @@
   gap: 0.75rem;
   flex-wrap: wrap;
   padding: 0.8rem 0.9rem;
-  border-radius: 9px;
+  border-radius: var(--radius);
   background: var(--preview-primary);
   color: #fff;
 }
@@ -521,7 +575,7 @@
   flex: none;
   width: 2rem;
   height: 2rem;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   background: var(--preview-secondary);
 }
 .pf-preview-text { display: flex; flex-direction: column; line-height: 1.25; margin-right: auto; }
@@ -531,7 +585,7 @@
   font-size: 0.78rem;
   font-weight: 600;
   padding: 0.35rem 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: var(--preview-secondary);
   color: #1b1b1b;
 }
@@ -545,7 +599,7 @@
   place-items: center;
   width: 5rem;
   height: 5rem;
-  border-radius: 9px;
+  border-radius: var(--radius);
   border: 1px solid var(--pf-line-strong);
   /* Chequerboard, so a transparent PNG reads as transparent rather than as a
      white square that will look wrong on the café's coloured header. */
@@ -603,7 +657,7 @@
   gap: 0 1.1rem;
   padding: 1.15rem 1.35rem;
   border: 1px solid var(--pf-line);
-  border-radius: 11px;
+  border-radius: var(--radius);
   background:
     linear-gradient(
       100deg,
@@ -635,7 +689,7 @@
 .tenant-hero-meta code {
   background: color-mix(in srgb, var(--hero-tint) 10%, transparent);
   padding: 0.05em 0.4em;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 0.92em;
 }
 .tenant-hero-plan { text-transform: capitalize; }
@@ -654,7 +708,7 @@
   place-items: center;
   width: 3.25rem;
   height: 3.25rem;
-  border-radius: 10px;
+  border-radius: var(--radius);
   flex: 0 0 auto;
   overflow: hidden;
   background: linear-gradient(135deg, var(--mark-a), var(--mark-b));
@@ -676,7 +730,7 @@
 .tenant-blocked-strip {
   margin: 0;
   padding: 0.65rem 0.9rem;
-  border-radius: 8px;
+  border-radius: var(--radius);
   border: 1px solid color-mix(in srgb, var(--pf-danger) 35%, transparent);
   background: color-mix(in srgb, var(--pf-danger) 7%, #fff);
   color: var(--pf-danger);
@@ -702,7 +756,7 @@
   white-space: nowrap;
   text-decoration: none;
   color: var(--pf-ink-soft);
-  border-radius: 7px 7px 0 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   /* Reserves the weight the active tab will take, so selecting one does not
      shove its neighbours sideways. */
   border-bottom: 2px solid transparent;
@@ -754,7 +808,7 @@
 .pf-card-danger .pf-actions .ghost.danger,
 .pf-card-suspended .pf-actions .ghost.danger {
   border: 1px solid color-mix(in srgb, var(--pf-danger) 45%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0.45rem 0.9rem;
 }
 .pf-card-danger .pf-actions .ghost.danger:hover:not(:disabled),

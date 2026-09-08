@@ -27,7 +27,7 @@
   width: 100%;
   max-width: 900px;
   background: linear-gradient(160deg, var(--brand-deepest) 0%, var(--brand-deep) 55%, var(--brand-deepest) 100%);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   border: 1px solid color-mix(in srgb, var(--brand-gold) 22%, transparent);
@@ -79,7 +79,7 @@
   font-size: 0.52rem;
   line-height: 1.2;
   text-transform: uppercase;
-  border-radius: 10px;
+  border-radius: var(--radius);
   transform: rotate(-9deg);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
@@ -89,7 +89,7 @@
   position: absolute;
   inset: 0;
   background: inherit;
-  border-radius: 10px;
+  border-radius: var(--radius);
   transform: rotate(45deg);
   z-index: -1;
 }
@@ -159,7 +159,7 @@
   display: inline-block;
   margin-top: 0.6rem;
   padding: 0.3rem 0.9rem;
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--brand-gold) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--brand-gold) 40%, transparent);
   color: var(--cream-dim);
@@ -179,7 +179,7 @@
   break-inside: avoid;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid color-mix(in srgb, var(--brand-gold) 16%, transparent);
-  border-radius: 10px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
@@ -284,7 +284,7 @@
 .menu-board-deal-card {
   display: flex;
   flex-direction: column;
-  border-radius: 10px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid color-mix(in srgb, var(--brand-gold) 16%, transparent);
@@ -355,7 +355,7 @@
   gap: 1rem;
   margin-top: 0.75rem;
   padding: 0.75rem 1rem;
-  border-radius: 10px;
+  border-radius: var(--radius);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
 }
 
@@ -516,80 +516,66 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Chacha brand theme — page polish (Orders).
-   Palette, fonts and primary buttons are now global (see :root + body).
-   This block only adds Orders-specific niceties on top of that base.
+   Take-order page polish, "White Label" redesign.
+   Palette, fonts and primary buttons are global (see :root + body).
+   This block keeps the till reading as clean, warm surfaces — no heavy
+   accent-tinted panels — to match the rest of the redesigned app.
    ══════════════════════════════════════════════════════════════════ */
 
-/* Card header — accent underline */
 .theme-chacha .card-head {
-  border-bottom: 2px solid var(--border);
-  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.85rem;
 }
-.theme-chacha .card h2 { font-size: 1.6rem; }
+.theme-chacha .card h2 { font-size: 1.5rem; }
 
-/* Primary buttons get a soft blue lift on this page */
 .theme-chacha button.primary {
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--brand-primary) 28%, transparent);
   transition: transform 0.15s ease, background 0.15s ease;
 }
 .theme-chacha button.primary:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-/* Order-type cards — rounded + blue active state */
-.theme-chacha .order-type-option { border-radius: 12px; }
-.theme-chacha .order-type-option--active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--text-h);
-}
+/* Order-type options inherit the global pill treatment (04-pages.css). */
 
-/* Totals + line prices → Anton, tabular navy (per "prices = Anton") */
+/* Totals + line prices → display face, heading ink */
 .theme-chacha .total-row strong,
 .theme-chacha .total-row.big {
-  font-family: 'Anton', sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.5px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-h);
   font-variant-numeric: tabular-nums;
 }
-.theme-chacha .total-row.big { font-size: 1.6rem; }
+.theme-chacha .total-row.big { font-size: 1.5rem; }
 
-/* Price columns: Each (6th) + Line (8th) + deal price */
 .theme-chacha .order-lines-table td:nth-child(6),
 .theme-chacha .order-lines-table td:nth-child(8),
-/* Anton is condensed, so prices need extra tracking to stay legible at badge size */
 .theme-chacha .deal-picker-item-price {
-  font-family: 'Anton', sans-serif;
-  font-weight: 400;
-  letter-spacing: 2px;
-  font-size: 1rem;
-  color: var(--accent-hover);
-  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-h);
   font-variant-numeric: tabular-nums;
 }
 
-/* Table header — blue on tinted cream */
 .theme-chacha .order-lines-table thead th {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
+  color: var(--text-muted);
+  background: var(--surface-raised);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
-/* Deal add strip — wider, roomier, soft-blue panel like the site */
+/* Deal add strip — a light raised panel, not a coloured one */
 .theme-chacha .deal-add-field-top {
   max-width: 560px;
-  background: var(--accent-soft);
-  border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  border-radius: 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 1rem 1.1rem;
 }
 .theme-chacha .deal-add-field-top > span {
   display: block;
   margin-bottom: 0.55rem;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-h);
 }
