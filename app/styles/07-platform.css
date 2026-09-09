@@ -17,9 +17,13 @@
    components/AppShell.jsx) and every rule below follows — as do the shared
    .card, .tabs and button skins. Headings and body use the same two typefaces
    as the rest of the app.
+
+   The chrome is the café app's sidebar shell (.app-shell / .side-nav / a
+   mobile drawer, all in 03-components.css) — the console rides it on this
+   slate palette rather than carrying a layout of its own.
    ══════════════════════════════════════════════════════════════════════════ */
 
-.app.app--platform {
+.app--platform {
   --brand-primary: #3d4a6b;
   --brand-secondary: #8a94ad;
   --brand-deep: #262f47;
@@ -41,32 +45,28 @@
   --text-heading: #14161f;
   --shadow: 0 10px 26px rgba(20, 22, 32, 0.07);
 
-  min-height: 100vh;
   background: var(--bg);
 }
 
-/* The console's top bar: a plain white strip with a hairline under it,
-   pulled out to the full width of the .app padding box. */
-.app--platform .top {
-  align-items: center;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  margin: -1.25rem -8.5rem 1.75rem;
-  padding: 0.9rem 8.5rem;
-}
-
-@media (max-width: 1100px) {
-  .app--platform .top {
-    margin: -1.25rem -2rem 1.5rem;
-    padding: 0.9rem 2rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .app--platform .top {
-    margin: -1rem -1rem 1.25rem;
-    padding: 0.85rem 1rem;
-  }
+/* Dark surface mode, opted into from the sidebar footer. The slate palette
+   above wins over the app-wide :root[data-theme='dark'] recipe on
+   specificity, so the console's dark tokens are restated here rather than
+   inherited — same neutral slate, pulled down onto near-black. */
+:root[data-theme='dark'] .app--platform {
+  --brand-secondary: #9aa4bd;
+  --primary-soft: #2b3350;
+  --accent: #7f8db5;
+  --accent-hover: #97a3c4;
+  --accent-soft: #2b3350;
+  --bg: #12151d;
+  --surface: #1a1e29;
+  --surface-raised: #222736;
+  --border: #333a4d;
+  --text: #d6dae5;
+  --text-muted: #8b93a7;
+  --text-h: #f0f2f7;
+  --text-heading: #f0f2f7;
+  --shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
 }
 
 .platform-page {
@@ -84,6 +84,18 @@
   max-width: 74rem;
   margin: 0 auto;
   width: 100%;
+}
+
+/* In dark mode the hairlines and the soft ink are mixed from a light base
+   rather than from slate-on-grey, or they vanish into the near-black ground;
+   the status hues lift to stay legible on it. */
+:root[data-theme='dark'] .platform-page {
+  --pf-line: color-mix(in srgb, #fff 12%, transparent);
+  --pf-line-strong: color-mix(in srgb, #fff 24%, transparent);
+  --pf-ink-soft: color-mix(in srgb, var(--brand-secondary) 45%, #c2c9d6);
+  --pf-warn: #e0a53a;
+  --pf-danger: #ec7461;
+  --pf-good: #4bbfb1;
 }
 
 /* ── Page header ────────────────────────────────────────────────────────── */
@@ -160,7 +172,7 @@
   border-radius: var(--radius);
   font: inherit;
   font-size: 0.9rem;
-  background: #fff;
+  background: var(--surface);
 }
 .platform-search::before {
   content: '⌕';
@@ -184,7 +196,7 @@
   flex-direction: column;
   gap: 0.15rem;
   padding: 0.85rem 1rem;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--pf-line);
   border-radius: var(--radius);
 }
@@ -213,7 +225,7 @@
 
 /* ── The café table ─────────────────────────────────────────────────────── */
 .platform-table-wrap {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--pf-line);
   border-radius: var(--radius);
   overflow: hidden;
@@ -307,7 +319,7 @@
 
 /* ── Cards and sections on the detail and creation screens ──────────────── */
 .pf-card {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--pf-line);
   border-radius: var(--radius);
   padding: 1.1rem 1.25rem;
@@ -437,7 +449,7 @@
   border-radius: var(--radius);
   font: inherit;
   font-size: 0.95rem;
-  background: #fff;
+  background: var(--surface);
 }
 .pf-field input:focus-visible,
 .pf-field select:focus-visible {
@@ -661,9 +673,9 @@
   background:
     linear-gradient(
       100deg,
-      color-mix(in srgb, var(--hero-tint) 13%, #fff) 0%,
-      color-mix(in srgb, var(--hero-tint) 4%, #fff) 42%,
-      #fff 78%
+      color-mix(in srgb, var(--hero-tint) 13%, var(--surface)) 0%,
+      color-mix(in srgb, var(--hero-tint) 4%, var(--surface)) 42%,
+      var(--surface) 78%
     );
   /* The café's colour as a rule down the edge — enough to identify them
      without turning an operator's tool into their app. */
@@ -723,7 +735,7 @@
 .tenant-mark-logo img { width: 100%; height: 100%; object-fit: contain; padding: 0.25rem; }
 .tenant-mark-ghost { background: var(--pf-line); box-shadow: none; }
 
-.tenant-hero-skeleton { box-shadow: none; background: #fff; }
+.tenant-hero-skeleton { box-shadow: none; background: var(--surface); }
 .tenant-hero-lines { display: flex; flex-direction: column; gap: 0.5rem; }
 
 /* ── The strip that says they cannot work ───────────────────────────────── */
@@ -732,7 +744,7 @@
   padding: 0.65rem 0.9rem;
   border-radius: var(--radius);
   border: 1px solid color-mix(in srgb, var(--pf-danger) 35%, transparent);
-  background: color-mix(in srgb, var(--pf-danger) 7%, #fff);
+  background: color-mix(in srgb, var(--pf-danger) 12%, var(--surface));
   color: var(--pf-danger);
   font-size: 0.88rem;
 }

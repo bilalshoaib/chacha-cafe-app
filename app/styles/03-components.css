@@ -1058,9 +1058,10 @@ button.inline-link-button:hover {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CAFÉ APP SHELL — a fixed left sidebar and a scrolling content column.
-   Replaces the top pill-tab bar the app used to carry. The platform console
-   keeps its own top bar (.tabs / PlatformNav), styled in 07-platform.css.
+   APP SHELL — a fixed left sidebar and a scrolling content column.
+   Replaces the top pill-tab bar the app used to carry. Both halves of the
+   product ride this: the café app, and the platform console (which re-points
+   the palette to slate on .app--platform — see 07-platform.css).
    ═══════════════════════════════════════════════════════════════════════════ */
 .app-shell {
   display: flex;

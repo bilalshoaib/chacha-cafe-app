@@ -45,30 +45,87 @@ function NavLink({ href, children, className, onClick, end = false, active }) {
 /**
  * The navigation for somebody who runs the platform rather than a café.
  *
- * The till's tabs — Take order, Create deal, Menu items — are not merely
- * useless here, they are unreachable: every one of those screens needs a
- * tenant, and middleware sends this account back to the café list. Showing
- * them offered seven links that all bounce.
+ * Same sidebar shell as the café app (`.side-nav` / mobile drawer), on the
+ * console's own slate palette — so the two halves of the product read as one
+ * app rather than two. The café's own tabs — Take order, Create deal, Menu
+ * items — are not merely useless here, they are unreachable: every one of
+ * those screens needs a tenant, and middleware sends this account back to the
+ * café list. So the nav is just the two places a platform owner goes.
  */
 function PlatformNav({ onLogout }) {
   const branding = useBranding()
+  const [navOpen, setNavOpen] = useState(false)
+  const closeNav = () => setNavOpen(false)
+  const name = branding?.name || 'Platform'
+
+  // One list, rendered twice — the fixed sidebar and the mobile drawer.
+  // `onNavigate` closes the drawer; the sidebar passes nothing.
+  const renderLinks = (onNavigate) => (
+    <>
+      <NavLink href="/platform" end onClick={onNavigate}>Cafés</NavLink>
+      <NavLink href="/platform/finance" onClick={onNavigate}>Books</NavLink>
+    </>
+  )
+
   return (
-    <header className="top">
-      <div className="brand">
-        <span className="brand-mark" aria-hidden="true" />
-        <div>
-          <h1>{branding?.name}</h1>
-          <p className="tagline">Platform administration</p>
+    <>
+      <div className="mobile-topbar">
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true" />
+          <h1>{name}</h1>
         </div>
+        <button
+          type="button"
+          className="hamburger-btn"
+          aria-label="Open navigation"
+          aria-expanded={navOpen}
+          onClick={() => setNavOpen(true)}
+        >
+          <span className="hamburger-bar" />
+          <span className="hamburger-bar" />
+          <span className="hamburger-bar" />
+        </button>
       </div>
-      <div className="top-header-right">
-        <nav className="tabs" aria-label="Main">
-          <NavLink href="/platform" end>Cafés</NavLink>
-          <NavLink href="/platform/finance">Books</NavLink>
-        </nav>
-        <button type="button" className="ghost sm header-logout" onClick={onLogout}>Log out</button>
-      </div>
-    </header>
+
+      <aside className="side-nav">
+        <div className="side-nav-brand">
+          <span className="brand-mark" aria-hidden="true" />
+          <div className="side-nav-brand-text">
+            <div className="side-nav-name">{name}</div>
+            <div className="side-nav-sub">Platform administration</div>
+          </div>
+        </div>
+        <nav className="side-nav-links" aria-label="Main">{renderLinks()}</nav>
+        <div className="side-nav-footer">
+          <ThemeToggle />
+          <button type="button" className="side-nav-logout" onClick={onLogout}>
+            Log out
+          </button>
+        </div>
+      </aside>
+
+      {navOpen && (
+        <div className="mobile-nav-overlay" onClick={closeNav} aria-hidden="true" />
+      )}
+      <nav
+        className={`mobile-nav-drawer${navOpen ? ' mobile-nav-open' : ''}`}
+        aria-label="Mobile navigation"
+      >
+        <div className="mobile-nav-header">
+          <span className="mobile-nav-title">Menu</span>
+          <button type="button" className="mobile-nav-close" aria-label="Close navigation" onClick={closeNav}>
+            ✕
+          </button>
+        </div>
+        <div className="mobile-nav-links">{renderLinks(closeNav)}</div>
+        <div className="mobile-nav-footer">
+          <ThemeToggle />
+          <button type="button" className="mobile-nav-logout" onClick={() => { closeNav(); onLogout() }}>
+            Log out
+          </button>
+        </div>
+      </nav>
+    </>
   )
 }
 
@@ -246,10 +303,12 @@ export default function AppShell({ children }) {
 
   if (runningPlatform) {
     return (
-      <div className="app app--platform">
-        <ImpersonationBanner />
+      <div className="app-shell app--platform">
         <PlatformNav onLogout={() => void handleLogout()} />
-        {children}
+        <div className="app-main">
+          <ImpersonationBanner />
+          {children}
+        </div>
       </div>
     )
   }
