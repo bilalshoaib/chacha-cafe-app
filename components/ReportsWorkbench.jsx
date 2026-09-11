@@ -529,101 +529,136 @@ export default function ReportsWorkbench({
       </div>
 
       <section className="card reports-filters-card">
-        <h3 className="sub">Date range</h3>
+        {/* The range the report is actually showing, named at the top of the
+            card rather than buried under the buttons. It used to sit below
+            the presets, so the answer to "what am I looking at?" was the last
+            thing on the card instead of the first. */}
+        <div className="reports-range-head">
+          <span className="reports-filter-label">Range</span>
+          <span className="reports-range-line">
+            {rangeLabel || (fromIso && toIso ? 'Loading range…' : '—')}
+          </span>
+          {/* Outside the custom block on purpose. These used to appear only
+              once somebody had opened Custom, which is the one place a person
+              looking at yesterday and wanting the day before would never
+              think to go. */}
+          <div className="reports-range-steppers">
+            {[
+              { unit: 'day', label: 'day' },
+              { unit: 'month', label: 'month' },
+            ].map(({ unit, label }) => (
+              <div
+                key={unit}
+                className="reports-month-step"
+                role="group"
+                aria-label={`Shift the range by a ${unit}`}
+              >
+                <button
+                  type="button"
+                  className="month-step-btn"
+                  onClick={() => stepRange(unit, -1)}
+                  aria-label={`Shift the range back one ${unit}`}
+                >
+                  <span className="month-step-chevron" aria-hidden="true">‹</span>
+                </button>
+                <span className="month-step-label" aria-hidden="true">{label}</span>
+                <button
+                  type="button"
+                  className="month-step-btn"
+                  onClick={() => stepRange(unit, 1)}
+                  aria-label={`Shift the range forward one ${unit}`}
+                >
+                  <span className="month-step-chevron" aria-hidden="true">›</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="reports-presets">
           {presets.map((p) => (
-            <button key={p.id} type="button" className={presetId === p.id ? 'primary sm' : 'ghost sm'} onClick={() => setPresetId(p.id)}>
+            <button
+              key={p.id}
+              type="button"
+              className={`reports-preset${presetId === p.id ? ' is-active' : ''}`}
+              aria-pressed={presetId === p.id}
+              onClick={() => setPresetId(p.id)}
+            >
               {p.label}
             </button>
           ))}
-          <button type="button" className={presetId === 'custom' ? 'primary sm' : 'ghost sm'} onClick={() => {
-            if (presetId !== 'custom') {
-              const [f, t] = defaultBusinessMonth(hours)
-              setCustomFrom(f); setCustomTo(t)
-              setCustomFromTime(timeInputValue(hours.startHour))
-              setCustomToTime(timeInputValue(hours.endHour))
-            }
-            setPresetId('custom')
-          }}>Custom</button>
+          <button
+            type="button"
+            className={`reports-preset${presetId === 'custom' ? ' is-active' : ''}`}
+            aria-pressed={presetId === 'custom'}
+            onClick={() => {
+              if (presetId !== 'custom') {
+                const [f, t] = defaultBusinessMonth(hours)
+                setCustomFrom(f); setCustomTo(t)
+                setCustomFromTime(timeInputValue(hours.startHour))
+                setCustomToTime(timeInputValue(hours.endHour))
+              }
+              setPresetId('custom')
+            }}
+          >
+            Custom
+          </button>
         </div>
+
         {presetId === 'custom' ? (
           <div className="reports-custom-dates">
-            <div className="reports-datetime-group">
-              <label className="field reports-date-field">
-                <span>From date</span>
-                <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
-              </label>
-              <label className="field reports-date-field">
-                <span>Start time</span>
-                <input type="time" value={customFromTime} onChange={(e) => e.target.value && setCustomFromTime(e.target.value)} />
-              </label>
-            </div>
-            <div className="reports-datetime-group">
-              <label className="field reports-date-field">
-                <span>To date</span>
-                <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
-              </label>
-              <label className="field reports-date-field">
-                <span>End time</span>
-                <input type="time" value={customToTime} onChange={(e) => e.target.value && setCustomToTime(e.target.value)} />
-              </label>
-            </div>
+            <label className="field reports-date-field">
+              <span>From date</span>
+              <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+            </label>
+            <label className="field reports-date-field reports-time-field">
+              <span>Start time</span>
+              <input type="time" value={customFromTime} onChange={(e) => e.target.value && setCustomFromTime(e.target.value)} />
+            </label>
+            <label className="field reports-date-field">
+              <span>To date</span>
+              <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+            </label>
+            <label className="field reports-date-field reports-time-field">
+              <span>End time</span>
+              <input type="time" value={customToTime} onChange={(e) => e.target.value && setCustomToTime(e.target.value)} />
+            </label>
           </div>
         ) : null}
 
-        {/* Outside the custom block on purpose. These used to appear only once
-            somebody had opened Custom, which is the one place a person looking
-            at yesterday and wanting the day before would never think to go. */}
-        <div className="reports-range-steppers">
-          {[
-            { unit: 'day', label: 'day' },
-            { unit: 'month', label: 'month' },
-          ].map(({ unit, label }) => (
-            <div
-              key={unit}
-              className="reports-month-step"
-              role="group"
-              aria-label={`Shift the range by a ${unit}`}
-            >
-              <button
-                type="button"
-                className="month-step-btn"
-                onClick={() => stepRange(unit, -1)}
-                aria-label={`Shift the range back one ${unit}`}
-              >
-                <span className="month-step-chevron" aria-hidden="true">‹</span>
-                Prev
-              </button>
-              <span className="month-step-label" aria-hidden="true">{label}</span>
-              <button
-                type="button"
-                className="month-step-btn"
-                onClick={() => stepRange(unit, 1)}
-                aria-label={`Shift the range forward one ${unit}`}
-              >
-                Next
-                <span className="month-step-chevron" aria-hidden="true">›</span>
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <p className="muted small reports-range-line">{rangeLabel || (fromIso && toIso ? 'Loading range…' : null)}</p>
-
+        {/* Which slice of the range, not which range. Segmented tracks rather
+            than the same pills the presets use, so the two questions stop
+            looking like one row of eleven buttons. */}
         <div className="reports-filter-row">
           <div className="reports-filter-group">
             <span className="reports-filter-label">Business</span>
-            <div className="reports-filter-btns">
+            <div className="reports-segmented" role="group" aria-label="Filter by business">
               {[{ id: 'all', label: 'All' }, ...(summary?.brands ?? []).map((b) => ({ id: b.slug, label: b.name }))].map((opt) => (
-                <button key={opt.id} type="button" className={businessFilter === opt.id ? 'primary sm' : 'ghost sm'} onClick={() => setBusinessFilter(opt.id)}>{opt.label}</button>
+                <button
+                  key={opt.id}
+                  type="button"
+                  className={`reports-seg-btn${businessFilter === opt.id ? ' is-active' : ''}`}
+                  aria-pressed={businessFilter === opt.id}
+                  onClick={() => setBusinessFilter(opt.id)}
+                >
+                  {opt.label}
+                </button>
               ))}
             </div>
           </div>
           <div className="reports-filter-group">
-            <span className="reports-filter-label">Payment method</span>
-            <div className="reports-filter-btns">
+            <span className="reports-filter-label">Payment</span>
+            <div className="reports-segmented" role="group" aria-label="Filter by payment method">
               {[{ id: 'all', label: 'All' }, { id: 'cash', label: '💵 Cash' }, { id: 'online', label: '💳 Online / Card' }].map((opt) => (
-                <button key={opt.id} type="button" className={paymentFilter === opt.id ? 'primary sm' : 'ghost sm'} onClick={() => setPaymentFilter(opt.id)}>{opt.label}</button>
+                <button
+                  key={opt.id}
+                  type="button"
+                  className={`reports-seg-btn${paymentFilter === opt.id ? ' is-active' : ''}`}
+                  aria-pressed={paymentFilter === opt.id}
+                  onClick={() => setPaymentFilter(opt.id)}
+                >
+                  {opt.label}
+                </button>
               ))}
             </div>
           </div>

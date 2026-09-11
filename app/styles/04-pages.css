@@ -1009,16 +1009,21 @@ a.danger-ghost:hover {
   }
 
   /* Reports custom date ranges wrap cleanly */
-  .reports-custom-dates,
   .invoices-custom-dates {
     flex-direction: column;
     gap: 0.65rem;
   }
 
-  .reports-date-field,
   .invoices-date-field {
     min-width: 0;
     width: 100%;
+  }
+
+  /* The four report boxes go two-up rather than four stacked rows — the
+     date and its time stay side by side, which is the pairing that matters. */
+  .reports-date-field {
+    min-width: 0;
+    flex: 1 1 calc(50% - 0.5rem);
   }
 }
 
@@ -1208,7 +1213,20 @@ a.danger-ghost:hover {
   /* Reports filter row: stack groups */
   .reports-filter-row {
     flex-direction: column;
+    align-items: flex-start;
     gap: 0.75rem;
+  }
+
+  /* Three payment options do not fit one phone-width track, so let the
+     segments wrap inside it rather than run off the card. */
+  .reports-segmented {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  /* The range sentence gets its own line above the arrows. */
+  .reports-range-steppers {
+    margin-left: 0;
   }
 }
 

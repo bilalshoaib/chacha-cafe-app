@@ -267,46 +267,87 @@ button.inline-link-button:hover {
 
 .reports-filters-card {
   margin-bottom: 1rem;
-  padding: 1rem 1.15rem 1.15rem;
+  padding: 0.95rem 1.15rem 1.1rem;
+}
+
+/* Row one of the filter card: what range the report is on, said in words,
+   with the arrows that step it sitting next to the sentence they move. */
+.reports-range-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+
+.reports-range-line {
+  flex: 1 1 14rem;
+  margin: 0;
+  color: var(--text-h);
+  font-size: 0.92rem;
+  font-weight: 600;
 }
 
 .reports-presets {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 0.65rem;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
 }
 
+/* The date presets. Outlined chips that fill in when chosen — one shape,
+   one job: pick the range. */
+.reports-preset {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.reports-preset:hover:not(.is-active) {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.reports-preset.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* The custom range's four boxes, revealed under a hairline so it is plain
+   they belong to the Custom chip above them. */
 .reports-custom-dates {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-  margin-top: 0.85rem;
-}
-
-.reports-datetime-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
   align-items: flex-end;
-  padding: 0.65rem 0.85rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  gap: 0.65rem 0.85rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
 }
 
 .reports-date-field {
   margin: 0;
-  min-width: 9rem;
+  min-width: 9.5rem;
 }
 
-/* The two steppers — a day and a month — sit on their own row under the range,
-   whether or not the custom date boxes are showing. */
+.reports-time-field {
+  min-width: 7rem;
+}
+
+/* The two steppers — a day and a month. */
 .reports-range-steppers {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 0.85rem;
+  gap: 0.45rem;
+  margin-left: auto;
 }
 
 /* Steps both ends of the range a day or a month at a time. Built as one
@@ -318,20 +359,19 @@ button.inline-link-button:hover {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--brand-deep) 6%, transparent);
   overflow: hidden;
 }
 
 .month-step-btn {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.55rem 1rem;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.3rem 0.5rem;
   border: none;
   background: transparent;
   color: var(--text-h);
   font: inherit;
-  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -348,7 +388,7 @@ button.inline-link-button:hover {
 }
 
 .month-step-chevron {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   line-height: 1;
 }
 
@@ -356,44 +396,76 @@ button.inline-link-button:hover {
 .month-step-label {
   display: flex;
   align-items: center;
-  padding: 0 0.55rem;
+  padding: 0 0.5rem;
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-
-.reports-range-line {
-  margin: 0.75rem 0 0;
 }
 
 .reports-filter-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.25rem;
-  margin-top: 1.1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border, #e5e7eb);
+  gap: 0.75rem 1.75rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
 }
 .reports-filter-group {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 .reports-filter-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-muted, #6b7280);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
-.reports-filter-btns {
+
+/* Business and payment are slices of the chosen range, not ranges — so they
+   get a segmented track instead of the presets' chips, and the row above
+   stops reading as one undifferentiated wall of buttons. */
+.reports-segmented {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius);
+  /* Mixed toward the darkest brand tone rather than toward a token, so the
+     track sinks below the card in both themes — --surface-raised is lighter
+     than the card in light mode and darker in dark, which would flip the
+     chosen segment from raised to recessed halfway through a theme switch. */
+  background: color-mix(in srgb, var(--brand-deepest) 8%, var(--surface));
+  border: 1px solid var(--border);
+}
+
+.reports-seg-btn {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.reports-seg-btn:hover:not(.is-active) {
+  color: var(--text-h);
+}
+
+.reports-seg-btn.is-active {
+  background: var(--surface);
+  color: var(--text-h);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--brand-deep) 14%, transparent);
 }
 
 .reports-summary-grid {
