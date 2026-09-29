@@ -108,9 +108,9 @@ export default function TenantAccessPage() {
           <p>
             Two ways to stop this café. <strong>Pause for payment</strong> is the one to use when an
             invoice is late — it says so, and names the reason you give. <strong>Suspend</strong> is
-            the harder stop, and also takes their public menu down. Either one signs out everyone at
-            this café within about half a minute — an idle till included, without anybody having to
-            touch it — and tells them why. Nothing is deleted, and both can be undone.
+            the harder stop, and also takes their public menu down. Either one signs out anyone using the
+            app at this café straight away, and an idle till within ten minutes or as soon as somebody
+            looks at it — and tells them why. Nothing is deleted, and both can be undone.
           </p>
         )}
 

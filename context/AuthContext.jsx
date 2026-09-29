@@ -16,12 +16,20 @@ const AuthContext = createContext(null)
  * hand off the screen makes no requests at all, so without this the café
  * carries on looking open until somebody presses something.
  *
- * Fifteen seconds, matched to the server's cache of the same verdict, so the
- * two together answer the promise the console makes: stopping a café signs its
- * staff out within about half a minute, without being asked to. It is one
- * small query per tab per quarter-minute, and the tills are few.
+ * Ten minutes, and only while the tab is on screen. It was fifteen seconds,
+ * and that kept the database awake around the clock: Neon bills for the hours
+ * its compute is running and suspends it after five idle minutes, and a beat
+ * every quarter-minute from one till left on overnight meant it never got
+ * five. The cost was set by how long a screen stayed open, not by how much the
+ * café sold.
+ *
+ * Anything longer than Neon's five minutes lets an idle café's database sleep.
+ * What it gives up is speed on the idle till: a stopped café is still signed
+ * out on its next request, since every data route checks, but a till nobody
+ * touches now finds out within ten minutes rather than half of one — or the
+ * moment somebody looks at it, since becoming visible checks too.
  */
-const HEARTBEAT_MS = 15_000
+const HEARTBEAT_MS = 10 * 60_000
 
 /**
  * Whether this tab is showing a café's menu to a customer rather than to
@@ -204,7 +212,12 @@ export function AuthProvider({ children }) {
   // "still signed in" would be believed.
   useEffect(() => {
     if (!authenticated) return
-    const timer = setInterval(() => { void verifySession() }, HEARTBEAT_MS)
+    // A hidden tab — minimised, behind another, or on a screen that has gone
+    // to sleep — skips its beat. It checks the moment it is seen again, below,
+    // which is the only time a stale session could mislead anybody.
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') void verifySession()
+    }, HEARTBEAT_MS)
     const onVisible = () => {
       if (document.visibilityState === 'visible') void verifySession()
     }

@@ -30,7 +30,7 @@ export async function GET() {
   const impersonation = activeImpersonation(session)
 
   // Checked here as well as in requireTenant(), because this is the first call
-  // the app makes on every load — and, every fifteen seconds after it, the
+  // the app makes on every load — and, every ten minutes after it, the
   // only call an idle till makes at all. Without it a café stopped for late
   // payment would render its whole shell before the first data request signed
   // them out, and a till nobody was touching would stay open until somebody
