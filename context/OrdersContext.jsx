@@ -617,6 +617,7 @@ export function OrdersProvider({ children }) {
       deliveryCharge: dc,
       customerNote,
       tableNumber,
+      newOrderPayment: menu.checkout?.newOrderPayment,
       dayStartHour: reservation.dayStartHour,
       timezone: reservation.timezone,
     })

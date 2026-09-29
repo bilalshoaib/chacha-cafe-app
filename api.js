@@ -161,6 +161,10 @@ export const api = {
     request(`/api/tenant/tax/${encodeURIComponent(rateId)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteTaxRate: (rateId) =>
     request(`/api/tenant/tax/${encodeURIComponent(rateId)}`, { method: 'DELETE' }),
+  // Whether a new order is rung up already paid, and how.
+  checkoutSettings: () => request('/api/tenant/checkout'),
+  setNewOrderPayment: (newOrderPayment) =>
+    request('/api/tenant/checkout', { method: 'PATCH', body: JSON.stringify({ newOrderPayment }) }),
   // Platform console — creating and governing cafés, not configuring them.
   listTenants: () => request('/api/platform/tenants'),
   platformActivity: (window = '30d') => request(`/api/platform/activity?window=${window}`),

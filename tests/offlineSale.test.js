@@ -241,3 +241,29 @@ test('sync re-normalizes a table number rather than trusting the queue', () => {
   const { invoice } = validateOfflineInvoice({ ...built, tableNumber: `  ${'z'.repeat(40)}  ` })
   assert.equal(invoice.tableNumber.length, 20)
 })
+
+// ── Orders rung up already paid ─────────────────────────────────────────────
+
+test('an offline sale starts unpaid by default', () => {
+  const inv = buildOfflineInvoice({ lines: [line()], reservation, now: duringShift })
+  assert.equal(inv.paid, undefined)
+  assert.equal(inv.paymentMethod, undefined)
+})
+
+test('a café that rings orders up paid gets paid offline sales, by its method', () => {
+  const inv = buildOfflineInvoice({ lines: [line()], reservation, newOrderPayment: 'cash', now: duringShift })
+  assert.equal(inv.paid, true)
+  assert.equal(inv.paymentMethod, 'cash')
+  assert.equal(inv.paidAt, inv.createdAt)
+
+  const { invoice, error } = validateOfflineInvoice(inv)
+  assert.equal(error, undefined)
+  assert.equal(invoice.paid, true)
+  assert.equal(invoice.paymentMethod, 'cash')
+})
+
+test('a queued sale claiming paid with no method is stored unpaid', () => {
+  const inv = buildOfflineInvoice({ lines: [line()], reservation, now: duringShift })
+  const { invoice } = validateOfflineInvoice({ ...inv, paid: true })
+  assert.equal(invoice.paid, undefined)
+})

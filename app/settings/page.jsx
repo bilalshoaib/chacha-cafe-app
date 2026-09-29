@@ -41,6 +41,13 @@ const SECTIONS = [
     owner: true,
   },
   {
+    href: '/settings/checkout',
+    icon: '💳',
+    title: 'New orders',
+    blurb: 'Whether a new order starts unpaid, or is marked paid — in cash or online — the moment it is rung up.',
+    owner: true,
+  },
+  {
     href: '/settings/close',
     icon: '🌙',
     title: 'End of day',

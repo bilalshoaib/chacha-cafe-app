@@ -10,6 +10,7 @@ import { shiftDateForInstant } from '@/lib/shift'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax'
 import { tableNumberForOrderType } from '@/lib/tableNumber'
 import { getTab, markTabInvoiced } from '@/lib/repositories/tabsRepository'
+import { paymentFieldsForNewOrder } from '@/lib/newOrderPayment'
 
 /* ── How an invoice is numbered ───────────────────────────────────────────────
    Every invoice in a café draws its number from that café's own counter, in
@@ -176,6 +177,10 @@ async function handleCheckout(request, marks, stats) {
     shiftDate,
     shiftNumber,
     ...(paymentMethod ? { paymentMethod } : {}),
+    // A café whose customers pay as they order has every sale marked paid
+    // here, rather than by a second tap on each invoice. Read with the menu
+    // above, so it costs no round trip.
+    ...paymentFieldsForNewOrder(menu.checkout?.newOrderPayment, createdAt.toISOString(), paymentMethod),
     ...(orderType ? { orderType } : {}),
     ...(tableNumber ? { tableNumber } : {}),
   }
