@@ -3777,3 +3777,10 @@ button.link-add-menu-item {
 .tab-card--add { cursor: pointer; justify-content: center; min-inline-size: 8rem; }
 .tab-card--new { gap: 0.35rem; }
 .tab-card--new input { inline-size: 7rem; }
+
+/* P prints the receipt (see the invoice page). Said only where there is
+   likely to be a keyboard — a tablet till has none to press. */
+.invoice-print-hint { white-space: nowrap; }
+@media (hover: none) {
+  .invoice-print-hint { display: none; }
+}

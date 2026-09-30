@@ -269,14 +269,52 @@ export default function InvoiceDetailPage() {
   }
   const confirmConfig = confirmAction ? confirmCopy[confirmAction] : null
 
+  // Printed from a hidden frame on this page rather than a popup, so the
+  // cashier goes straight to the print dialog instead of first getting a
+  // second window to print from. The dialog itself is the browser's and no
+  // page can skip it; a till that should print with no dialog at all runs
+  // Chrome with --kiosk-printing.
+  const printing = useRef(false)
   function printReceipt() {
-    if (!invoice) return
-    const html = buildReceiptHtml(invoice, itemLabelById, branding)
-    const win = window.open('', '_blank', 'width=340,height=600,toolbar=0,menubar=0,location=0')
-    if (!win) return
-    win.document.write(html); win.document.close(); win.focus()
-    setTimeout(() => { win.print() }, 300)
+    if (!invoice || printing.current) return
+    printing.current = true
+    const frame = document.createElement('iframe')
+    frame.setAttribute('aria-hidden', 'true')
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'
+    document.body.appendChild(frame)
+    const done = () => {
+      printing.current = false
+      frame.remove()
+    }
+    const doc = frame.contentWindow.document
+    doc.open(); doc.write(buildReceiptHtml(invoice, itemLabelById, branding)); doc.close()
+    // print() blocks until the dialog closes in most browsers; afterprint is
+    // for the ones where it returns at once. The timeout is the backstop for
+    // a browser that fires neither, so the next print is never locked out.
+    frame.contentWindow.addEventListener('afterprint', done, { once: true })
+    setTimeout(() => {
+      try { frame.contentWindow.focus(); frame.contentWindow.print() } catch { done(); return }
+      setTimeout(() => { if (printing.current) done() }, 60000)
+    }, 50)
   }
+
+  // P prints the receipt, so a cashier with a keyboard never has to reach for
+  // the mouse between sales — and Ctrl/Cmd+P prints the receipt rather than
+  // the screen, which is what anybody pressing it on this page wants. Not
+  // while typing into a field, where P is a letter, and not while a dialog is
+  // open.
+  const dialogOpen = Boolean(confirmAction) || returnOpen || showPayMethodModal
+  useEffect(() => {
+    if (!invoice || invoiceLoading || dialogOpen) return undefined
+    const onKey = (e) => {
+      if (e.repeat || e.altKey || e.key.toLowerCase() !== 'p') return
+      if (!(e.ctrlKey || e.metaKey) && e.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return
+      e.preventDefault()
+      printReceipt()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [invoice, invoiceLoading, dialogOpen, itemLabelById, branding]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shaped like the sheet below it, so arriving here straight from checkout
   // shows the invoice settling into place rather than a bare line of text.
@@ -338,7 +376,8 @@ export default function InvoiceDetailPage() {
         <header className="invoice-view-toolbar">
           <nav className="invoice-detail-nav"><Link href="/invoices" className="invoice-return-button invoice-toolbar-link">← All invoices</Link></nav>
           <div className="invoice-view-actions">
-            <button type="button" className="ghost sm" onClick={printReceipt}>🖨 Print receipt</button>
+            <button type="button" className="ghost sm" onClick={printReceipt} title="Or press P">🖨 Print receipt</button>
+            <span className="muted small invoice-print-hint">or press P</span>
             {!invoice.returned ? (
               <Link href={`/invoices/${invoice.id}/edit`} className="invoice-edit-link">Edit invoice</Link>
             ) : (
