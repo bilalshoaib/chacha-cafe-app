@@ -19,9 +19,11 @@ import { useOrders } from '@/context/OrdersContext.jsx'
  * entire job is taking orders quickly.
  */
 export default function OfflineBanner() {
-  const { online, queuedCount, numbersLeft, menuCachedAt, syncing, syncNow } = useOrders()
+  const { online, queuedCount, numbersLeft, menuCachedAt, syncing, syncStuck, syncNow } = useOrders()
 
-  if (online && !queuedCount) return null
+  // Every sale sits in the queue for the second or two it takes to send, so a
+  // queue alone is not news. A send that was tried and left sales behind is.
+  if (online && (!queuedCount || !syncStuck)) return null
 
   const low = numbersLeft <= 5
 
@@ -41,7 +43,7 @@ export default function OfflineBanner() {
               : 'No invoice numbers left — reconnect before the next sale.'
           )}
           {online && queuedCount > 0 && (
-            `${queuedCount} offline ${queuedCount === 1 ? 'sale' : 'sales'} still to send.`
+            `${queuedCount} ${queuedCount === 1 ? 'sale' : 'sales'} still to send.`
           )}
           {!online && queuedCount > 0 && ` ${queuedCount} waiting to send.`}
           {!online && menuCachedAt && (

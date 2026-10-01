@@ -107,3 +107,27 @@ test('the table is matched whole, not as a substring', () => {
   const { whereSql } = buildInvoiceWhere({ search: '4' })
   assert.doesNotMatch(whereSql, /position\(\$1 IN lower\(table_number\)\)/)
 })
+
+// ── Sales still queued on the till ──────────────────────────────────────────
+
+import { filterQueuedInvoices } from '../lib/invoiceQuery.js'
+
+const queued = [
+  { id: 'inv-1201', createdAt: '2026-09-29T10:00:00.000Z', businessType: 'cafe', shiftNumber: 7, tableNumber: 'T4' },
+  { id: 'inv-1202', createdAt: '2026-09-29T11:00:00.000Z', businessType: 'burger', shiftNumber: 8 },
+  { id: 'inv-1203', createdAt: '2026-09-29T12:00:00.000Z', businessType: 'combined', shiftNumber: 9 },
+]
+
+test('queued sales come back newest first, like the server page', () => {
+  assert.deepEqual(filterQueuedInvoices(queued).map((i) => i.id), ['inv-1203', 'inv-1202', 'inv-1201'])
+})
+
+test('queued sales follow the same filters as the server list', () => {
+  const ids = (f) => filterQueuedInvoices(queued, f).map((i) => i.id)
+  assert.deepEqual(ids({ businessType: 'cafe' }), ['inv-1203', 'inv-1201'])
+  assert.deepEqual(ids({ search: '1202' }), ['inv-1202'])
+  assert.deepEqual(ids({ search: '7' }), ['inv-1201'])
+  assert.deepEqual(ids({ search: 't4' }), ['inv-1201'])
+  assert.deepEqual(ids({ search: '4' }), [])
+  assert.deepEqual(ids({ from: '2026-09-29T10:30:00.000Z', to: '2026-09-29T11:30:00.000Z' }), ['inv-1202'])
+})

@@ -2133,7 +2133,8 @@ a.sm {
   white-space: nowrap;
 }
 
-a.invoice-edit-link {
+a.invoice-edit-link,
+button.invoice-edit-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2149,7 +2150,8 @@ a.invoice-edit-link {
   box-shadow: var(--shadow);
 }
 
-a.invoice-edit-link:hover {
+a.invoice-edit-link:hover,
+button.invoice-edit-link:hover {
   filter: brightness(1.05);
 }
 

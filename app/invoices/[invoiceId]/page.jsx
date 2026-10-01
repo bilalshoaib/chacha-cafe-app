@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useParams, usePathname } from 'next/navigation'
+import { useParams, usePathname, useRouter } from 'next/navigation'
 import { api, isOfflineError } from '@/api.js'
 import { findQueuedSale } from '@/lib/offline/store.js'
 import Modal, { ConfirmActions } from '@/components/Modal.jsx'
@@ -165,7 +165,8 @@ export default function InvoiceDetailPage() {
   const money = useMoney()
   const { formatDateTime } = useLocale()
   const invoiceId = useInvoiceIdFromAddress(useParams().invoiceId)
-  const { menu } = useOrders()
+  const { menu, online, queuedCount, syncNow, takeRecentInvoice } = useOrders()
+  const router = useRouter()
   const { user } = useAuth()
   const toast = useToast()
   const isCounterCashier = user?.role === 'counter_cashier'
@@ -179,28 +180,67 @@ export default function InvoiceDetailPage() {
   const [returnOpen, setReturnOpen] = useState(false)
   const [showPayMethodModal, setShowPayMethodModal] = useState(false)
 
-  // A sale rung up offline is not in the database yet, and this page is where
-  // checkout lands to print the receipt — so it reads the queue when the
-  // server cannot be reached. Marked `pendingSync` so the screen can say the
-  // sale is recorded on this device and not yet sent, which is the one thing
-  // that is materially different about it.
-  const loadInvoice = useCallback(async () => {
-    setInvoiceLoading(true)
+  // Checkout rings every sale up on the device and sends it a moment later,
+  // and this page is where checkout lands — so the device's queue is asked
+  // first, and a sale still in it is shown from there, marked `pendingSync`.
+  // That is the one thing materially different about it: the figures and the
+  // number are final, the server just does not have it yet.
+  //
+  // Then the invoice checkout itself just returned, if that is this one, and
+  // only then the server. `quiet` reloads without the skeleton, for when a
+  // pending sale lands and the screen swaps to the server's copy.
+  const loadInvoice = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) setInvoiceLoading(true)
     try {
-      const inv = await api.getInvoice(invoiceId)
-      setInvoice(inv)
+      const queued = tenantId ? await findQueuedSale(tenantId, invoiceId) : null
+      if (queued) { setInvoice({ ...queued, pendingSync: true }); return }
+
+      const recent = takeRecentInvoice(invoiceId)
+      if (recent) { setInvoice(recent); return }
+
+      setInvoice(await api.getInvoice(invoiceId))
     } catch (e) {
-      if (isOfflineError(e) && tenantId) {
-        const queued = await findQueuedSale(tenantId, invoiceId)
-        setInvoice(queued ? { ...queued, pendingSync: true } : null)
-      } else {
-        setInvoice(null)
-      }
+      // Offline with nothing queued under this number: nothing to show. A
+      // quiet reload keeps what is on screen rather than blanking it.
+      if (!quiet) setInvoice(null)
+      else if (!isOfflineError(e)) setError(e.message)
     }
-    finally { setInvoiceLoading(false) }
-  }, [invoiceId, tenantId])
+    finally { if (!quiet) setInvoiceLoading(false) }
+  }, [invoiceId, tenantId, takeRecentInvoice])
 
   useEffect(() => { void loadInvoice() }, [loadInvoice])
+
+  // The queue shrinking is the sale being sent, so a pending receipt swaps to
+  // the stored invoice as soon as it lands, without anybody reloading.
+  const pendingSync = Boolean(invoice?.pendingSync)
+  useEffect(() => {
+    if (pendingSync) void loadInvoice({ quiet: true })
+  }, [queuedCount]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Every change to an invoice — paid, returned, edited — is made on the
+   * server, so a sale that has not reached it yet is sent first. Usually that
+   * is already under way and takes a moment; offline it cannot happen, and
+   * the cashier is told so rather than shown a "not found".
+   */
+  async function ensureSent() {
+    if (!invoice?.pendingSync) return
+    await syncNow()
+    const still = tenantId ? await findQueuedSale(tenantId, invoice.id) : null
+    if (still) {
+      throw new Error('This sale has not reached the server yet — it can be changed once the connection is back.')
+    }
+  }
+
+  async function openEditor() {
+    setError('')
+    setSaving(true)
+    try {
+      await ensureSent()
+      router.push(`/invoices/${invoice.id}/edit`)
+    } catch (e) { setError(e.message); toast.error(e.message) }
+    finally { setSaving(false) }
+  }
   useEffect(() => { if (!invoice) return; setReturnNoteDraft(invoice.returnNote ?? '') }, [invoice])
 
   const itemLabelById = useMemo(() => {
@@ -231,6 +271,7 @@ export default function InvoiceDetailPage() {
     if (!invoice) return
     setSaving(true); setError('')
     try {
+      await ensureSent()
       await api.updateInvoice(invoice.id, { returned: true, returnNote: returnNoteDraft.trim() })
       await loadInvoice()
       closeReturnDialog()
@@ -244,6 +285,7 @@ export default function InvoiceDetailPage() {
     try {
       const patch = { paid }
       if (paid && paymentMethod) patch.paymentMethod = paymentMethod
+      await ensureSent()
       await api.updateInvoice(inv.id, patch)
       await loadInvoice()
       toast.success(paid ? `Invoice marked as paid${paymentMethod ? ` (${paymentMethod})` : ''}` : 'Invoice marked as unpaid')
@@ -255,6 +297,7 @@ export default function InvoiceDetailPage() {
   async function runClearReturn(inv) {
     setSaving(true); setError('')
     try {
+      await ensureSent()
       await api.updateInvoice(inv.id, { returned: false })
       await loadInvoice()
       toast.success('Return status cleared')
@@ -379,7 +422,11 @@ export default function InvoiceDetailPage() {
             <button type="button" className="ghost sm" onClick={printReceipt} title="Or press P">🖨 Print receipt</button>
             <span className="muted small invoice-print-hint">or press P</span>
             {!invoice.returned ? (
-              <Link href={`/invoices/${invoice.id}/edit`} className="invoice-edit-link">Edit invoice</Link>
+              invoice.pendingSync ? (
+                <button type="button" className="invoice-edit-link" disabled={saving} onClick={() => void openEditor()}>Edit invoice</button>
+              ) : (
+                <Link href={`/invoices/${invoice.id}/edit`} className="invoice-edit-link">Edit invoice</Link>
+              )
             ) : (
               <span className="muted small invoice-edit-disabled-hint">Returned — not editable</span>
             )}
@@ -403,7 +450,7 @@ export default function InvoiceDetailPage() {
                     prints normally; what this says is that the sale has not
                     reached the books yet, which is the one thing a manager
                     reconciling a drawer needs to know. */}
-                {invoice.pendingSync ? <span className="badge-pending-sync">⚡ Not yet sent</span> : null}
+                {invoice.pendingSync ? <span className="badge-pending-sync">{online ? '⏳ Sending…' : '⚡ Not yet sent'}</span> : null}
                 {invoice.paymentMethod === 'cash' ? <span className="badge-payment-method">💵 Cash</span> : invoice.paymentMethod === 'online' ? <span className="badge-payment-method">💳 Online / Card</span> : null}
               </div>
               {invoice.paid && invoice.paidAt ? (

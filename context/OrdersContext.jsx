@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { api, isOfflineError } from '@/api.js'
 import { useAuth } from '@/context/AuthContext.jsx'
@@ -7,6 +7,8 @@ import { buildCategoryTabs } from '@/utils/formatting.js'
 import { applyPricing, discountPartsOf, priceLine, repriceLine } from '@/lib/pricing.js'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax.js'
 import { buildOfflineInvoice } from '@/lib/offlineSale.js'
+import { buildOrderLine } from '@/lib/orderLines.js'
+import { shiftDateForInstant } from '@/lib/shift.js'
 import {
   cacheMenu,
   dropFromQueue,
@@ -27,6 +29,20 @@ const BLOCK_SIZE = 50
 const LOW_WATER = 15
 
 const OrdersContext = createContext(null)
+
+/**
+ * Whether the café's day has rolled past the one the held block was reserved
+ * against. Its order numbers then belong to a shift that has ended — a sale
+ * spending one would print a number the new day's first customer also gets.
+ */
+function reservationIsStale(held, now = new Date()) {
+  if (!held?.shiftDate || !Number.isFinite(Number(held.dayStartHour))) return false
+  const today = shiftDateForInstant(now, {
+    shiftStartHour: Number(held.dayStartHour),
+    ...(held.timezone ? { timezone: held.timezone } : {}),
+  })
+  return today !== held.shiftDate
+}
 
 // Orders live purely in frontend state while being built — nothing is saved
 // to the database until "Create invoice" is pressed, which sends the whole
@@ -112,6 +128,14 @@ export function OrdersProvider({ children }) {
   const [numbersLeft, setNumbersLeft] = useState(0)
   const [menuCachedAt, setMenuCachedAt] = useState(null)
   const [syncing, setSyncing] = useState(false)
+  // Every sale is queued now, so a queue with something in it is normal for
+  // the second or two a sale takes to send. This is the abnormal case: a send
+  // was tried and left sales behind, which is when the banner speaks up.
+  const [syncStuck, setSyncStuck] = useState(false)
+  // The invoice the server just answered checkout with, handed to the receipt
+  // screen so it does not ask the server for what it was just told.
+  const recentInvoice = useRef(null)
+  const draining = useRef(null)
   // Tabs held on the server rather than in this browser, so a second device
   // can pick one up. `tabSaving` is separate from `checkingOut` because saving
   // to a tab is not a sale and must not disable the checkout button.
@@ -161,7 +185,7 @@ export function OrdersProvider({ children }) {
     try {
       const held = await readReservation(tid)
       const remaining = Array.isArray(held?.numbers) ? held.numbers.length : 0
-      if (remaining >= LOW_WATER) {
+      if (remaining >= LOW_WATER && !reservationIsStale(held)) {
         setNumbersLeft(remaining)
         return
       }
@@ -183,19 +207,12 @@ export function OrdersProvider({ children }) {
     }
   }, [])
 
-  /**
-   * Sends everything the till rang up while it was disconnected.
-   *
-   * Entries are dropped only on a definite answer. `stored` means the sale is
-   * in the database — including the duplicate case, where a previous attempt
-   * got through and the reply did not. `rejected` means it will never store
-   * and keeping it would block the queue forever. Anything else stays, because
-   * the alternative to retrying a sale is losing it.
-   */
-  const drainQueue = useCallback(async (tid) => {
-    if (!tid) return
+  const sendQueue = useCallback(async (tid) => {
     const pending = await listQueue(tid)
-    if (!pending.length) return
+    if (!pending.length) {
+      setSyncStuck(false)
+      return
+    }
     setSyncing(true)
     try {
       const { results } = await api.syncOfflineSales(
@@ -205,6 +222,7 @@ export function OrdersProvider({ children }) {
         .filter((r) => r.status === 'stored' || r.status === 'rejected')
         .map((r) => r.localId)
       if (settled.length) await dropFromQueue(tid, settled)
+      setOnline(true)
 
       const refused = (results || []).filter((r) => r.status === 'rejected')
       if (refused.length) {
@@ -212,11 +230,43 @@ export function OrdersProvider({ children }) {
       }
     } catch (e) {
       if (!isOfflineError(e)) console.warn('[offline] sync failed:', e.message)
+      else setOnline(false)
     } finally {
       setSyncing(false)
       await refreshOfflineCounts(tid)
+      setSyncStuck((await queueLength(tid)) > 0)
     }
   }, [refreshOfflineCounts])
+
+  /**
+   * Sends everything the till has queued: every sale it rings up, a second or
+   * two after the receipt is on screen, and anything left from a stretch
+   * without a connection.
+   *
+   * Entries are dropped only on a definite answer. `stored` means the sale is
+   * in the database — including the duplicate case, where a previous attempt
+   * got through and the reply did not. `rejected` means it will never store
+   * and keeping it would block the queue forever. Anything else stays, because
+   * the alternative to retrying a sale is losing it.
+   */
+  const drainQueue = useCallback(async (tid) => {
+    if (!tid) return
+    // One send at a time. A sale sent twice is harmless — the server skips an
+    // invoice it already has — but two sends racing both report on the same
+    // entries, and the receipt screen waiting on "is mine sent yet" needs one
+    // answer. A caller arriving mid-send waits for it, then sends whatever
+    // was queued since.
+    while (draining.current) await draining.current
+    const run = sendQueue(tid)
+    draining.current = run
+    try {
+      await run
+    } finally {
+      draining.current = null
+    }
+  }, [sendQueue])
+
+
 
   const refreshAll = useCallback(async () => {
     setError('')
@@ -597,19 +647,42 @@ export function OrdersProvider({ children }) {
   }
 
   /**
-   * Rings the sale up on this device, out of the reserved block.
+   * Rings the sale up on this device, out of the reserved block, so the
+   * receipt is on screen without waiting on the network. The sale is sent in
+   * the background straight after (see doCheckout); the queue is what makes
+   * that safe, since a send that fails is simply retried.
    *
-   * Returns null if there is nothing left to number with, which is the one
-   * case where an offline till genuinely has to stop: an invoice number is
-   * the only part of a sale it cannot work out for itself, and inventing one
-   * would collide with a number the server will hand to somebody else.
+   * Lines are re-priced against the menu by lib/orderLines.js, the same code
+   * /api/checkout runs, so a sale made here carries the same prices and the
+   * same per-line brand as one made there.
+   *
+   * Returns null when this sale should go to the server instead, which is
+   * only ever while connected: no numbers held, a block reserved for a day
+   * that has ended, or a line the menu no longer has — the server's answer to
+   * that is the error the cashier needs to see. Offline there is nobody else
+   * to ask, so the sale is made from what the till has, as it always was.
    */
-  async function checkoutOffline(dc) {
+  async function checkoutLocally(dc) {
+    const held = await readReservation(tenantId)
+    const hasNumbers = Array.isArray(held?.numbers) && held.numbers.length > 0
+    if (online && (!hasNumbers || reservationIsStale(held))) {
+      void topUpNumbers(tenantId)
+      return null
+    }
+
+    let lines = activeOrder.lines
+    const priced = activeOrder.lines.map((l) => buildOrderLine(
+      { kind: l.kind, refId: l.refId, qty: l.qty, ...discountPartsOf(l) },
+      menu,
+    ))
+    if (priced.every((r) => r.line)) lines = priced.map((r) => r.line)
+    else if (online) return null
+
     const reservation = await takeNumber(tenantId)
     if (!reservation) return null
 
     const invoice = buildOfflineInvoice({
-      lines: activeOrder.lines,
+      lines,
       reservation,
       rates: menu.tax?.rates ?? [],
       pricesIncludeTax: menu.tax?.pricesIncludeTax ?? true,
@@ -624,6 +697,24 @@ export function OrdersProvider({ children }) {
     await enqueueSale(tenantId, invoice)
     await refreshOfflineCounts(tenantId)
     return invoice
+  }
+
+  /** Sends the queue now, then tops the block back up if the sale ran it low. */
+  function sendInBackground() {
+    const tid = tenantId
+    void drainQueue(tid).then(() => topUpNumbers(tid))
+  }
+
+  /**
+   * The receipt screen asks for the invoice checkout just produced, once, and
+   * gets it without a round trip. Taken rather than read, so a later visit to
+   * the same invoice fetches the current copy — it may since have been paid.
+   */
+  function takeRecentInvoice(invoiceId) {
+    const inv = recentInvoice.current
+    if (!inv || inv.id !== invoiceId) return null
+    recentInvoice.current = null
+    return inv
   }
 
   function clearSoldOrder(invoiceId) {
@@ -643,19 +734,23 @@ export function OrdersProvider({ children }) {
     setCheckingOut(true)
     const dc = orderType === 'delivery' ? (Number(deliveryCharge) || 0) : 0
     try {
-      // Straight to the queue when the till already knows it is disconnected,
-      // rather than making the cashier watch a request time out with a
-      // customer waiting. Any other time it goes to the server first: the
-      // server is the authority on price whenever it can be reached, and this
-      // path stays the one that normally runs.
-      if (!online) {
-        const invoice = await checkoutOffline(dc)
-        if (!invoice) {
+      // Rung up on the device first, connected or not, so the receipt is on
+      // screen the moment the button is pressed instead of after a round trip
+      // on café wifi. The sale is sent straight after, in the background.
+      //
+      // Not for a tab: ringing one up has to close it on the server in the
+      // same request, or two devices could each sell the same table.
+      if (!activeOrder.tabId) {
+        const invoice = await checkoutLocally(dc)
+        if (invoice) {
+          clearSoldOrder(invoice.id)
+          if (online) sendInBackground()
+          return
+        }
+        if (!online) {
           setError('No connection and no invoice numbers left on this device. Reconnect to keep selling.')
           return
         }
-        clearSoldOrder(invoice.id)
-        return
       }
 
       const lines = activeOrder.lines.map((l) => ({
@@ -682,6 +777,7 @@ export function OrdersProvider({ children }) {
         // there are now two.
         if (tabAlreadyClosed) setError('That tab had already been rung up on another device — check for a duplicate sale.')
       }
+      recentInvoice.current = invoice
       clearSoldOrder(invoice.id)
     } catch (e) {
       // The connection dropped between pressing the button and the server
@@ -697,7 +793,7 @@ export function OrdersProvider({ children }) {
       if (isOfflineError(e)) {
         setOnline(false)
         try {
-          const invoice = await checkoutOffline(dc)
+          const invoice = await checkoutLocally(dc)
           if (invoice) {
             clearSoldOrder(invoice.id)
             return
@@ -756,7 +852,9 @@ export function OrdersProvider({ children }) {
     numbersLeft,
     menuCachedAt,
     syncing,
+    syncStuck,
     syncNow: () => drainQueue(tenantId),
+    takeRecentInvoice,
     refreshAll,
     startNewOrder,
     addItemToOrder,
@@ -770,7 +868,7 @@ export function OrdersProvider({ children }) {
     menu, orders, activeOrderId, activeOrder,
     orderMenuItems, orderDeals, orderCategoryTabs, orderTotal, orderTax, orderGrandTotal,
     categoryTabs, customerNote, orderType, tableNumber, deliveryCharge, error, loading, checkingOut, openingInvoiceId, refreshAll,
-    online, queuedCount, numbersLeft, menuCachedAt, syncing, drainQueue, tenantId,
+    online, queuedCount, numbersLeft, menuCachedAt, syncing, syncStuck, drainQueue, tenantId,
     tabs, tabSaving, refreshTabs,
   ])
 

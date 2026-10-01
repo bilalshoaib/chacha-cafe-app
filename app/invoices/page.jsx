@@ -1,8 +1,12 @@
 'use client'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/api.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
+import { useAuth } from '@/context/AuthContext.jsx'
+import { listQueue } from '@/lib/offline/store.js'
+import { filterQueuedInvoices } from '@/lib/invoiceQuery.js'
+import { normalizeBusinessType } from '@/lib/businessTypes.js'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import Pagination from '@/components/Pagination.jsx'
 
@@ -39,7 +43,9 @@ export default function InvoicesListPage() {
   const money = useMoney()
   const { formatDateTime } = useLocale()
   const router = useRouter()
-  const { menu } = useOrders()
+  const { menu, queuedCount } = useOrders()
+  const { user } = useAuth()
+  const tenantId = user?.effectiveTenantId ?? user?.tenantId ?? null
   // A café with one counter has nothing to tell apart, so the filter and the
   // per-row badge that names it both disappear.
   const hasCounters = (menu.brands?.length ?? 0) > 1
@@ -53,6 +59,9 @@ export default function InvoicesListPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(INVOICE_PAGE_SIZE)
   const [invoices, setInvoices] = useState([])
+  // Sales rung up on this till and not yet sent, shown above the server's
+  // page so a sale made a moment ago is findable straight away.
+  const [queued, setQueued] = useState([])
   const [pagination, setPagination] = useState({ page: 1, pageSize: INVOICE_PAGE_SIZE, total: 0, totalPages: 1 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -77,16 +86,30 @@ export default function InvoicesListPage() {
 
   useEffect(() => { setPage(1) }, [filterType, fromIso, toIso, presetId, searchId, pageSize])
 
-  const load = useCallback(async () => {
-    setError(''); setLoading(true)
+  // `quiet` re-reads without the skeleton — for a sale that has just been
+  // sent, where the rows are already on screen and only its badge changes.
+  const load = useCallback(async ({ quiet = false } = {}) => {
+    setError('')
+    if (!quiet) setLoading(true)
     try {
       const params = { page, pageSize }
       if (fromIso) params.from = fromIso
       if (toIso) params.to = toIso
       if (filterType !== 'all') params.businessType = filterType
       if (searchId.trim()) params.search = searchId.trim()
-      const res = await api.getInvoices(params)
-      setInvoices(Array.isArray(res.invoices) ? res.invoices : [])
+      const [res, queue] = await Promise.all([
+        api.getInvoices(params),
+        page === 1 && tenantId ? listQueue(tenantId) : Promise.resolve([]),
+      ])
+      const serverRows = Array.isArray(res.invoices) ? res.invoices : []
+      // A sale that landed between the two reads is in both; the server's
+      // copy wins.
+      const stored = new Set(serverRows.map((inv) => inv.id))
+      setQueued(filterQueuedInvoices(
+        queue.map((row) => row.invoice).filter((inv) => inv && !stored.has(inv.id)),
+        { from: fromIso, to: toIso, businessType: normalizeBusinessType(filterType === 'all' ? null : filterType), search: searchId },
+      ).map((inv) => ({ ...inv, pendingSync: true })))
+      setInvoices(serverRows)
       setPagination({
         page: res.pagination?.page ?? page,
         pageSize: res.pagination?.pageSize ?? pageSize,
@@ -96,13 +119,26 @@ export default function InvoicesListPage() {
     } catch (e) {
       setError(e.message || 'Could not load invoices')
       setInvoices([])
+      setQueued([])
       setPagination({ page: 1, pageSize, total: 0, totalPages: 1 })
     } finally {
       setLoading(false)
     }
-  }, [filterType, fromIso, toIso, page, pageSize, searchId])
+  }, [filterType, fromIso, toIso, page, pageSize, searchId, tenantId])
 
   useEffect(() => { void load() }, [load])
+
+  // Sales leaving the queue have reached the server, so the list is re-read
+  // to show them as stored rather than sending. Skipped while the queue grows,
+  // which is only ever a sale made on another screen.
+  const lastQueued = useRef(queuedCount)
+  useEffect(() => {
+    const shrank = queuedCount < lastQueued.current
+    lastQueued.current = queuedCount
+    if (shrank && queued.length) void load({ quiet: true })
+  }, [queuedCount]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const rows = useMemo(() => [...queued, ...invoices], [queued, invoices])
 
   const rangeSummary = useMemo(() => {
     if (presetId === 'all' || (!fromIso && !toIso)) return 'All invoices — no date filter applied'
@@ -113,11 +149,12 @@ export default function InvoicesListPage() {
 
   const pageSummary = useMemo(() => {
     const { total, pageSize } = pagination
-    if (total === 0) return presetId === 'all' ? 'No invoices yet' : 'No invoices in this range'
+    const sending = queued.length ? `${queued.length} sending` : ''
+    if (total === 0) return sending || (presetId === 'all' ? 'No invoices yet' : 'No invoices in this range')
     const start = (pagination.page - 1) * pageSize + 1
     const end = Math.min(pagination.page * pageSize, total)
-    return `Showing ${start}–${end} of ${total}`
-  }, [pagination])
+    return `${sending ? `${sending} · ` : ''}Showing ${start}–${end} of ${total}`
+  }, [pagination, queued.length])
 
   function goToPage(next) {
     setPage(Math.max(1, Math.min(pagination.totalPages, next)))
@@ -194,7 +231,7 @@ export default function InvoicesListPage() {
             said "No invoices yet" directly above a second paragraph saying the
             same thing — the empty state below is the one that stays, because
             it also names the filter that is hiding everything. */}
-        {loading || invoices.length ? (
+        {loading || rows.length ? (
           <div className="invoices-list-meta">
             {loading
               ? <Skeleton width="9rem" height="0.8rem" />
@@ -202,7 +239,7 @@ export default function InvoicesListPage() {
           </div>
         ) : null}
 
-        {!loading && invoices.length === 0 ? (
+        {!loading && rows.length === 0 ? (
           <p className="muted">
             {presetId === 'all' ? 'No invoices yet' : 'No invoices in this range'}
             {filterType !== 'all' ? ' for this business' : ''}.
@@ -240,7 +277,7 @@ export default function InvoicesListPage() {
                   </tr>
               </thead>
               <tbody>
-                {invoices.map((inv) => (
+                {rows.map((inv) => (
                   <tr
                     key={inv.id}
                     className="invoices-table-row"
@@ -280,6 +317,7 @@ export default function InvoicesListPage() {
                       <span className="inv-badge-group invoices-table-badges">
                         {inv.paid ? <span className="badge-paid">Paid</span> : <span className="badge-unpaid">Unpaid</span>}
                         {inv.returned ? <span className="badge-returned">Returned</span> : null}
+                        {inv.pendingSync ? <span className="badge-pending-sync">⏳ Sending</span> : null}
                       </span>
                     </td>
                   </tr>
@@ -290,7 +328,7 @@ export default function InvoicesListPage() {
         )}
 
         {/* Nothing to page through, so no "rows per page" over an empty table. */}
-        {!loading && invoices.length ? (
+        {!loading && rows.length ? (
           <Pagination
             page={pagination.page}
             totalPages={pagination.totalPages}
