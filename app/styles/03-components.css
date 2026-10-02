@@ -2436,10 +2436,6 @@ button.invoice-edit-link:hover {
   border-radius: 0;
 }
 
-.expenses-range-line {
-  margin: 0.55rem 0 0;
-}
-
 .expenses-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));

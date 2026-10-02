@@ -5,10 +5,12 @@ import { api } from '@/api.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import { expenseBusinessType } from '@/constants/businessTypes.js'
-import { EXPENSE_RANGE_PRESETS, expenseCategoryLabel, startOfMonth, toISOEnd, toISOStart } from '@/utils/expenses.js'
+import { expenseCategoryLabel } from '@/utils/expenses.js'
+import DateRangeFilter, { useDateRange } from '@/components/DateRangeFilter.jsx'
+import { tradingDay } from '@/lib/tradingDay.js'
 
 import { SkeletonTable } from '@/components/Skeleton.jsx'
-import { useMoney, useLocale } from '@/context/BrandingContext.jsx'
+import { useBranding, useMoney, useLocale } from '@/context/BrandingContext.jsx'
 
 export default function ExpensesListPage() {
   const money = useMoney()
@@ -17,26 +19,23 @@ export default function ExpensesListPage() {
   // A café with one counter has nothing to tell apart, so the filter and the
   // per-row badge that names it both disappear.
   const hasCounters = (menu.brands?.length ?? 0) > 1
-  const [presetId, setPresetId] = useState('this_month')
+  const branding = useBranding()
+  // The same picker as the reports screen, on the same trading day, so
+  // "Today" here covers the same hours of trade as "Today" there.
+  const hours = useMemo(
+    () => tradingDay({ dayStartHour: branding?.dayStartHour, dayEndHour: branding?.dayEndHour }),
+    [branding?.dayStartHour, branding?.dayEndHour],
+  )
+  const range = useDateRange({ hours, formatDateTime, initialPreset: 'this_month', allTime: true })
+  const { fromIso, toIso, ready } = range
   const [filterType, setFilterType] = useState('all')
-  const [fromIso, setFromIso] = useState(() => toISOStart(startOfMonth(new Date())))
-  const [toIso, setToIso] = useState(() => toISOEnd(new Date()))
   const [expenses, setExpenses] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const applyPreset = useCallback((id) => {
-    const p = EXPENSE_RANGE_PRESETS.find((x) => x.id === id)
-    if (!p) return
-    const { from, to } = p.range()
-    setFromIso(from)
-    setToIso(to)
-  }, [])
-
-  useEffect(() => { applyPreset(presetId) }, [presetId, applyPreset])
-
   const load = useCallback(async () => {
+    if (!ready) return
     setError(''); setLoading(true)
     try {
       const params = {}
@@ -50,16 +49,9 @@ export default function ExpensesListPage() {
       setError(e.message || 'Could not load expenses')
       setExpenses([]); setTotal(0)
     } finally { setLoading(false) }
-  }, [fromIso, toIso, filterType])
+  }, [ready, fromIso, toIso, filterType])
 
   useEffect(() => { void load() }, [load])
-
-  const rangeSummary = useMemo(() => {
-    if (presetId === 'all') return 'All recorded expenses'
-    if (!fromIso || !toIso) return ''
-    try { return `${formatDateTime(fromIso)} → ${formatDateTime(toIso)}` }
-    catch { return '' }
-  }, [presetId, fromIso, toIso])
 
   return (
     <main className="expenses-page">
@@ -74,22 +66,9 @@ export default function ExpensesListPage() {
         </div>
       </div>
 
-      <div className="list-filter-group">
-        <div className="list-filter-label">Date range</div>
-        <div className="filter-chip-row">
-          {EXPENSE_RANGE_PRESETS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={`filter-chip${presetId === p.id ? ' active' : ''}`}
-              onClick={() => setPresetId(p.id)}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-        {rangeSummary ? <p className="muted small expenses-range-line">{rangeSummary}</p> : null}
-      </div>
+      <section className="card reports-filters-card">
+        <DateRangeFilter range={range} />
+      </section>
 
       {/* Heading and all, only where the café has counters to tell apart. */}
       {hasCounters ? (

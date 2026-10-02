@@ -40,39 +40,3 @@ export function expenseDateInputValue(d) {
   const day = String(x.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
-
-export const EXPENSE_RANGE_PRESETS = [
-  {
-    id: 'all',
-    label: 'All time',
-    range: () => ({ from: '', to: '' }),
-  },
-  {
-    id: '30d',
-    label: 'Last 30 days',
-    range: () => {
-      const end = new Date()
-      const start = new Date(end)
-      start.setDate(start.getDate() - 29)
-      return { from: toISOStart(start), to: toISOEnd(end) }
-    },
-  },
-  {
-    id: 'this_month',
-    label: 'This month',
-    range: () => {
-      const n = new Date()
-      return { from: toISOStart(startOfMonth(n)), to: toISOEnd(n) }
-    },
-  },
-  {
-    id: 'last_month',
-    label: 'Last month',
-    range: () => {
-      const n = new Date()
-      const first = startOfMonth(new Date(n.getFullYear(), n.getMonth() - 1, 1))
-      const last = endOfMonth(first)
-      return { from: toISOStart(first), to: toISOEnd(last) }
-    },
-  },
-]
