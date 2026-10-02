@@ -153,6 +153,18 @@ export default function ExpensesListPage() {
                   </tr>
                 ))}
               </tbody>
+              {/* The sum of the rows above, at the foot of the column it adds
+                  up. The list is never paged, so it is the same figure as the
+                  total in range — repeated where the eye ends up. */}
+              <tfoot>
+                <tr>
+                  <td className="cell-card-title" colSpan={hasCounters ? 4 : 3}>
+                    <strong>Total ({expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'})</strong>
+                  </td>
+                  <td className="num" data-label="Amount"><strong>{money(total)}</strong></td>
+                  <td className="cell-card-action" colSpan={2} />
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}

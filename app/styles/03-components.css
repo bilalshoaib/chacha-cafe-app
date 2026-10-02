@@ -2463,6 +2463,12 @@ button.invoice-edit-link:hover {
   color: var(--text-h);
 }
 
+/* Totals row under the list. */
+.expenses-table tfoot td {
+  border-top: 2px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+
 .expenses-table .expenses-title-cell {
   font-weight: 600;
   color: var(--text-h);
