@@ -150,6 +150,7 @@ function AppNav({ user, onLogout }) {
     <>
       <NavLink href="/" end onClick={onNavigate}>Home</NavLink>
       <NavLink href="/orders" end onClick={onNavigate}>Take order</NavLink>
+      <NavLink href="/orders/quick" onClick={onNavigate}>Quick order</NavLink>
       <NavLink href="/deals" onClick={onNavigate}>Create deal</NavLink>
       <NavLink href="/menu" onClick={onNavigate}>Menu items</NavLink>
       <NavLink href="/invoices" active={invoicesActive} onClick={onNavigate}>Invoices</NavLink>

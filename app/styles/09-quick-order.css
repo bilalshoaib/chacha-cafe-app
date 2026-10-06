@@ -1,0 +1,707 @@
+/* 09-quick-order.css — the tile till at /orders/quick.
+   Fast-food counter layout: category rail | button wall | ticket.
+   Every colour is a token from 01-base.css, so it follows the café's brand
+   and the dark mode like the rest of the app. */
+
+/* The till wants the whole width of the screen, not the 80rem reading column
+   every other page sits in. */
+.app-main:has(> .qo) {
+  max-width: none;
+  padding: 1rem 1.25rem 1rem;
+}
+.app-main:has(> .qo) > .foot {
+  display: none;
+}
+
+.qo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: calc(100dvh - 2rem);
+  min-height: 32rem;
+}
+
+.qo--handoff {
+  height: auto;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+.qo-top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.qo-top-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.qo-top-title h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--text-h);
+}
+
+.qo-switch {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.qo-switch:hover {
+  color: var(--accent);
+}
+
+.qo-search {
+  flex: 1;
+  min-width: 14rem;
+  max-width: 32rem;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.qo-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+}
+.qo-search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 0.7rem 0;
+  font: inherit;
+  color: var(--text);
+  outline: none;
+  min-width: 0;
+}
+
+.qo-error {
+  margin: 0;
+}
+
+/* ── Three columns ───────────────────────────────────────────────────────── */
+.qo-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) minmax(20rem, 24rem);
+  gap: 0.85rem;
+}
+
+/* Category rail */
+.qo-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.qo-rail-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.75rem 0.35rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.qo-rail-btn:hover {
+  background: var(--surface-raised);
+}
+.qo-rail-btn:active {
+  transform: scale(0.97);
+}
+.qo-rail-btn.is-active {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+.qo-rail-btn.is-deals:not(.is-active) {
+  border-color: color-mix(in srgb, var(--ribbon) 45%, transparent);
+}
+.qo-rail-btn.is-deals.is-active {
+  background: var(--ribbon);
+}
+
+.qo-rail-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.qo-rail-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.qo-rail-count {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+/* Button wall */
+.qo-menu {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0.1rem;
+}
+
+.qo-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.65rem;
+}
+
+.qo-tile {
+  --tile-hue: var(--brand-primary);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 8.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.8rem 0.85rem 0.75rem;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--tile-hue);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s, box-shadow 0.15s, background 0.15s;
+}
+.qo-tile:hover:not(:disabled) {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--brand-primary) 14%, transparent);
+}
+.qo-tile:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.qo-tile:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.qo-tile.is-on {
+  background: color-mix(in srgb, var(--tile-hue) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--tile-hue) 55%, transparent);
+  border-top-color: var(--tile-hue);
+}
+.qo-tile.is-flash {
+  animation: qo-flash 0.22s ease-out;
+}
+@keyframes qo-flash {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tile-hue) 60%, transparent); }
+  100% { box-shadow: 0 0 0 10px transparent; }
+}
+
+.qo-tile--deal {
+  --tile-hue: var(--ribbon);
+  background: color-mix(in srgb, var(--ribbon) 5%, var(--surface));
+}
+
+.qo-tile-ribbon {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: var(--ribbon);
+  color: #fff;
+  border-radius: var(--radius-sm);
+}
+
+.qo-tile-qty {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.4rem;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.35rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  background: var(--brand-secondary);
+  color: var(--accent-deep);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.18);
+  z-index: 1;
+}
+
+.qo-tile-icon {
+  font-size: 1.9rem;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+.qo-tile-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+}
+.qo-tile-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+.qo-tile-price {
+  margin-top: auto;
+  padding-top: 0.4rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+:root[data-theme='dark'] .qo-tile-price {
+  color: var(--brand-secondary);
+}
+
+.qo-empty {
+  display: grid;
+  place-items: center;
+  min-height: 12rem;
+  color: var(--text-muted);
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+/* ── Ticket ──────────────────────────────────────────────────────────────── */
+.qo-ticket {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.qo-ticket-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem 0.6rem;
+}
+.qo-ticket-head-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+.qo-ticket-title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-h);
+}
+.qo-ticket-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.qo-ticket-close {
+  display: none;
+}
+
+.qo-types {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  margin: 0 1rem 0.5rem;
+  padding: 0.25rem;
+  background: var(--surface-raised);
+  border-radius: var(--radius);
+}
+.qo-type {
+  padding: 0.5rem 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.qo-type.is-active {
+  background: var(--surface);
+  color: var(--text-h);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.12);
+}
+
+.qo-lines {
+  flex: 1;
+  min-height: 4rem;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0 0.5rem;
+  border-top: 1px dashed var(--border);
+}
+
+.qo-lines-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+.qo-lines-empty span {
+  font-size: 2rem;
+  opacity: 0.6;
+}
+
+.qo-line {
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.qo-line.is-open {
+  background: var(--surface-raised);
+  border-radius: var(--radius-sm);
+}
+
+.qo-line-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qo-stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.qo-stepper button {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-raised);
+  color: var(--text-h);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.qo-stepper button:hover {
+  background: var(--accent-soft);
+}
+.qo-stepper-n {
+  min-width: 1.8rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.qo-line-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-h);
+  cursor: pointer;
+}
+.qo-line-name > span:first-child {
+  overflow-wrap: anywhere;
+}
+.qo-line-tag {
+  display: inline-block;
+  margin-right: 0.35rem;
+  padding: 0 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  vertical-align: 1px;
+  background: var(--ribbon);
+  color: #fff;
+  border-radius: 4px;
+}
+.qo-line-extras,
+.qo-line-each {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.qo-line-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: 800;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+.qo-line-off {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.qo-line-edit {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+}
+.qo-line-edit p {
+  margin: 0;
+}
+.qo-line-discount {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+.qo-line-discount input {
+  width: 8rem;
+}
+
+.qo-extras {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem 0.25rem;
+  border-top: 1px dashed var(--border);
+}
+.qo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 0;
+}
+.qo-field input {
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.qo-totals {
+  padding: 0.4rem 1rem 0.2rem;
+}
+.qo-total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  padding: 0.1rem 0;
+}
+.qo-total-grand {
+  margin-top: 0.25rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+  font-size: 1.05rem;
+  color: var(--text-h);
+}
+.qo-total-grand strong {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+}
+
+.qo-pay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.6rem 1rem 1rem;
+  padding: 1rem 1.1rem;
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.qo-pay strong {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+}
+.qo-pay:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.qo-pay:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.qo-pay:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* The phone dock and scrim exist only below the breakpoint. */
+.qo-dock,
+.qo-scrim {
+  display: none;
+}
+
+/* ── Narrower screens ────────────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .qo-body {
+    grid-template-columns: 5.5rem minmax(0, 1fr) minmax(18rem, 21rem);
+  }
+  .qo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(8.25rem, 1fr));
+  }
+}
+
+/* Phone and small tablet: rail across the top, ticket becomes a sheet. */
+@media (max-width: 900px) {
+  .app-main:has(> .qo) {
+    padding: 0.75rem 1rem 0;
+  }
+  .qo {
+    height: auto;
+    min-height: 0;
+    padding-bottom: 5rem;
+  }
+  .qo-search {
+    max-width: none;
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+  .qo-body {
+    display: block;
+  }
+  .qo-rail {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 0 -1rem 0.75rem;
+    padding: 0.4rem 1rem;
+    background: var(--bg);
+    scrollbar-width: none;
+  }
+  .qo-rail-btn {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 0.35rem;
+    padding: 0.5rem 0.8rem;
+  }
+  .qo-rail-icon {
+    font-size: 1.1rem;
+  }
+  .qo-rail-count {
+    display: none;
+  }
+  .qo-menu {
+    overflow: visible;
+  }
+  .qo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 0.55rem;
+  }
+  .qo-tile {
+    min-height: 7.5rem;
+  }
+
+  .qo-ticket {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    max-height: 88dvh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    transform: translateY(105%);
+    transition: transform 0.22s ease-out;
+  }
+  .qo-ticket.is-open {
+    transform: none;
+  }
+  .qo-ticket-close {
+    display: inline-flex;
+  }
+  .qo-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgb(0 0 0 / 0.4);
+  }
+
+  .qo-dock {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: fixed;
+    left: 1rem;
+    right: 1rem;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 50;
+    padding: 0.9rem 1rem;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .qo-dock:disabled {
+    opacity: 0.6;
+  }
+  .qo-dock strong {
+    margin-left: auto;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+  }
+  .qo-dock-count {
+    min-width: 1.6rem;
+    height: 1.6rem;
+    display: grid;
+    place-items: center;
+    background: var(--brand-secondary);
+    color: var(--accent-deep);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+}

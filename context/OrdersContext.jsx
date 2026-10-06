@@ -148,7 +148,8 @@ export function OrdersProvider({ children }) {
   // leave the till spinning.
   useEffect(() => {
     if (!openingInvoiceId) return undefined
-    if (pathname !== '/orders') {
+    // Either till — the classic screen or the tile one at /orders/quick.
+    if (pathname !== '/orders' && !pathname.startsWith('/orders/')) {
       setOpeningInvoiceId(null)
       return undefined
     }
