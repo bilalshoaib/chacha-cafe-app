@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import OfflineBanner from '@/components/OfflineBanner.jsx'
 import { SkeletonStatus } from '@/components/Skeleton.jsx'
-import { categoryColor, categoryIcon, formatItemExtras } from '@/utils/formatting.js'
+import { categoryColor, categoryIcon, categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { discountPartsOf } from '@/lib/pricing.js'
 import { MAX_TABLE_NUMBER } from '@/lib/tableNumber.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
@@ -101,22 +101,36 @@ export default function QuickOrderPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Categories are grouped by the name the café sees, not by key. Menus carry
+  // spelling variants — `snack` and `snacks`, `drink` and `drinks` — that the
+  // categories table labels identically, and keyed one-per-button they put two
+  // "Snacks" on the rail, each holding half the snacks.
+  const groupOf = useMemo(() => {
+    const m = new Map()
+    for (const t of categoryTabs) m.set(t.key, t.label.trim().toLowerCase())
+    return (key) => m.get(key || 'other') ?? categoryLabel(key || 'other', menu.categories).trim().toLowerCase()
+  }, [categoryTabs, menu.categories])
+
   const rail = useMemo(() => {
     const counts = new Map()
-    for (const i of menu.items) counts.set(i.category || 'other', (counts.get(i.category || 'other') ?? 0) + 1)
+    for (const i of menu.items) {
+      const g = groupOf(i.category)
+      counts.set(g, (counts.get(g) ?? 0) + 1)
+    }
+    const groups = []
+    const seen = new Set()
+    for (const t of categoryTabs) {
+      const g = groupOf(t.key)
+      if (seen.has(g) || !counts.get(g)) continue
+      seen.add(g)
+      groups.push({ key: g, label: t.label, icon: categoryIcon(t.key, menu.categories), count: counts.get(g) })
+    }
     return [
       { key: ALL_KEY, label: 'All', icon: '🍴', count: menu.items.length },
       ...(deals.length ? [{ key: DEALS_KEY, label: 'Deals', icon: '🔥', count: deals.length }] : []),
-      ...categoryTabs
-        .filter((t) => counts.get(t.key))
-        .map((t) => ({
-          key: t.key,
-          label: t.label,
-          icon: categoryIcon(t.key, menu.categories),
-          count: counts.get(t.key),
-        })),
+      ...groups,
     ]
-  }, [menu.items, menu.categories, categoryTabs, deals.length])
+  }, [menu.items, menu.categories, categoryTabs, deals.length, groupOf])
 
   // A category the menu no longer has falls back to All rather than an empty wall.
   useEffect(() => {
@@ -143,7 +157,7 @@ export default function QuickOrderPage() {
         name: i.name,
         sub: formatItemExtras(i),
         price: i.price,
-        category: i.category || 'other',
+        group: groupOf(i.category),
         icon: categoryIcon(i.category, menu.categories),
         color: categoryColor(i.category, menu.categories),
       }))
@@ -167,8 +181,8 @@ export default function QuickOrderPage() {
     }
     if (category === DEALS_KEY) return dealTiles
     if (category === ALL_KEY) return [...dealTiles, ...itemTiles]
-    return itemTiles.filter((t) => t.category === category)
-  }, [deals, menu.items, menu.categories, category, query])
+    return itemTiles.filter((t) => t.group === category)
+  }, [deals, menu.items, menu.categories, category, query, groupOf])
 
   const lines = activeOrder?.lines ?? []
 
