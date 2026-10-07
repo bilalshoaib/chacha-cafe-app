@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { allocateDealLineRevenue, calcInvoiceSplits, roundMoney } from '../lib/reports.js'
+import { allocateDealLineRevenue, calcInvoiceSplits, lineMatchesBusiness, roundMoney } from '../lib/reports.js'
 
 const sum = (parts) => roundMoney(parts.reduce((s, p) => s + p.revenue, 0))
 
@@ -184,4 +184,26 @@ test('brandSplits keyed by slug take precedence over the legacy pair', () => {
 test('every brand appears in the result even when it sold nothing', () => {
   const inv = { total: 100, lines: [{ lineBusinessType: 'cafe', qty: 1, lineTotal: 100 }] }
   assert.deepEqual(Object.keys(portions(inv)), ['cafe', 'burger'])
+})
+
+test('a combined invoice only puts its own side\'s lines in a filtered report', () => {
+  const pizza = { lineBusinessType: 'cafe' }
+  const burger = { lineBusinessType: 'burger' }
+  assert.equal(lineMatchesBusiness(pizza, 'combined', 'burger'), false)
+  assert.equal(lineMatchesBusiness(burger, 'combined', 'burger'), true)
+  assert.equal(lineMatchesBusiness(pizza, 'combined', 'cafe'), true)
+  assert.equal(lineMatchesBusiness(burger, 'combined', 'cafe'), false)
+})
+
+test('shared items, combined deals and untyped lines stay in under either filter', () => {
+  for (const line of [{ lineBusinessType: 'both' }, { lineBusinessType: 'combined' }, {}]) {
+    assert.equal(lineMatchesBusiness(line, 'combined', 'burger'), true)
+    assert.equal(lineMatchesBusiness(line, 'combined', 'cafe'), true)
+  }
+})
+
+test('a single-business invoice is filtered as a whole, and no filter keeps everything', () => {
+  assert.equal(lineMatchesBusiness({ lineBusinessType: 'cafe' }, 'burger', 'burger'), true)
+  assert.equal(lineMatchesBusiness({ lineBusinessType: 'burger' }, 'cafe', 'burger'), false)
+  assert.equal(lineMatchesBusiness({ lineBusinessType: 'cafe' }, 'combined', null), true)
 })

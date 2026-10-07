@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import { requireReportReader } from '@/lib/session'
 import { getInvoicesInRange } from '@/lib/repositories/invoicesRepository'
 import { loadMenu } from '@/lib/repositories/menuRepository'
+import { itemBusinessType } from '@/lib/businessTypes'
 import {
   allocateDealLineRevenue,
   invoiceBusinessType,
+  lineMatchesBusiness,
   matchesBusiness,
   matchesPayment,
   parseReportFilters,
@@ -36,7 +38,9 @@ export async function GET(request) {
   const menuLabelById = new Map()
   const menuPriceById = new Map()
   const menuCostById = new Map()
+  const menuTypeById = new Map()
   for (const item of menu.items ?? []) {
+    menuTypeById.set(item.id, itemBusinessType(item))
     const extras = [item.size, item.flavour].filter(Boolean).join(' · ')
     menuLabelById.set(item.id, extras ? `${item.name} · ${extras}` : item.name)
     menuPriceById.set(item.id, Number(item.price) || 0)
@@ -72,6 +76,7 @@ export async function GET(request) {
     if (!matchesBusiness(businessType, business)) continue
     if (!matchesPayment(inv.paymentMethod ?? null, payment)) continue
     for (const line of Array.isArray(inv.lines) ? inv.lines : []) {
+      if (!lineMatchesBusiness(line, businessType, business)) continue
       const extras = [line.size, line.flavour].filter(Boolean).join(' · ')
       const label = extras ? `${line.name} · ${extras}` : (line.name ?? '')
       const kind = line.kind ?? 'item'
@@ -116,6 +121,12 @@ export async function GET(request) {
         // One deal line of qty N contributes N × (units per deal) of each
         // included item, and a proportional share of what the line earned.
         for (const part of allocateDealLineRevenue(line, menuPriceById)) {
+          // A combined deal spans both counters; under a business filter only
+          // its own side's items count. Unknown or shared items stay in.
+          if (business && line.isCombined) {
+            const t = menuTypeById.get(part.itemId)
+            if (t && t !== 'both' && t !== business) continue
+          }
           const entry = itemEntry(part.itemId, menuLabelById.get(part.itemId) || part.itemId)
           entry.inDealQty += part.units
           entry.inDealRevenue += part.revenue
