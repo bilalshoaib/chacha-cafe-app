@@ -46,7 +46,10 @@ export default function LoginPage() {
       const { user } = await login(email, password)
       // Somebody who runs the platform rather than a café lands on the café
       // list; there is no till for them to stand at.
-      const destination = user?.platformOwner && !user?.tenantId ? '/platform' : '/orders'
+      // A partner kitchen's login has its own till and nothing of the café's.
+      const destination = user?.platformOwner && !user?.tenantId
+        ? '/platform'
+        : user?.role === 'partner' && user?.partnerId ? `/partners/${user.partnerId}` : '/orders'
 
       // A full document load rather than router.push() + router.refresh().
       //

@@ -30,7 +30,9 @@ function isPlatformPath(pathname) {
 
 /** Paths that require super_admin role. */
 function isSuperAdminPath(pathname) {
-  return pathname.startsWith('/settings/team') || pathname.startsWith('/settings/reports')
+  return pathname.startsWith('/settings/team')
+    || pathname.startsWith('/settings/reports')
+    || pathname.startsWith('/settings/partners')
 }
 
 /** Paths that counter_cashier cannot access. */
@@ -108,6 +110,20 @@ export async function middleware(request) {
     !PUBLIC_PATHS.includes(pathname)
   ) {
     return NextResponse.redirect(new URL('/platform', request.url))
+  }
+
+  // A partner kitchen's login sees its own screens and nothing of the café's.
+  // The API refuses it everything else regardless (requireTenant); this only
+  // keeps it from landing on a café page that would fail on every request.
+  // `/` is included: the bare address is the café's home, not the partner's.
+  if (session.userId && session.role === 'partner') {
+    const home = session.partnerId ? `/partners/${session.partnerId}` : '/login'
+    const allowed = pathname === home
+      || pathname.startsWith(home + '/')
+      || pathname === '/settings/password'
+      || pathname === '/login'
+    if (!allowed) return NextResponse.redirect(new URL(home, request.url))
+    return response
   }
 
   if (session.userId && isSuperAdminPath(pathname) && session.role !== 'super_admin') {

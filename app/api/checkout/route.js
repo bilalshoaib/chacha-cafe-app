@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { pool } from '@/lib/db'
-import { requireTenant } from '@/lib/session'
+import { requirePartnerAccess, requireTenant } from '@/lib/session'
 import { loadMenu } from '@/lib/repositories/menuRepository'
 import { saveInvoice, nextInvoiceNumber, nextShiftNumber } from '@/lib/repositories/invoicesRepository'
 import { getTenantDayHours } from '@/lib/repositories/tenantsRepository'
 import { buildOrderLine } from '@/lib/orderLines'
 import { invoiceBusinessTypeForLines } from '@/lib/businessTypes'
+import { findPartner } from '@/lib/partners'
 import { shiftDateForInstant } from '@/lib/shift'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax'
 import { tableNumberForOrderType } from '@/lib/tableNumber'
@@ -74,12 +75,20 @@ export async function POST(request) {
 }
 
 async function handleCheckout(request, marks, stats) {
-  const ctx = await timed(marks, 'requireTenant', () => requireTenant())
+  const body = await request.json().catch(() => ({}))
+
+  // A sale for a partner kitchen (lib/partners.js) names the partner, and is
+  // let in by the partner's rule rather than the café's: the café's own users
+  // may ring one up, and so may that partner's logins, but no one else's.
+  const partnerId = body.partnerId ? String(body.partnerId) : null
+  const ctx = await timed(marks, 'requireTenant', () => (partnerId ? requirePartnerAccess(partnerId) : requireTenant()))
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json().catch(() => ({}))
   const rawLines = Array.isArray(body.lines) ? body.lines : []
   if (!rawLines.length) return NextResponse.json({ error: 'Add at least one line before checkout' }, { status: 400 })
+  if (partnerId && body.tabId) {
+    return NextResponse.json({ error: 'A partner sale cannot be rung up from a tab.' }, { status: 400 })
+  }
 
   // Ringing up a tab. Checked before anything is priced so that a tab somebody
   // else already closed is refused without an invoice number being spent on
@@ -101,16 +110,21 @@ async function handleCheckout(request, marks, stats) {
   stats.menuItems = menu.items.length
   stats.menuDeals = menu.deals.length
 
+  const partner = partnerId ? findPartner(menu, partnerId) : null
+  if (partnerId && !partner) return NextResponse.json({ error: 'That partner kitchen is not here any more.' }, { status: 404 })
+
   const lines = []
   for (const raw of rawLines) {
-    const { line, error, status } = buildOrderLine(raw, menu)
+    const { line, error, status } = buildOrderLine(raw, menu, { partner })
     if (error) return NextResponse.json({ error }, { status: status || 400 })
     lines.push(line)
   }
   stats.lineCount = lines.length
 
   const subtotal = Math.round(lines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100
-  const businessType = invoiceBusinessTypeForLines(lines)
+  // A partner's sale is the partner's whole: its slug is what every report
+  // filters on, and a bill is never split between it and the café.
+  const businessType = partner ? partner.slug : invoiceBusinessTypeForLines(lines)
 
   const VALID_PAYMENT_METHODS = ['cash', 'online']
   const paymentMethod = VALID_PAYMENT_METHODS.includes(body.paymentMethod) ? body.paymentMethod : null
@@ -164,6 +178,7 @@ async function handleCheckout(request, marks, stats) {
   const invoice = {
     id: `inv-${invoiceNum}`,
     businessType,
+    ...(partner ? { brandId: partner.id } : {}),
     orderId: null,
     createdAt: createdAt.toISOString(),
     customerNote: body.customerNote ? String(body.customerNote).slice(0, 200) : '',

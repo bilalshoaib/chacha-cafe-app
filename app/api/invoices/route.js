@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireTenant } from '@/lib/session'
 import { countInvoices, findInvoices } from '@/lib/repositories/invoicesRepository'
-import { normalizeBusinessType } from '@/lib/businessTypes'
+import { normalizeReportBusiness } from '@/lib/reports'
 
 function parsePageParam(raw, fallback) {
   const n = parseInt(String(raw ?? ''), 10)
@@ -27,7 +27,7 @@ export async function GET(request) {
   if (fromRaw && Number.isNaN(from.getTime())) return NextResponse.json({ error: 'Invalid from date.' }, { status: 400 })
   if (toRaw && Number.isNaN(to.getTime())) return NextResponse.json({ error: 'Invalid to date.' }, { status: 400 })
 
-  const businessType = normalizeBusinessType(searchParams.get('businessType'))
+  const businessType = normalizeReportBusiness(searchParams.get('businessType'))
   const search = String(searchParams.get('search') ?? '').trim().toLowerCase()
 
   const filters = {

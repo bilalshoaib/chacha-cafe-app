@@ -14,6 +14,7 @@ import {
   roundMoney,
 } from '@/lib/reports'
 import { netOfTax } from '@/lib/tax'
+import { partnerSettlement } from '@/lib/partners'
 
 /** Headline totals for the reports Summary tab. Reads no invoice line detail. */
 export async function GET(request) {
@@ -46,6 +47,11 @@ export async function GET(request) {
   const brands = await listBrands(ctx)
   const netByBrand = new Map(brands.map((b) => [b.slug, 0]))
   const countByBrand = new Map(brands.map((b) => [b.slug, 0]))
+  // A partner kitchen's sales are collected by the café's cashier but are not
+  // all the café's: it keeps the supply price of what was sold and owes the
+  // partner the rest. Gathered per partner, settled after the loop.
+  const partnerSlugs = new Set(brands.filter((b) => b.partner).map((b) => b.slug))
+  const partnerInvoices = new Map([...partnerSlugs].map((slug) => [slug, []]))
 
   let grossTotal = 0, returnedCount = 0, returnedTotal = 0
   let paidCount = 0, unpaidCount = 0
@@ -78,6 +84,8 @@ export async function GET(request) {
     taxCollectedTotal += roundMoney(inv.taxTotal ?? 0)
     taxableSalesTotal += netOfTax(inv)
 
+    if (partnerSlugs.has(businessType)) partnerInvoices.get(businessType).push(inv)
+
     const portions = calcInvoiceSplits(inv, brands)
 
     if (inv.taxInclusive && (inv.taxTotal ?? 0) > 0) {
@@ -106,14 +114,22 @@ export async function GET(request) {
     if (deliveryCharge > 0) { deliveryChargesTotal += deliveryCharge; deliveryOrderCount += 1 }
   }
 
-  const brandSummary = brands.map((b) => ({
-    id: b.id, slug: b.slug, name: b.name,
-    netSales: roundMoney(netByBrand.get(b.slug) ?? 0),
-    invoiceCount: countByBrand.get(b.slug) ?? 0,
-  }))
+  const brandSummary = brands.map((b) => {
+    const row = {
+      id: b.id, slug: b.slug, name: b.name,
+      netSales: roundMoney(netByBrand.get(b.slug) ?? 0),
+      invoiceCount: countByBrand.get(b.slug) ?? 0,
+    }
+    if (!b.partner) return row
+    const settled = partnerSettlement(partnerInvoices.get(b.slug))
+    return { ...row, partner: true, cafeShare: settled.cafeShare, payable: settled.payable }
+  })
 
   const filtered = business ? brandSummary.filter((b) => b.slug === business) : brandSummary
   const netSalesTotal = roundMoney(filtered.reduce((sum, b) => sum + b.netSales, 0))
+  // What the café is holding for partner kitchens. Comes off what it keeps,
+  // like tax: collected at this till, but somebody else's money.
+  const partnerPayableTotal = roundMoney(filtered.reduce((sum, b) => sum + (b.payable ?? 0), 0))
   // Net sales is built from per-business item portions, which never include the
   // delivery charge — so it already excludes delivery.
   const netSalesExclDelivery = netSalesTotal
@@ -147,9 +163,11 @@ export async function GET(request) {
       taxableSalesTotal: roundMoney(taxableSalesTotal),
       netSalesExclTax,
       expenseCount, expensesTotal,
+      partnerPayableTotal,
       // Expenses come off sales the business actually keeps, which is sales
-      // with the tax taken out — tax collected was never the café's to spend.
-      netAfterExpenses: roundMoney(netSalesExclTax - expensesTotal),
+      // with the tax taken out — tax collected was never the café's to spend —
+      // and with what is owed to partner kitchens taken out too.
+      netAfterExpenses: roundMoney(netSalesExclTax - expensesTotal - partnerPayableTotal),
     },
   })
 }

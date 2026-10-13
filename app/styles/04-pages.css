@@ -1252,3 +1252,257 @@ a.danger-ghost:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Partner kitchens (lib/partners.js) ─────────────────────────────────────── */
+
+.badge-business-partner {
+  background: color-mix(in srgb, #0f766e 14%, transparent);
+  color: #115e59;
+  border: 1px solid color-mix(in srgb, #0f766e 28%, transparent);
+}
+
+.partner-prices-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.partner-prices-toolbar .partner-search {
+  flex: 1 1 16rem;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.partner-prices-only {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.partner-prices-group,
+.partner-report .card {
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.partner-prices-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.partner-prices-table th,
+.partner-prices-table td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.partner-prices-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.partner-prices-table input[type='number'] {
+  width: 7rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  text-align: right;
+}
+
+.partner-prices-table input[type='number']:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.partner-prices-table input[type='number']:disabled {
+  opacity: 0.45;
+}
+
+.partner-prices-table input[type='checkbox'],
+.partner-prices-only input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.partner-prices-table th {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.partner-prices-table tr:not(.is-on) td {
+  color: var(--text-muted);
+}
+
+.partner-prices-table tr.is-returned td {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.partner-prices-table td.partner-loss {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Inline form rows: fields side by side, the button level with the inputs. */
+.partner-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.partner-form .field {
+  margin-top: 0;
+  min-width: 0;
+}
+
+.partner-form .partner-field-name {
+  flex: 1 1 16rem;
+  max-width: 26rem;
+}
+
+.partner-form .partner-field-pct {
+  flex: 0 0 11rem;
+}
+
+.partner-form .partner-field-url {
+  flex: 1 1 22rem;
+}
+
+.partner-form .partner-field-url input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.partner-form > .partner-open-link {
+  padding: 0.6rem 1.15rem;
+  text-decoration: none;
+}
+
+.partner-form .field input {
+  width: 100%;
+}
+
+.partner-form > button {
+  padding: 0.6rem 1.15rem;
+  white-space: nowrap;
+}
+
+/* The % sits inside the box, so the number reads as a percentage at a glance. */
+.partner-pct {
+  position: relative;
+  display: block;
+}
+
+.partner-pct input {
+  padding-right: 2rem;
+}
+
+.partner-pct > span {
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.partner-hint {
+  margin: 0 0 0.25rem;
+  max-width: 44rem;
+  line-height: 1.45;
+}
+
+.partner-subhead {
+  margin-top: 1.25rem;
+}
+
+.partner-card {
+  padding: 1.15rem 1.25rem 1.25rem;
+}
+
+.partner-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.partner-card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.partner-logins {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+}
+
+.partner-logins li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .partner-form .partner-field-name,
+  .partner-form .partner-field-pct,
+  .partner-form .partner-field-url {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .partner-form > button {
+    width: 100%;
+  }
+
+  .partner-prices-table thead {
+    display: none;
+  }
+
+  .partner-prices-table tr {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.15rem 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .partner-prices-table td {
+    border: 0;
+    padding: 0.1rem 0;
+    text-align: left;
+  }
+
+  .partner-prices-table td.num {
+    text-align: left;
+  }
+
+  .partner-prices-table td::before {
+    content: attr(data-label) ': ';
+    color: var(--text-muted);
+    font-size: 0.85em;
+  }
+}

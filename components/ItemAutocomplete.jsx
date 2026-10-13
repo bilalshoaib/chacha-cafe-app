@@ -32,6 +32,9 @@ export default function ItemAutocomplete({
   onRequestNextField,
   disabled,
   inputRef,
+  // What to say when nothing matches. The café's till adds the typed name to
+  // the menu; a partner kitchen's till can only sell what is on its list.
+  noMatchHint = null,
 }) {
   const money = useMoney()
   const wrapRef = useRef(null)
@@ -215,9 +218,13 @@ export default function ItemAutocomplete({
               {searchValue.trim() && filtered.length === 0 ? (
                 <li className="item-autocomplete-hint" role="presentation">
                   <span className="muted small">
-                    No menu match. Choose <strong>category</strong>, enter <strong>unit price</strong> in{' '}
-                    <strong>Each</strong>, set <strong>Qty</strong>, then <strong>Add line</strong> — it will
-                    be saved to the menu.
+                    {noMatchHint ?? (
+                      <>
+                        No menu match. Choose <strong>category</strong>, enter <strong>unit price</strong> in{' '}
+                        <strong>Each</strong>, set <strong>Qty</strong>, then <strong>Add line</strong> — it will
+                        be saved to the menu.
+                      </>
+                    )}
                   </span>
                 </li>
               ) : null}

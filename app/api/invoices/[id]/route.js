@@ -6,11 +6,12 @@ import { buildOrderLine } from '@/lib/orderLines'
 import { applyPricing, priceLine } from '@/lib/pricing'
 import { computeInvoiceTax, invoiceTotal } from '@/lib/tax'
 import { tableNumberForOrderType } from '@/lib/tableNumber'
+import { findPartner } from '@/lib/partners'
 
 /** Re-prices a line whose product is no longer on the menu, using the price the
  *  invoice already recorded — never one supplied by the request. */
 function repriceFromStored(stored, raw) {
-  return applyPricing(
+  const next = applyPricing(
     stored,
     priceLine({
       unitPrice: stored.unitPrice,
@@ -19,6 +20,11 @@ function repriceFromStored(stored, raw) {
       lineDiscount: raw.lineDiscount ?? raw.discount ?? 0,
     }),
   )
+  // A partner line owes the café per unit, so what it owes follows the qty.
+  if (stored.supplyUnitPrice != null) {
+    next.supplyTotal = Math.round(stored.supplyUnitPrice * next.qty * 100) / 100
+  }
+  return next
 }
 
 /**
@@ -27,7 +33,7 @@ function repriceFromStored(stored, raw) {
  * how many — name, unit price and line total are always the server's, so an
  * edit cannot introduce a total the server didn't compute.
  */
-function repriceLines(rawLines, menu, storedLines) {
+function repriceLines(rawLines, menu, storedLines, partner = null) {
   if (!Array.isArray(rawLines) || rawLines.length === 0) {
     return { error: 'At least one line is required.' }
   }
@@ -45,7 +51,7 @@ function repriceLines(rawLines, menu, storedLines) {
     if (!Number.isFinite(qty) || qty < 1) return { error: 'Each line needs a valid qty ≥ 1.' }
     if (Math.floor(qty) !== qty) return { error: 'Quantity must be a whole number.' }
 
-    const { line, error, status } = buildOrderLine(raw, menu, { allowArchived: true })
+    const { line, error, status } = buildOrderLine(raw, menu, { allowArchived: true, partner })
     let next = line
     if (error) {
       // Item or deal has since been removed from the menu; keep the invoice
@@ -88,7 +94,14 @@ export async function PATCH(request, { params }) {
 
   if (lines !== undefined) {
     const menu = await loadMenu(ctx)
-    const repriced = repriceLines(lines, menu, inv.lines)
+    // A partner kitchen's sale is re-priced from the partner's list, or editing
+    // it would quietly charge the café's prices and lose what the café is owed.
+    // Matched by slug as well as id: business_type is what the sale was filed
+    // under, and is there even if brand_id is not.
+    const partner = findPartner(menu, inv.brandId)
+      ?? (menu.partners ?? []).find((p) => p.slug === inv.businessType)
+      ?? null
+    const repriced = repriceLines(lines, menu, inv.lines, partner)
     if (repriced.error) return NextResponse.json({ error: repriced.error }, { status: repriced.status || 400 })
     inv.lines = repriced.lines
     inv.subtotal = repriced.subtotal

@@ -55,6 +55,13 @@ const SECTIONS = [
     owner: true,
   },
   {
+    href: '/settings/partners',
+    icon: '🤝',
+    title: 'Partner kitchens',
+    blurb: 'Another business selling from your menu at its own prices, with its own till, logins and settlement.',
+    owner: true,
+  },
+  {
     href: '/settings/team',
     icon: '👥',
     title: 'Team & admins',

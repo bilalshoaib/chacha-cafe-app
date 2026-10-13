@@ -40,7 +40,10 @@ function brandStats(summary) {
     key: `brand-${b.slug}`,
     label: b.name,
     value: (_s, money) => money(b.netSales),
-    sub: (_s, _money) => `${b.invoiceCount} invoice${b.invoiceCount === 1 ? '' : 's'}`,
+    // A partner kitchen's card says how its sales settle, which is the figure
+    // the two businesses actually meet over.
+    sub: (_s, money) => `${b.invoiceCount} invoice${b.invoiceCount === 1 ? '' : 's'}`
+      + (b.partner ? ` · café keeps ${money(b.cafeShare ?? 0)} · pay ${b.name} ${money(b.payable ?? 0)}` : ''),
   }))
 }
 
@@ -62,6 +65,15 @@ const SUMMARY_STATS = [
     sub: (s, money) => `On ${money(s.taxableSalesTotal ?? 0)} of sales · for filing`,
     when: (s) => (s?.taxCollectedTotal ?? 0) > 0,
   },
+  // Only for a café selling for a partner kitchen: money its cashier took that
+  // is the partner's, and so comes off what the café keeps.
+  {
+    key: 'partnerPayable',
+    label: 'Payable to partners',
+    value: (s, money) => money(s.partnerPayableTotal ?? 0),
+    sub: () => 'Partner sales − café’s supply price',
+    when: (s) => (s?.brands ?? []).some((b) => b.partner),
+  },
   { key: 'expenses', label: 'Total expenses', value: (s, money) => money(s.expensesTotal), sub: (s) => `${s.expenseCount} entries · date spent` },
   {
     key: 'netAfterExpenses',
@@ -71,7 +83,8 @@ const SUMMARY_STATS = [
     // tax only comes off when the café was collecting some.
     sub: (s) => ((s?.taxCollectedTotal ?? 0) > 0
       ? 'Sales excl. delivery & tax − expenses'
-      : 'Sales excl. delivery − expenses'),
+      : 'Sales excl. delivery − expenses')
+      + ((s?.partnerPayableTotal ?? 0) !== 0 ? ' − partners' : ''),
   },
 ]
 
@@ -156,7 +169,8 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sel
   <div class="stat"><span class="stat-label">Net Sales</span><span class="stat-value">${money(summary.netSalesTotal)}</span><span class="stat-sub">Excl. returns</span></div>
   <div class="stat"><span class="stat-label">Sales excl. delivery</span><span class="stat-value">${money(summary.netSalesExclDelivery ?? summary.netSalesTotal)}</span><span class="stat-sub">Net sales − delivery charges</span></div>
   <div class="stat"><span class="stat-label">Delivery charges</span><span class="stat-value">${money(summary.deliveryChargesTotal ?? 0)}</span><span class="stat-sub">${summary.deliveryOrderCount ?? 0} delivery orders</span></div>
-  ${(summary.brands ?? []).length > 1 ? (summary.brands ?? []).map((b) => `<div class="stat"><span class="stat-label">${b.name}</span><span class="stat-value">${money(b.netSales)}</span><span class="stat-sub">${b.invoiceCount} invoices</span></div>`).join('') : ''}
+  ${(summary.brands ?? []).length > 1 ? (summary.brands ?? []).map((b) => `<div class="stat"><span class="stat-label">${b.name}</span><span class="stat-value">${money(b.netSales)}</span><span class="stat-sub">${b.invoiceCount} invoices${b.partner ? ` · café keeps ${money(b.cafeShare ?? 0)} · pay ${b.name} ${money(b.payable ?? 0)}` : ''}</span></div>`).join('') : ''}
+  ${(summary.brands ?? []).some((b) => b.partner) ? `<div class="stat"><span class="stat-label">Payable to partners</span><span class="stat-value">${money(summary.partnerPayableTotal ?? 0)}</span><span class="stat-sub">Partner sales − café's supply price</span></div>` : ''}
   <div class="stat"><span class="stat-label">Invoices</span><span class="stat-value">${summary.invoiceCount}</span><span class="stat-sub">In range</span></div>
   <div class="stat"><span class="stat-label">Gross Total</span><span class="stat-value">${money(summary.grossTotal)}</span><span class="stat-sub">All invoices</span></div>
   <div class="stat"><span class="stat-label">Returns</span><span class="stat-value">${summary.returnedCount}</span><span class="stat-sub">${money(summary.returnedTotal)} refunded</span></div>

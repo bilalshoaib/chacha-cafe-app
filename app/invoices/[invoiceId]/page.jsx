@@ -7,7 +7,7 @@ import { findQueuedSale } from '@/lib/offline/store.js'
 import Modal, { ConfirmActions } from '@/components/Modal.jsx'
 import BusinessTypeBadge from '@/components/BusinessTypeBadge.jsx'
 import Skeleton, { SkeletonStatus } from '@/components/Skeleton.jsx'
-import { businessTypeLabel, invoiceBusinessType } from '@/constants/businessTypes.js'
+import { businessTypeLabel, invoiceBusinessType, invoicePartner } from '@/constants/businessTypes.js'
 import { categoryLabel, formatItemExtras, moneyFormatter } from '@/utils/formatting.js'
 import { useOrders } from '@/context/OrdersContext.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
@@ -64,14 +64,16 @@ const orderTypeBanner = (invoice) => {
  * the app reads business_type; once it reads brands this becomes the brand's
  * own name, and a single-brand café stops seeing a distinction at all.
  */
-function businessLabel(invoice, branding) {
+function businessLabel(invoice, branding, partners) {
+  const partner = invoicePartner(invoice, partners)
+  if (partner) return partner.name
   const type = invoiceBusinessType(invoice)
   if (type === 'burger') return 'Burger'
   if (type === 'cafe') return 'Cafe'
   return branding?.name ?? ''
 }
 
-function buildReceiptHtml(invoice, itemLabelById, branding) {
+function buildReceiptHtml(invoice, itemLabelById, branding, partners) {
   // The printed receipt is built as a string rather than rendered, so it
   // cannot reach the hook the rest of this file uses. It takes the same two
   // values off the branding it is already handed, which is what the hook reads
@@ -80,7 +82,7 @@ function buildReceiptHtml(invoice, itemLabelById, branding) {
   const receiptLocale = branding?.locale ?? undefined
   const tenantName = branding?.name ?? ''
   const receiptFooter = branding?.receiptFooter || tenantName
-  const businessName = businessLabel(invoice, branding)
+  const businessName = businessLabel(invoice, branding, partners)
   const paymentLine = invoice.paymentMethod === 'cash' ? 'Payment: Cash' : invoice.paymentMethod === 'online' ? 'Payment: Online / Card' : ''
   const lineRows = invoice.lines.map((line) => {
     const extras = formatItemExtras(line)
@@ -330,7 +332,7 @@ export default function InvoiceDetailPage() {
       frame.remove()
     }
     const doc = frame.contentWindow.document
-    doc.open(); doc.write(buildReceiptHtml(invoice, itemLabelById, branding)); doc.close()
+    doc.open(); doc.write(buildReceiptHtml(invoice, itemLabelById, branding, menu.partners)); doc.close()
     // print() blocks until the dialog closes in most browsers; afterprint is
     // for the ones where it returns at once. The timeout is the backstop for
     // a browser that fires neither, so the next print is never locked out.
@@ -440,7 +442,7 @@ export default function InvoiceDetailPage() {
               <h1 className="invoice-view-title">{invoice.id}</h1>
               {invoice.shiftNumber != null ? <p className="invoice-order-num">Order #{invoice.shiftNumber}</p> : null}
               <div className="invoice-status-badges">
-                <BusinessTypeBadge type={invoiceBusinessType(invoice)} />
+                <BusinessTypeBadge type={invoiceBusinessType(invoice)} partnerName={invoicePartner(invoice, menu.partners)?.name} />
                 <OrderTypeBadge type={invoice.orderType} />
                 {invoice.tableNumber ? <span className="badge-table-number">🪑 Table {invoice.tableNumber}</span> : null}
                 {invoice.paid ? <span className="badge-paid">Paid</span> : <span className="badge-unpaid">Unpaid</span>}
@@ -457,7 +459,7 @@ export default function InvoiceDetailPage() {
                 <p className="muted small invoice-meta-line">Paid · {formatDateTime(invoice.paidAt)}{invoice.paymentMethod ? ` · ${invoice.paymentMethod === 'cash' ? 'Cash' : 'Online / Card'}` : ''}</p>
               ) : null}
               {invoice.returned && invoice.returnedAt ? <p className="muted small invoice-meta-line">Return recorded · {formatDateTime(invoice.returnedAt)}</p> : null}
-              <p className="muted small invoice-meta-line">{businessTypeLabel(invoiceBusinessType(invoice))}</p>
+              <p className="muted small invoice-meta-line">{invoicePartner(invoice, menu.partners)?.name ?? businessTypeLabel(invoiceBusinessType(invoice))}</p>
             </div>
             <div className="text-right invoice-view-dates">
               <p className="muted small">Issued</p>

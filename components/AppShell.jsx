@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useBranding } from '@/context/BrandingContext.jsx'
-import { OrdersProvider } from '@/context/OrdersContext.jsx'
+import { OrdersProvider, useOrders } from '@/context/OrdersContext.jsx'
 import ImpersonationBanner from '@/components/ImpersonationBanner.jsx'
 import BrandMark from '@/components/BrandMark.jsx'
 import ThemeToggle from '@/components/ThemeToggle.jsx'
@@ -129,9 +129,97 @@ function PlatformNav({ onLogout }) {
   )
 }
 
+/**
+ * The navigation for a partner kitchen's own login: its till, its prices and
+ * its sales, and nothing of the café's. Rendered outside OrdersProvider, which
+ * loads the café's menu, tabs and invoice numbers — every one of those routes
+ * refuses this account, and a 401 reads to the client as a dead session.
+ */
+function PartnerNav({ user, onLogout }) {
+  const branding = useBranding()
+  const [navOpen, setNavOpen] = useState(false)
+  const closeNav = () => setNavOpen(false)
+  const base = `/partners/${user?.partnerId ?? ''}`
+
+  const renderLinks = (onNavigate) => (
+    <>
+      <NavLink href={base} end onClick={onNavigate}>Take order</NavLink>
+      <NavLink href={`${base}/quick`} onClick={onNavigate}>Quick order</NavLink>
+      <NavLink href={`${base}/prices`} onClick={onNavigate}>My menu &amp; prices</NavLink>
+      <NavLink href={`${base}/report`} onClick={onNavigate}>Sales &amp; settlement</NavLink>
+      <NavLink href="/settings/password" onClick={onNavigate}>Password</NavLink>
+    </>
+  )
+
+  return (
+    <>
+      <div className="mobile-topbar">
+        <div className="brand">
+          <BrandMark />
+          <h1>{branding?.name}</h1>
+        </div>
+        <button
+          type="button"
+          className="hamburger-btn"
+          aria-label="Open navigation"
+          aria-expanded={navOpen}
+          onClick={() => setNavOpen(true)}
+        >
+          <span className="hamburger-bar" />
+          <span className="hamburger-bar" />
+          <span className="hamburger-bar" />
+        </button>
+      </div>
+
+      <aside className="side-nav">
+        <div className="side-nav-brand">
+          <BrandMark />
+          <div className="side-nav-brand-text">
+            <div className="side-nav-name">{branding?.name}</div>
+            <div className="side-nav-sub">Partner kitchen</div>
+          </div>
+        </div>
+        <nav className="side-nav-links" aria-label="Main">{renderLinks()}</nav>
+        <div className="side-nav-footer">
+          <ThemeToggle />
+          <button type="button" className="side-nav-logout" onClick={onLogout}>
+            Log out
+          </button>
+        </div>
+      </aside>
+
+      {navOpen && (
+        <div className="mobile-nav-overlay" onClick={closeNav} aria-hidden="true" />
+      )}
+      <nav
+        className={`mobile-nav-drawer${navOpen ? ' mobile-nav-open' : ''}`}
+        aria-label="Mobile navigation"
+      >
+        <div className="mobile-nav-header">
+          <span className="mobile-nav-title">Menu</span>
+          <button type="button" className="mobile-nav-close" aria-label="Close navigation" onClick={closeNav}>
+            ✕
+          </button>
+        </div>
+        <div className="mobile-nav-links">{renderLinks(closeNav)}</div>
+        <div className="mobile-nav-footer">
+          <ThemeToggle />
+          <button type="button" className="mobile-nav-logout" onClick={() => { closeNav(); onLogout() }}>
+            Log out
+          </button>
+        </div>
+      </nav>
+    </>
+  )
+}
+
 function AppNav({ user, onLogout }) {
   const branding = useBranding()
   const pathname = usePathname()
+  // Each partner kitchen gets its own till, beside the café's, so a sale for
+  // it is never rung up on the café's screen by mistake.
+  const { menu } = useOrders()
+  const partners = menu.partners ?? []
   const [navOpen, setNavOpen] = useState(false)
   const closeNav = () => setNavOpen(false)
 
@@ -151,6 +239,9 @@ function AppNav({ user, onLogout }) {
       <NavLink href="/" end onClick={onNavigate}>Home</NavLink>
       <NavLink href="/orders" end onClick={onNavigate}>Take order</NavLink>
       <NavLink href="/orders/quick" onClick={onNavigate}>Quick order</NavLink>
+      {partners.map((p) => (
+        <NavLink key={p.id} href={`/partners/${p.id}`} onClick={onNavigate}>{p.name}</NavLink>
+      ))}
       <NavLink href="/deals" onClick={onNavigate}>Create deal</NavLink>
       <NavLink href="/menu" onClick={onNavigate}>Menu items</NavLink>
       <NavLink href="/invoices" active={invoicesActive} onClick={onNavigate}>Invoices</NavLink>
@@ -295,6 +386,15 @@ export default function AppShell({ children }) {
       <OrdersProvider key={tenantKey}>
         {isHome ? children : <div className="app">{children}</div>}
       </OrdersProvider>
+    )
+  }
+
+  if (user?.role === 'partner') {
+    return (
+      <div className="app-shell">
+        <PartnerNav user={user} onLogout={() => void handleLogout()} />
+        <div className="app-main">{children}</div>
+      </div>
     )
   }
 

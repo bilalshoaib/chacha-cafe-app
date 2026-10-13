@@ -32,6 +32,11 @@ export async function POST(request) {
     }
   }
 
+  // A partner whose partner has been removed has nothing left to sign in to.
+  if (user.role === 'partner' && !user.partnerId) {
+    return NextResponse.json({ error: 'This login is no longer linked to a partner kitchen.' }, { status: 403 })
+  }
+
   const session = await getSession()
   session.userId = user.id
   session.email = user.email
@@ -40,6 +45,9 @@ export async function POST(request) {
   // id the client could supply would be a tenant id the client could forge.
   session.tenantId = user.tenantId
   session.platformOwner = user.platformOwner
+  // Read from the account like the tenant, and for the same reason. Cleared
+  // for everyone else so a cookie reused across sign-ins cannot keep one.
+  session.partnerId = user.role === 'partner' ? user.partnerId : undefined
   await session.save()
 
   return NextResponse.json({ ok: true, user: usersRepo.toPublicUser(user) })

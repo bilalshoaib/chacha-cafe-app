@@ -25,7 +25,7 @@ function OrderTypeBadge({ type }) {
     </span>
   )
 }
-import { invoiceBusinessType } from '@/constants/businessTypes.js'
+import { invoiceBusinessType, invoicePartner } from '@/constants/businessTypes.js'
 import {
   INVOICE_PAGE_SIZE,
   INVOICE_PAGE_SIZE_OPTIONS,
@@ -48,7 +48,7 @@ export default function InvoicesListPage() {
   const tenantId = user?.effectiveTenantId ?? user?.tenantId ?? null
   // A café with one counter has nothing to tell apart, so the filter and the
   // per-row badge that names it both disappear.
-  const hasCounters = (menu.brands?.length ?? 0) > 1
+  const hasCounters = (menu.brands?.length ?? 0) + (menu.partners?.length ?? 0) > 1
   const [filterType, setFilterType] = useState('all')
   const [presetId, setPresetId] = useState('all')
   const [searchId, setSearchId] = useState('')
@@ -107,7 +107,7 @@ export default function InvoicesListPage() {
       const stored = new Set(serverRows.map((inv) => inv.id))
       setQueued(filterQueuedInvoices(
         queue.map((row) => row.invoice).filter((inv) => inv && !stored.has(inv.id)),
-        { from: fromIso, to: toIso, businessType: normalizeBusinessType(filterType === 'all' ? null : filterType), search: searchId },
+        { from: fromIso, to: toIso, businessType: filterType === 'all' ? null : (normalizeBusinessType(filterType) ?? filterType), search: searchId },
       ).map((inv) => ({ ...inv, pendingSync: true })))
       setInvoices(serverRows)
       setPagination({
@@ -213,7 +213,7 @@ export default function InvoicesListPage() {
             <h3 className="sub invoices-business-heading">Counter</h3>
             <div className="invoices-filter-tabs">
               <button type="button" className={filterType === 'all' ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType('all')}>All</button>
-              {menu.brands.map((b) => (
+              {[...menu.brands, ...(menu.partners ?? [])].map((b) => (
                 <button key={b.id} type="button" className={filterType === b.slug ? 'primary sm' : 'ghost sm'} onClick={() => setFilterType(b.slug)}>{b.name}</button>
               ))}
             </div>
@@ -293,7 +293,7 @@ export default function InvoicesListPage() {
                     }}
                   >
                     <td className="invoices-table-shift-num cell-card-title">{inv.shiftNumber != null ? `#${inv.shiftNumber}` : <span className="muted">—</span>}</td>
-                    {hasCounters ? <td data-label="Counter"><BusinessTypeBadge type={invoiceBusinessType(inv)} /></td> : null}
+                    {hasCounters ? <td data-label="Counter"><BusinessTypeBadge type={invoiceBusinessType(inv)} partnerName={invoicePartner(inv, menu.partners)?.name} /></td> : null}
                     <td className="invoices-table-id" data-label="Invoice">{inv.id}</td>
                     <td data-label="Type">
                       <span className="inv-badge-group">

@@ -26,6 +26,7 @@ in it, and none of the eight backlog items has been started.
 | ✅ | Open tabs and table service | §2.7 |
 | ✅ | The app stays on screen when the network goes | §2.8 |
 | ✅ | Table numbers on an invoice | §2.9 |
+| ✅ | Partner kitchens — another business selling from the menu at its own prices | §2.10 |
 | ⬜ | 1. Tipping — *blocker* | §3 |
 | ⬜ | 2. Card payments — *blocker* | §3 |
 | ⬜ | 3. Menu modifiers — *largest build* | §3 |
@@ -808,6 +809,56 @@ against the real table.
 **Not verified:** no manual browser pass. Nothing has been typed into the field
 on screen, printed, or looked at on a phone — the till, receipt and invoice-list
 rendering are argued from the code, not seen.
+
+---
+
+### 2.10 Done — partner kitchens (2026-10-13)
+
+Another business sells items from a café's menu, through the café's till, at
+prices it sets itself. Built for Chacha's contract with Claude Kitchen: the café
+supplies at 20% off its menu price, the café's cashier collects every sale, and
+the two settle from the reports.
+
+| Area | File(s) |
+|---|---|
+| Schema — `brands.partner`, `brands.supply_discount_pct`, `partner_prices` (+ RLS), `users.brand_id`, `invoices.business_type` widened to 40 | `migrations/033_partner_brands.sql` *(new)* |
+| Pricing and settlement, pure | `lib/partners.js` *(new)*, `lib/orderLines.js` |
+| Partners, price lists and partner logins | `lib/repositories/partnersRepository.js` *(new)* |
+| Partners and their prices ride along in `loadMenu()` as `menu.partners` | `lib/repositories/menuRepository.js` |
+| Checkout takes `partnerId`; invoice edit re-prices from the partner list | `app/api/checkout/route.js`, `app/api/invoices/[id]/route.js` |
+| API | `app/api/partners/**` *(new)* |
+| Partner till in two views sharing one cart — classic (`/partners/[id]`) and tiles (`/partners/[id]/quick`) — plus price list and settlement | `app/partners/[id]/**`, `components/PartnerTill.jsx` *(new)* |
+| Owner settings: add a partner, its discount, its logins | `app/settings/partners/page.jsx` *(new)* |
+| Public menu for the partner's own website — `GET /api/menu-public/partners/<partner>?tenant=<café>`, CORS `*`, 60s edge cache; its prices only, built field by field so no café price, cost or discount can leak | `app/api/menu-public/partners/[slug]/route.js` *(new)*, `lib/publicMenu.js` |
+| Reports: partner column, "café keeps / pay partner", payable comes off net after expenses | `app/api/reports/summary/route.js`, `components/ReportsWorkbench.jsx`, `lib/reports.js` |
+| 19 tests | `tests/partners.test.js` *(new)* |
+
+**Decisions worth knowing before changing any of it:**
+
+- **A partner is a brand with its own price list, not a counter.** `menu.brands`
+  stays the café's own counters (item and deal forms offer only those);
+  partners travel as `menu.partners`. Its sales carry its slug in
+  `business_type` and its id in `brand_id`, so every report filter already
+  keeps them apart.
+- **Its own till, never a mode of the café's.** A bill is wholly the partner's
+  or wholly the café's. The partner till is online only and has its own cart.
+- **What the café is owed is frozen on each line** (`supplyUnitPrice`,
+  `supplyTotal` = menu price less the discount, × qty). Later changes to the
+  menu or the discount do not move old sales. A discount the cashier gives
+  comes off the partner's side only. Items only — no deals.
+- **Partner logins are deny-by-default.** Role `partner`; `requireTenant()`
+  refuses it, so no café route — present or future — answers it. Partner
+  routes go through `requirePartnerAccess()`, which re-checks the login against
+  the database on every call, so removing one shuts it out at once. Middleware
+  keeps it on `/partners/<its id>`. Café users may sell for a partner; only the
+  owner (or the partner) may change its prices or read its settlement.
+
+**Verified:** 248 unit tests pass; production build clean; end to end against
+the local staging DB on a separate `next start` (prices, sale, hidden and
+unlisted items refused, invoice edit, summary and partner report figures,
+cashier selling for the partner, partner login refused by every café route and
+removed login cut off at once). Test data removed afterwards; invoice numbers
+1094–1096 were consumed by the test. **Not** visually checked in a browser.
 
 ---
 

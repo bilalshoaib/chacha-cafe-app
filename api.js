@@ -165,6 +165,21 @@ export const api = {
   checkoutSettings: () => request('/api/tenant/checkout'),
   setNewOrderPayment: (newOrderPayment) =>
     request('/api/tenant/checkout', { method: 'PATCH', body: JSON.stringify({ newOrderPayment }) }),
+  // Partner kitchens — see lib/partners.js.
+  listPartners: () => request('/api/partners'),
+  createPartner: (body) => request('/api/partners', { method: 'POST', body: JSON.stringify(body) }),
+  getPartner: (id) => request(`/api/partners/${encodeURIComponent(id)}`),
+  updatePartner: (id, body) =>
+    request(`/api/partners/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  savePartnerPrices: (id, prices) =>
+    request(`/api/partners/${encodeURIComponent(id)}/prices`, { method: 'PUT', body: JSON.stringify({ prices }) }),
+  partnerReport: (id, params) =>
+    request(`/api/partners/${encodeURIComponent(id)}/report?${new URLSearchParams(params)}`),
+  listPartnerLogins: (id) => request(`/api/partners/${encodeURIComponent(id)}/logins`),
+  createPartnerLogin: (id, body) =>
+    request(`/api/partners/${encodeURIComponent(id)}/logins`, { method: 'POST', body: JSON.stringify(body) }),
+  deletePartnerLogin: (id, userId) =>
+    request(`/api/partners/${encodeURIComponent(id)}/logins/${encodeURIComponent(userId)}`, { method: 'DELETE' }),
   // Platform console — creating and governing cafés, not configuring them.
   listTenants: () => request('/api/platform/tenants'),
   platformActivity: (window = '30d') => request(`/api/platform/activity?window=${window}`),

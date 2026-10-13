@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { toPublicMenu } from '../lib/publicMenu.js'
+import { toPublicMenu, toPublicPartnerMenu } from '../lib/publicMenu.js'
 
 const menu = {
   items: [
@@ -62,4 +62,42 @@ test('categories travel with the public menu', () => {
   assert.deepEqual(toPublicMenu(withCategories).categories, [
     { key: 'pizza', label: 'Pizzas', icon: '🍕', color: '#8a1f1f' },
   ])
+})
+
+const partnerMenu = {
+  items: [
+    { id: 'i-1', name: 'Zinger', category: 'burger', price: 200, costPrice: 120, size: 'large' },
+    { id: 'i-2', name: 'Cola', category: 'drinks', price: 80, costPrice: 30 },
+    { id: 'i-3', name: 'Fries', category: 'fries', price: 150, costPrice: 40 },
+  ],
+  categories: [
+    { key: 'burger', label: 'Burgers', icon: '🍔', color: '#c45c26' },
+    { key: 'drinks', label: 'Cold drinks', icon: '🥤', color: '#1f7a3c' },
+    { key: 'fries', label: 'Fries', icon: '🍟', color: '#b8860b' },
+  ],
+}
+const kitchen = {
+  id: 'br-ck', name: 'Claude Kitchen', slug: 'claude-kitchen', supplyDiscountPct: 20,
+  prices: [
+    { itemId: 'i-1', price: 260, visible: true },
+    { itemId: 'i-2', price: 100, visible: false },
+  ],
+}
+
+test('a partner’s public menu carries its own prices, and only what it sells', () => {
+  const pub = toPublicPartnerMenu(partnerMenu, kitchen)
+  assert.deepEqual(pub.items, [{ id: 'i-1', name: 'Zinger', category: 'burger', price: 260, size: 'large' }])
+  assert.deepEqual(pub.partner, { name: 'Claude Kitchen', slug: 'claude-kitchen' })
+})
+
+test('a partner’s public menu never shows the café’s price, cost or discount', () => {
+  const text = JSON.stringify(toPublicPartnerMenu(partnerMenu, kitchen))
+  assert.ok(!text.includes('costPrice'))
+  assert.ok(!text.includes('supply'))
+  assert.ok(!text.includes('"price":200'), 'the café’s own menu price leaked')
+  assert.ok(!text.includes('br-ck'), 'the internal partner id leaked')
+})
+
+test('a partner’s public menu lists only the categories it uses', () => {
+  assert.deepEqual(toPublicPartnerMenu(partnerMenu, kitchen).categories.map((c) => c.key), ['burger'])
 })

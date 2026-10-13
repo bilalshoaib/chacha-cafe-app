@@ -92,7 +92,18 @@ export function orderBusinessType(order) {
 }
 
 export function invoiceBusinessType(invoice) {
-  return normalizeBusinessType(invoice?.businessType) || 'cafe'
+  const known = normalizeBusinessType(invoice?.businessType)
+  if (known) return known
+  // A partner kitchen's sale carries the partner's slug (lib/partners.js).
+  const slug = String(invoice?.businessType ?? '').trim().toLowerCase()
+  if (/^[a-z0-9][a-z0-9-]{0,39}$/.test(slug)) return slug
+  return 'cafe'
+}
+
+/** The partner kitchen an invoice was sold for, or null. */
+export function invoicePartner(invoice, partners) {
+  const type = invoiceBusinessType(invoice)
+  return (partners ?? []).find((p) => p.id === invoice?.brandId || p.slug === type) ?? null
 }
 
 export function expenseBusinessType(expense) {
