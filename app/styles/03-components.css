@@ -1309,6 +1309,582 @@ button.inline-link-button:hover {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOP NAV — the header layout (components/TopNav.jsx), chosen per device on
+   Settings → Appearance, which sets data-nav="top" on <html> (pre-applied by
+   the inline script in app/layout.jsx). Both navigations are always in the
+   page; this decides which one shows, so there is never a frame of the wrong
+   one. Wide screens only: below 900px both are the ☰ drawer.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.top-nav {
+  display: none;
+}
+
+@media (min-width: 901px) {
+  :root[data-nav='top'] {
+    /* The room the header takes, for anything that has to sit below it. */
+    --topnav-h: 4.75rem;
+  }
+
+  :root[data-nav='top'] .app-shell {
+    flex-direction: column;
+  }
+
+  :root[data-nav='top'] .side-nav {
+    display: none;
+  }
+
+  :root[data-nav='top'] .top-nav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    padding: 0.75rem 1.5rem 0;
+  }
+
+  :root[data-nav='top'] .impersonation-banner {
+    top: var(--topnav-h);
+  }
+
+  :root[data-nav='top'] .qo {
+    height: calc(100dvh - 2rem - var(--topnav-h));
+  }
+}
+
+.tn-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 76rem;
+  height: 3.6rem;
+  margin: 0 auto;
+  padding: 0 0.6rem 0 0.85rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: saturate(1.5) blur(16px);
+  -webkit-backdrop-filter: saturate(1.5) blur(16px);
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 12%, transparent);
+  box-shadow:
+    0 12px 32px -18px color-mix(in srgb, var(--brand-primary) 45%, transparent),
+    0 1px 3px color-mix(in srgb, #000 6%, transparent);
+}
+
+:root[data-theme='dark'] .tn-inner {
+  box-shadow: 0 14px 34px -16px #000;
+}
+
+/* ── Brand ── */
+.tn-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.tn-brand .brand-mark {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 9px;
+  border-width: 1.5px;
+}
+
+.tn-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.tn-brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--text-h);
+  max-width: 11rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tn-brand-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 13rem;
+}
+
+/* ── Links: plain words with a sliding underline, not buttons ── */
+.tn-links {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  /* Centred while they fit; once a café has more sections than the bar is
+     wide, they scroll sideways, fading at the ends, rather than wrap. `safe`
+     keeps the first one reachable. */
+  justify-content: safe center;
+  gap: 0.1rem;
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent, #000 0.6rem, #000 calc(100% - 0.6rem), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 0.6rem, #000 calc(100% - 0.6rem), transparent);
+}
+
+.tn-links::-webkit-scrollbar {
+  display: none;
+}
+
+.tn-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 100%;
+  flex-shrink: 0;
+  padding: 0 0.65rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.tn-link::after {
+  content: '';
+  position: absolute;
+  left: 0.65rem;
+  right: 0.65rem;
+  bottom: 0.55rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.2s ease;
+}
+
+.tn-link:hover {
+  color: var(--text-h);
+}
+
+.tn-link:hover::after {
+  transform: scaleX(0.5);
+}
+
+.tn-link.is-active {
+  color: var(--text-h);
+}
+
+.tn-link.is-active::after,
+.tn-link:has(.nav-pending)::after {
+  transform: scaleX(1);
+}
+
+.tn-link:focus-visible {
+  outline: none;
+  color: var(--text-h);
+}
+
+.tn-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* ── The account menu ── */
+.tn-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  min-width: 15.5rem;
+  padding: 0.4rem;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 18px 40px -16px color-mix(in srgb, var(--brand-primary) 40%, transparent),
+    0 2px 8px color-mix(in srgb, #000 8%, transparent);
+  transform: translateX(-50%);
+  animation: tn-menu-in 0.14s ease-out;
+  z-index: 60;
+}
+
+.tn-menu--right {
+  left: auto;
+  right: 0;
+  transform: none;
+  min-width: 16rem;
+}
+
+@keyframes tn-menu-in {
+  from { opacity: 0; margin-top: -4px; }
+  to { opacity: 1; margin-top: 0; }
+}
+
+.tn-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--text-h);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tn-menu-item:hover,
+.tn-menu-item:focus-visible {
+  outline: none;
+  background: var(--surface-raised);
+}
+
+.tn-menu-item.is-active {
+  background: var(--primary-soft);
+}
+
+.tn-menu-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
+  font-size: 0.95rem;
+}
+
+.tn-menu-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tn-menu-label {
+  font-size: 0.87rem;
+  font-weight: 600;
+}
+
+.tn-menu-hint {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Right side: the main action and the account ── */
+.tn-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.tn-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--brand-primary) 80%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.tn-cta:hover {
+  background: var(--accent-hover, var(--accent));
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -8px color-mix(in srgb, var(--brand-primary) 80%, transparent);
+}
+
+.tn-account {
+  position: relative;
+}
+
+.tn-avatar {
+  display: grid;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  background: linear-gradient(135deg, var(--brand-primary), color-mix(in srgb, var(--brand-primary) 55%, var(--brand-secondary)));
+  color: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--border);
+  transition: box-shadow 0.15s ease;
+}
+
+.tn-avatar:hover,
+.tn-avatar.is-open {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 25%, transparent);
+}
+
+.tn-avatar--lg {
+  width: 2.6rem;
+  height: 2.6rem;
+  cursor: default;
+}
+
+.tn-account-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.65rem 0.75rem;
+  margin-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* The theme switch reused from the sidebar, dressed as a menu row. */
+.tn-menu-theme .side-nav-theme {
+  width: 100%;
+  gap: 0.7rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.87rem;
+  color: var(--text-h);
+}
+
+.tn-menu-theme .side-nav-theme-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
+}
+
+.tn-menu-logout {
+  margin-top: 0.3rem;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+  padding-top: 0.75rem;
+}
+
+.tn-menu-logout:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+}
+
+.tn-menu-logout .tn-menu-icon {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+/* A narrower desktop: the café's name gives its room to the links, then the
+   links tighten. */
+@media (max-width: 1380px) {
+  .tn-brand-text { display: none; }
+  .tn-inner { gap: 0.75rem; }
+}
+
+@media (max-width: 1150px) {
+  .tn-link { padding: 0 0.5rem; font-size: 0.83rem; }
+  .tn-link::after { left: 0.5rem; right: 0.5rem; }
+}
+
+/* ── Settings → Appearance: the two layouts as picture cards ─────────────── */
+.nav-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.nav-choice-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.nav-choice-option:hover {
+  border-color: color-mix(in srgb, var(--brand-primary) 45%, transparent);
+  transform: translateY(-1px);
+}
+
+.nav-choice-option.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+}
+
+.nav-choice-option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 35%, transparent);
+}
+
+.nav-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nav-choice-text strong {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-h);
+}
+
+.nav-choice-check {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+}
+
+.nav-choice-note {
+  margin-top: 0.85rem;
+}
+
+/* A drawn miniature of each layout: bar, links, and a page under it. */
+.nav-choice-preview {
+  display: flex;
+  height: 7.5rem;
+  border-radius: calc(var(--radius) - 4px);
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.nav-choice-preview--top {
+  flex-direction: column;
+}
+
+.ncp-bar {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.45rem;
+  background: var(--surface);
+}
+
+.nav-choice-preview--side .ncp-bar {
+  flex-direction: column;
+  width: 28%;
+  border-right: 1px solid var(--border);
+}
+
+.nav-choice-preview--top .ncp-bar {
+  align-items: center;
+  justify-content: center;
+  margin: 0.4rem 0.5rem 0;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  box-shadow: 0 4px 10px -6px color-mix(in srgb, var(--brand-primary) 45%, transparent);
+}
+
+.nav-choice-preview--top .ncp-dot {
+  border-radius: 3px;
+  margin-right: auto;
+}
+
+.nav-choice-preview--top .ncp-bar::after {
+  content: '';
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-left: auto;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+
+.ncp-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-bottom: 0.15rem;
+}
+
+
+
+.ncp-link {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+
+.nav-choice-preview--side .ncp-link {
+  width: 80%;
+}
+
+.nav-choice-preview--top .ncp-link {
+  width: 1.6rem;
+}
+
+.ncp-link--on {
+  background: var(--accent);
+}
+
+.ncp-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem;
+}
+
+.ncp-line {
+  height: 0.4rem;
+  width: 70%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 22%, transparent);
+}
+
+.ncp-line--title {
+  width: 45%;
+  height: 0.55rem;
+  background: color-mix(in srgb, var(--text-h) 35%, transparent);
+}
+
+.ncp-line--short {
+  width: 40%;
+}
+
+.ncp-card {
+  flex: 1;
+  margin-top: 0.2rem;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
 /* The same tile, holding a café's own logo instead of the brand gradient.
    Neutral behind it and contained rather than cropped, because a logo arrives
    at whatever shape its designer drew it and must not be cut into a square. */

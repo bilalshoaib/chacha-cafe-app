@@ -705,3 +705,13 @@
     font-weight: 800;
   }
 }
+
+/* A partner's till: one order type, shown rather than chosen. */
+.qo-types--fixed {
+  grid-template-columns: 1fr;
+}
+
+.qo-types--fixed .qo-type {
+  text-align: center;
+  cursor: default;
+}

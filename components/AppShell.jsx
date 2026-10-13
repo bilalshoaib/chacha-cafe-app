@@ -9,6 +9,7 @@ import ImpersonationBanner from '@/components/ImpersonationBanner.jsx'
 import BrandMark from '@/components/BrandMark.jsx'
 import ThemeToggle from '@/components/ThemeToggle.jsx'
 import NavPending from '@/components/NavPending.jsx'
+import TopNav from '@/components/TopNav.jsx'
 import Skeleton from '@/components/Skeleton.jsx'
 import RouteSkeleton from '@/components/RouteSkeleton.jsx'
 import { ADD_MENU_ITEM_HASH } from '@/constants/categories.js'
@@ -34,6 +35,7 @@ function NavLink({ href, children, className, onClick, end = false, active }) {
     isActive = pathname === href || pathname.startsWith(href + '/')
   }
   const cls = [isActive ? 'active' : '', className].filter(Boolean).join(' ') || undefined
+
   return (
     <Link href={href} className={cls} onClick={onClick}>
       {children}
@@ -69,6 +71,14 @@ function PlatformNav({ onLogout }) {
 
   return (
     <>
+      <TopNav
+        items={[
+          { href: '/platform', label: 'Cafés', end: true },
+          { href: '/platform/finance', label: 'Books' },
+        ]}
+        tagline="Platform"
+        onLogout={onLogout}
+      />
       <div className="mobile-topbar">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true" />
@@ -147,12 +157,27 @@ function PartnerNav({ user, onLogout }) {
       <NavLink href={`${base}/quick`} onClick={onNavigate}>Quick order</NavLink>
       <NavLink href={`${base}/prices`} onClick={onNavigate}>My menu &amp; prices</NavLink>
       <NavLink href={`${base}/report`} onClick={onNavigate}>Sales &amp; settlement</NavLink>
+      <NavLink href="/settings/appearance" onClick={onNavigate}>Appearance</NavLink>
       <NavLink href="/settings/password" onClick={onNavigate}>Password</NavLink>
     </>
   )
 
   return (
     <>
+      <TopNav
+        items={[
+          { href: base, label: 'Take order', end: true },
+          { href: `${base}/quick`, label: 'Quick order' },
+          { href: `${base}/prices`, label: 'Menu & prices' },
+          { href: `${base}/report`, label: 'Sales' },
+        ]}
+        tagline="Partner kitchen"
+        accountLinks={[
+          { href: '/settings/appearance', label: 'Appearance', icon: '🎨' },
+          { href: '/settings/password', label: 'Password', icon: '🔑' },
+        ]}
+        onLogout={onLogout}
+      />
       <div className="mobile-topbar">
         <div className="brand">
           <BrandMark />
@@ -255,8 +280,32 @@ function AppNav({ user, onLogout }) {
     </>
   )
 
+  // The header layout's copy of the list above — the same sections in the
+  // same order. See TopNav.
+  const topItems = [
+    { href: '/', label: 'Home', end: true },
+    { href: '/orders', label: 'Take order', end: true },
+    { href: '/orders/quick', label: 'Quick order' },
+    ...partners.map((p) => ({ href: `/partners/${p.id}`, label: p.name })),
+    { href: '/deals', label: 'Create deal' },
+    { href: '/menu', label: 'Menu items' },
+    { href: '/invoices', label: 'Invoices', active: invoicesActive },
+    ...(user?.role !== 'counter_cashier' ? [{ href: '/expenses', label: 'Expenses', active: expensesActive }] : []),
+    { href: '/settings', label: 'Settings', active: settingsActive },
+    ...(user?.role === 'super_admin' ? [{ href: '/settings/reports', label: 'Reports' }] : []),
+  ]
+
   return (
     <>
+      <TopNav
+        items={topItems}
+        tagline={branding?.tagline}
+        accountLinks={[
+          { href: '/settings/appearance', label: 'Appearance', icon: '🎨' },
+          { href: '/settings/password', label: 'Password', icon: '🔑' },
+        ]}
+        onLogout={onLogout}
+      />
       {/* Mobile-only strip: brand on the left, hamburger on the right. The
           fixed sidebar takes its place from 900px up. */}
       <div className="mobile-topbar">

@@ -1506,3 +1506,67 @@ a.danger-ghost:hover {
     font-size: 0.85em;
   }
 }
+
+/* A partner's own items, above the café's on its menu & prices page. */
+.partner-own-head {
+  margin-bottom: 0.5rem;
+}
+
+.partner-own-head .sub {
+  margin-bottom: 0.15rem;
+}
+
+.partner-own-table input:not([type='checkbox']) {
+  width: 100%;
+  min-width: 7rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.partner-own-table input:not([type='checkbox']):focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.partner-own-table td.num input {
+  max-width: 7rem;
+}
+
+.partner-own-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.partner-own-actions button + button {
+  margin-left: 0.4rem;
+}
+
+.partner-own-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.partner-own-add .field {
+  margin-top: 0;
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.partner-own-add .field:nth-child(3) {
+  flex: 0 1 8rem;
+}
+
+/* A partner's till has one order type, shown rather than chosen. */
+.partner-order-type {
+  margin: 0;
+  font-weight: 700;
+}

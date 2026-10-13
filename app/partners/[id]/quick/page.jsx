@@ -3,10 +3,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useMoney } from '@/context/BrandingContext.jsx'
 import { SkeletonStatus } from '@/components/Skeleton.jsx'
-import { PARTNER_ORDER_TYPES, PartnerSaleDone, usePartnerTill } from '@/components/PartnerTill.jsx'
+import { PARTNER_ORDER_TYPE, PartnerSaleDone, usePartnerTill } from '@/components/PartnerTill.jsx'
 import { categoryColor, categoryIcon, categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { discountPartsOf, roundMoney } from '@/lib/pricing.js'
-import { MAX_TABLE_NUMBER } from '@/lib/tableNumber.js'
 
 /**
  * A partner kitchen's till as tiles — the partner's version of /orders/quick.
@@ -28,7 +27,7 @@ export default function PartnerQuickTillPage() {
   const {
     partnerId, data, partnerName, loadError, reload, items, error, lines,
     bumpItem, setLineQty, setLineDiscount, removeLine, clearOrder,
-    orderType, setOrderType, tableNumber, setTableNumber, deliveryCharge, setDeliveryCharge,
+    deliveryCharge, setDeliveryCharge,
     customerNote, setCustomerNote, subtotal, tax, dc, total, itemCount, checkout, checkingOut, sold,
   } = till
 
@@ -124,7 +123,7 @@ export default function PartnerQuickTillPage() {
   }
 
   const showBreakdown = dc > 0 || tax.taxTotal > 0
-  const typeMeta = PARTNER_ORDER_TYPES.find((t) => t.value === orderType)
+  const typeMeta = PARTNER_ORDER_TYPE
 
   return (
     <main className="qo">
@@ -232,19 +231,8 @@ export default function PartnerQuickTillPage() {
             </div>
           </div>
 
-          <div className="qo-types" role="radiogroup" aria-label="Order type">
-            {PARTNER_ORDER_TYPES.map(({ value, label, icon }) => (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={orderType === value}
-                className={`qo-type${orderType === value ? ' is-active' : ''}`}
-                onClick={() => setOrderType(value)}
-              >
-                <span aria-hidden="true">{icon}</span> {label}
-              </button>
-            ))}
+          <div className="qo-types qo-types--fixed">
+            <span className="qo-type is-active"><span aria-hidden="true">{typeMeta.icon}</span> {typeMeta.label}</span>
           </div>
 
           <ol className="qo-lines">
@@ -308,17 +296,10 @@ export default function PartnerQuickTillPage() {
           </ol>
 
           <div className="qo-extras">
-            {orderType !== 'delivery' ? (
-              <label className="qo-field">
-                <span>🪑 Table</span>
-                <input value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder="Optional" maxLength={MAX_TABLE_NUMBER} autoComplete="off" />
-              </label>
-            ) : (
-              <label className="qo-field">
-                <span>🛵 Delivery</span>
-                <input type="number" min={0} step={1} inputMode="decimal" placeholder="0" value={deliveryCharge} onChange={(e) => setDeliveryCharge(e.target.value)} />
-              </label>
-            )}
+            <label className="qo-field">
+              <span>🛵 Delivery</span>
+              <input type="number" min={0} step={1} inputMode="decimal" placeholder="0" value={deliveryCharge} onChange={(e) => setDeliveryCharge(e.target.value)} />
+            </label>
             <label className="qo-field">
               <span>📝 Note</span>
               <input value={customerNote} onChange={(e) => setCustomerNote(e.target.value)} placeholder="Allergy, pickup time…" maxLength={200} />

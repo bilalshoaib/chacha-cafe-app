@@ -18,6 +18,9 @@ import { roundMoney } from '@/lib/pricing.js'
  * loss before it is saved, not at settlement.
  *
  * "Hidden" keeps the price but takes the item off the till for now.
+ *
+ * Above them sit the partner's own items (OwnItemsCard): food it makes itself,
+ * which owes the café nothing.
  */
 export default function PartnerPricesPage({ params }) {
   const { id } = use(params)
@@ -163,6 +166,8 @@ export default function PartnerPricesPage({ params }) {
         ) : null}
       </section>
 
+      <OwnItemsCard partnerId={id} data={data} canManage={canManage} onChanged={load} />
+
       {groups.length === 0 ? <p className="muted">No items match.</p> : groups.map((g) => (
         <section key={g.key} className="card partner-prices-group">
           <h3 className="sub">{g.label}</h3>
@@ -232,5 +237,172 @@ export default function PartnerPricesPage({ params }) {
         </section>
       ))}
     </main>
+  )
+}
+
+/**
+ * A category as typed: the café's key when it matches one of the café's
+ * categories by label or key, otherwise the name as typed.
+ */
+function categoryFromInput(text, categories) {
+  const t = String(text ?? '').trim()
+  if (!t) return 'other'
+  const lower = t.toLowerCase()
+  const hit = (categories ?? []).find((c) => c.label.toLowerCase() === lower || c.key.toLowerCase() === lower)
+  return hit ? hit.key : t
+}
+
+/** Items the partner makes itself — the café supplies nothing for them, so the whole price is the partner's. */
+function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
+  const money = useMoney()
+  const partnerName = data.partner.name
+  const ownItems = data.ownItems ?? []
+  // itemId → { name, category, price, visible } as typed.
+  const [edits, setEdits] = useState({})
+  const [adding, setAdding] = useState({ name: '', category: '', price: '' })
+  const [busy, setBusy] = useState(null)
+  const [error, setError] = useState('')
+  const listId = `partner-cats-${partnerId}`
+
+  useEffect(() => {
+    const next = {}
+    for (const i of ownItems) {
+      next[i.id] = { name: i.name, category: categoryLabel(i.category, data.categories), price: String(i.price), visible: i.visible }
+    }
+    setEdits(next)
+  }, [data]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function edit(itemId, patch) {
+    setEdits((prev) => ({ ...prev, [itemId]: { ...prev[itemId], ...patch } }))
+  }
+
+  function isDirty(item) {
+    const e = edits[item.id]
+    if (!e) return false
+    return e.name.trim() !== item.name
+      || categoryFromInput(e.category, data.categories) !== item.category
+      || Number(e.price) !== item.price
+      || e.visible !== item.visible
+  }
+
+  async function run(key, fn) {
+    setError('')
+    setBusy(key)
+    try {
+      await fn()
+      await onChanged()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  function add(e) {
+    e.preventDefault()
+    void run('add', async () => {
+      await api.createPartnerItem(partnerId, {
+        name: adding.name,
+        category: categoryFromInput(adding.category, data.categories),
+        price: adding.price,
+      })
+      setAdding({ name: '', category: adding.category, price: '' })
+    })
+  }
+
+  function save(item) {
+    const e = edits[item.id]
+    void run(item.id, () => api.updatePartnerItem(partnerId, item.id, {
+      name: e.name,
+      category: categoryFromInput(e.category, data.categories),
+      price: e.price,
+      visible: e.visible,
+    }))
+  }
+
+  function remove(item) {
+    if (!window.confirm(`Remove "${item.name}" from ${partnerName}'s items? Sales already made keep it.`)) return
+    void run(item.id, () => api.deletePartnerItem(partnerId, item.id))
+  }
+
+  return (
+    <section className="card partner-prices-group partner-own-items">
+      <div className="partner-own-head">
+        <h3 className="sub">{partnerName}’s own items</h3>
+        <p className="muted small">
+          Food {partnerName} makes itself. The café supplies nothing for these, so {partnerName} keeps the whole price.
+        </p>
+      </div>
+      {error ? <p className="banner error" role="alert">{error}</p> : null}
+
+      <datalist id={listId}>
+        {(data.categories ?? []).map((c) => <option key={c.key} value={c.label} />)}
+      </datalist>
+
+      {ownItems.length ? (
+        <table className="partner-prices-table partner-own-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Category</th>
+              <th className="num">Price</th>
+              <th>Hidden</th>
+              {canManage ? <th aria-label="Actions" /> : null}
+            </tr>
+          </thead>
+          <tbody>
+            {ownItems.map((item) => {
+              const e = edits[item.id] ?? { name: item.name, category: item.category, price: String(item.price), visible: item.visible }
+              return (
+                <tr key={item.id} className="is-on">
+                  <td data-label="Item">
+                    <input value={e.name} disabled={!canManage} maxLength={120} onChange={(ev) => edit(item.id, { name: ev.target.value })} aria-label="Item name" />
+                  </td>
+                  <td data-label="Category">
+                    <input value={e.category} disabled={!canManage} maxLength={60} list={listId} onChange={(ev) => edit(item.id, { category: ev.target.value })} aria-label={`Category of ${item.name}`} />
+                  </td>
+                  <td data-label="Price" className="num">
+                    {canManage ? (
+                      <input type="number" min={0} step={1} inputMode="decimal" value={e.price} onChange={(ev) => edit(item.id, { price: ev.target.value })} aria-label={`Price of ${item.name}`} />
+                    ) : money(item.price)}
+                  </td>
+                  <td data-label="Hidden">
+                    <input type="checkbox" checked={!e.visible} disabled={!canManage} onChange={(ev) => edit(item.id, { visible: !ev.target.checked })} aria-label={`Hide ${item.name} for now`} />
+                  </td>
+                  {canManage ? (
+                    <td className="partner-own-actions">
+                      <button type="button" className="primary sm" disabled={!isDirty(item) || busy === item.id} onClick={() => save(item)}>Save</button>
+                      <button type="button" className="ghost danger sm" disabled={busy === item.id} onClick={() => remove(item)}>Remove</button>
+                    </td>
+                  ) : null}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      ) : (
+        <p className="muted small">None yet.</p>
+      )}
+
+      {canManage ? (
+        <form className="partner-own-add" onSubmit={add}>
+          <label className="field">
+            <span>New item</span>
+            <input value={adding.name} maxLength={120} placeholder="e.g. Chicken Karahi" onChange={(e) => setAdding((a) => ({ ...a, name: e.target.value }))} required />
+          </label>
+          <label className="field">
+            <span>Category</span>
+            <input value={adding.category} maxLength={60} list={listId} placeholder="Pick or type one" onChange={(e) => setAdding((a) => ({ ...a, category: e.target.value }))} />
+          </label>
+          <label className="field">
+            <span>Price</span>
+            <input type="number" min={0} step={1} inputMode="decimal" value={adding.price} placeholder="0" onChange={(e) => setAdding((a) => ({ ...a, price: e.target.value }))} required />
+          </label>
+          <button type="submit" className="primary" disabled={busy === 'add' || !adding.name.trim() || adding.price === ''}>
+            {busy === 'add' ? 'Adding…' : '＋ Add item'}
+          </button>
+        </form>
+      ) : null}
+    </section>
   )
 }

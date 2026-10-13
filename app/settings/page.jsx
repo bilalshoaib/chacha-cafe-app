@@ -34,6 +34,12 @@ const SECTIONS = [
     blurb: 'Change the password on this account. Needs your current one.',
   },
   {
+    href: '/settings/appearance',
+    icon: '🎨',
+    title: 'Appearance',
+    blurb: 'Navigation down the side or along the top. Saved on this device.',
+  },
+  {
     href: '/settings/tax',
     icon: '🧾',
     title: 'Sales tax',

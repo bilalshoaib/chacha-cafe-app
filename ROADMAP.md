@@ -80,7 +80,13 @@ which also carries an opt-in dark surface mode under
 pre-applied by an inline script in `app/layout.jsx` (hence
 `suppressHydrationWarning` on `<html>`). The café app is a fixed left sidebar
 (`.side-nav` / `.app-shell` / `.app-main` in `AppShell.jsx` + `03-components.css`),
-collapsing to the existing hamburger drawer below 900px. The **sign-in page
+collapsing to the existing hamburger drawer below 900px. Settings → Appearance
+can swap it for a website-style header (`components/TopNav.jsx`: the same
+links in one row, underlined when current, and an account menu) — a per-device `pos-nav` flag,
+pre-applied as `data-nav="top"` on `<html>` like the theme. Both navigations
+are always rendered and CSS shows one (the "TOP NAV" block in
+`03-components.css`), so there is no flash of the wrong one. A new section has
+to be added to both the sidebar list and the header's `topItems`. The **sign-in page
 shows no café identity** — the tenant is only resolved after the session
 exists. The **platform console** keeps its own brand-independent neutral
 palette, set by re-pointing the semantic tokens on `.app--platform` at the top
@@ -828,10 +834,13 @@ the two settle from the reports.
 | Checkout takes `partnerId`; invoice edit re-prices from the partner list | `app/api/checkout/route.js`, `app/api/invoices/[id]/route.js` |
 | API | `app/api/partners/**` *(new)* |
 | Partner till in two views sharing one cart — classic (`/partners/[id]`) and tiles (`/partners/[id]/quick`) — plus price list and settlement | `app/partners/[id]/**`, `components/PartnerTill.jsx` *(new)* |
-| Owner settings: add a partner, its discount, its logins | `app/settings/partners/page.jsx` *(new)* |
+| Owner settings: add a partner, its discount, its logins, its receipt lines | `app/settings/partners/page.jsx` *(new)* |
+| A partner's receipt prints its own name, tagline and footer — nothing of the café's | `migrations/034_partner_receipts.sql` *(new)*, `app/invoices/[invoiceId]/page.jsx` |
+| A partner's own items — food it makes itself, sold beside the café's; supply price 0, so the whole of it settles to the partner; on its till, price list and public menu | `migrations/035_partner_items.sql` *(new)*, `app/api/partners/[id]/items/**` *(new)*, `app/partners/[id]/prices/page.jsx` |
+| A partner's sale is always a delivery — no order-type choice on its till, and checkout holds it to that | `components/PartnerTill.jsx`, `app/api/checkout/route.js` |
 | Public menu for the partner's own website — `GET /api/menu-public/partners/<partner>?tenant=<café>`, CORS `*`, 60s edge cache; its prices only, built field by field so no café price, cost or discount can leak | `app/api/menu-public/partners/[slug]/route.js` *(new)*, `lib/publicMenu.js` |
 | Reports: partner column, "café keeps / pay partner", payable comes off net after expenses | `app/api/reports/summary/route.js`, `components/ReportsWorkbench.jsx`, `lib/reports.js` |
-| 19 tests | `tests/partners.test.js` *(new)* |
+| 25 tests | `tests/partners.test.js` *(new)* |
 
 **Decisions worth knowing before changing any of it:**
 

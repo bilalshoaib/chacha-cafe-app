@@ -43,6 +43,8 @@ export async function GET(_request, { params }) {
   return NextResponse.json({
     partner: { id: partner.id, name: partner.name, slug: partner.slug, supplyDiscountPct: partner.supplyDiscountPct },
     items,
+    // Items the partner makes itself; the café is owed nothing for them.
+    ownItems: partner.ownItems ?? [],
     categories: menu.categories,
     // The till shows the tax on the ticket before checkout, as the café's does.
     tax: menu.tax,
@@ -53,7 +55,7 @@ export async function GET(_request, { params }) {
   })
 }
 
-/** Renames the partner or changes its discount. The café's owner only. */
+/** Renames the partner, changes its discount or its receipt lines. The café's owner only. */
 export async function PATCH(request, { params }) {
   const { id } = await params
   const ctx = await requirePartnerAccess(id, { ownerOnly: true })
@@ -70,6 +72,12 @@ export async function PATCH(request, { params }) {
     const pct = parseSupplyDiscountPct(body.supplyDiscountPct)
     if (pct.error) return NextResponse.json({ error: pct.error }, { status: 400 })
     fields.supplyDiscountPct = pct.value
+  }
+
+  // The two lines its receipts print in place of the café's. Blank clears one.
+  for (const [key, max] of [['receiptTagline', 160], ['receiptFooter', 200]]) {
+    if (body[key] === undefined) continue
+    fields[key] = String(body[key] ?? '').trim().slice(0, max) || null
   }
 
   const partner = await updatePartner(ctx, id, fields)

@@ -1,12 +1,11 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import ItemAutocomplete from '@/components/ItemAutocomplete.jsx'
 import { SkeletonStatus } from '@/components/Skeleton.jsx'
-import { PARTNER_ORDER_TYPES, PartnerSaleDone, usePartnerTill } from '@/components/PartnerTill.jsx'
+import { PARTNER_ORDER_TYPE, PartnerSaleDone, usePartnerTill } from '@/components/PartnerTill.jsx'
 import { categoryLabel, formatItemExtras } from '@/utils/formatting.js'
 import { discountPartsOf, priceLine, roundMoney } from '@/lib/pricing.js'
-import { MAX_TABLE_NUMBER } from '@/lib/tableNumber.js'
 import { useMoney } from '@/context/BrandingContext.jsx'
 
 /**
@@ -23,7 +22,7 @@ export default function PartnerClassicTillPage() {
   const {
     partnerId, data, partnerName, loadError, reload, items, error, lines,
     addItem, setLineQty, setLineDiscount, removeLine, clearOrder,
-    orderType, setOrderType, tableNumber, setTableNumber, deliveryCharge, setDeliveryCharge,
+    deliveryCharge, setDeliveryCharge,
     customerNote, setCustomerNote, subtotal, tax, dc, total, checkout, checkingOut, sold,
   } = usePartnerTill()
 
@@ -127,7 +126,7 @@ export default function PartnerClassicTillPage() {
     dropDraft(setDiscountDraftByLine, key)
   }
 
-  const typeMeta = useMemo(() => PARTNER_ORDER_TYPES.find((t) => t.value === orderType), [orderType])
+  const typeMeta = PARTNER_ORDER_TYPE
 
   if (sold) return <PartnerSaleDone />
 
@@ -339,35 +338,13 @@ export default function PartnerClassicTillPage() {
 
             <div className="order-type-block">
               <p className="order-type-label">Order type</p>
-              <div className="order-type-options" role="group" aria-label="Order type">
-                {PARTNER_ORDER_TYPES.map(({ value, label, icon }) => (
-                  <label key={value} className={`order-type-option${orderType === value ? ' order-type-option--active' : ''}`}>
-                    <input
-                      type="radio"
-                      name="partnerOrderType"
-                      value={value}
-                      checked={orderType === value}
-                      onChange={() => setOrderType(value)}
-                      className="order-type-radio"
-                    />
-                    <span className="order-type-icon">{icon}</span>
-                    <span className="order-type-text">{label}</span>
-                  </label>
-                ))}
-              </div>
+              <p className="partner-order-type"><span aria-hidden="true">{typeMeta.icon}</span> {typeMeta.label} <span className="muted small">— every {partnerName} order goes out for delivery</span></p>
             </div>
 
-            {orderType !== 'delivery' ? (
-              <label className="field table-number-field">
-                <span>🪑 Table number (optional)</span>
-                <input value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} placeholder="e.g. 4, 12A, Patio 3" maxLength={MAX_TABLE_NUMBER} autoComplete="off" />
-              </label>
-            ) : (
-              <label className="field delivery-charge-field">
-                <span>🛵 Delivery charge</span>
-                <input type="number" min={0} step={1} inputMode="decimal" placeholder="0" value={deliveryCharge} onChange={(e) => setDeliveryCharge(e.target.value)} />
-              </label>
-            )}
+            <label className="field delivery-charge-field">
+              <span>🛵 Delivery charge</span>
+              <input type="number" min={0} step={1} inputMode="decimal" placeholder="0" value={deliveryCharge} onChange={(e) => setDeliveryCharge(e.target.value)} />
+            </label>
 
             <label className="field">
               <span>Note on invoice (optional)</span>

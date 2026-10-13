@@ -154,3 +154,71 @@ test('a partner sale is credited to the partner’s own column', () => {
   assert.equal(splits.get('claude-kitchen'), 650)
   assert.equal(splits.get('cafe'), 0)
 })
+
+// ── Own items ───────────────────────────────────────────────────────────────
+
+{
+  const { test } = await import('node:test')
+  const assert = (await import('node:assert/strict')).default
+  const { buildOrderLine } = await import('../lib/orderLines.js')
+  const { toPublicPartnerMenu } = await import('../lib/publicMenu.js')
+  const { partnerSellableItems: sellable, partnerSettlement: settle } = await import('../lib/partners.js')
+
+  const kitchen = {
+    id: 'br-k',
+    name: 'Kitchen',
+    slug: 'kitchen',
+    supplyDiscountPct: 20,
+    prices: [{ itemId: 'it-1', price: 500, visible: true }],
+    ownItems: [
+      { id: 'pi-1', name: 'Karahi', category: 'Curries', price: 1200, visible: true },
+      { id: 'pi-2', name: 'Off today', category: 'Curries', price: 300, visible: false },
+    ],
+  }
+  const cafeMenu = {
+    items: [{ id: 'it-1', name: 'Burger', category: 'burgers', price: 400, cost: 150 }],
+    categories: [{ key: 'burgers', label: 'Burgers', icon: '🍔', color: '#f00' }],
+    partners: [kitchen],
+  }
+
+  test('a partner sells its own visible items beside the café’s', () => {
+    const names = sellable(cafeMenu, kitchen).map((i) => i.name)
+    assert.deepEqual(names, ['Burger', 'Karahi'])
+  })
+
+  test('an own item owes the café nothing', () => {
+    const { line } = buildOrderLine({ kind: 'item', refId: 'pi-1', qty: 2 }, cafeMenu, { partner: kitchen })
+    assert.equal(line.lineTotal, 2400)
+    assert.equal(line.supplyUnitPrice, 0)
+    assert.equal(line.supplyTotal, 0)
+    assert.equal(line.lineBusinessType, 'kitchen')
+  })
+
+  test('a hidden own item cannot be sold, but an old bill holding it can be edited', () => {
+    const { error } = buildOrderLine({ kind: 'item', refId: 'pi-2', qty: 1 }, cafeMenu, { partner: kitchen })
+    assert.ok(error)
+    const { line } = buildOrderLine({ kind: 'item', refId: 'pi-2', qty: 1 }, cafeMenu, { partner: kitchen, allowArchived: true })
+    assert.equal(line.lineTotal, 300)
+  })
+
+  test('the café cannot sell a partner’s own item', () => {
+    const { error } = buildOrderLine({ kind: 'item', refId: 'pi-1', qty: 1 }, cafeMenu)
+    assert.ok(error)
+  })
+
+  test('own items settle wholly to the partner', () => {
+    const burger = buildOrderLine({ kind: 'item', refId: 'it-1', qty: 1 }, cafeMenu, { partner: kitchen }).line
+    const karahi = buildOrderLine({ kind: 'item', refId: 'pi-1', qty: 1 }, cafeMenu, { partner: kitchen }).line
+    const s = settle([{ lines: [burger, karahi] }])
+    assert.equal(s.sales, 1700)
+    assert.equal(s.cafeShare, 320)
+    assert.equal(s.payable, 1380)
+  })
+
+  test('the public menu lists own items and their own category', () => {
+    const out = toPublicPartnerMenu(cafeMenu, kitchen)
+    assert.deepEqual(out.items.map((i) => i.id), ['it-1', 'pi-1'])
+    assert.deepEqual(out.categories.map((c) => c.key), ['burgers', 'Curries'])
+    assert.equal(JSON.stringify(out).includes('cost'), false)
+  })
+}

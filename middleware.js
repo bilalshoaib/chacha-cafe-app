@@ -121,6 +121,7 @@ export async function middleware(request) {
     const allowed = pathname === home
       || pathname.startsWith(home + '/')
       || pathname === '/settings/password'
+      || pathname === '/settings/appearance'
       || pathname === '/login'
     if (!allowed) return NextResponse.redirect(new URL(home, request.url))
     return response

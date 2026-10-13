@@ -53,7 +53,8 @@ export default function PartnerReportPage({ params }) {
           <h2>{name} — sales &amp; settlement</h2>
           <p className="muted small">
             {cafeName} collects every {name} sale at the till, keeps its menu price less
-            {' '}{report?.partner?.supplyDiscountPct ?? 0}% for each item sold, and owes {name} the rest.
+            {' '}{report?.partner?.supplyDiscountPct ?? 0}% for each of its items sold, and owes {name} the rest —
+            {' '}including the whole of what {name}’s own items sold for.
           </p>
         </div>
         <div className="settings-subpage-actions">

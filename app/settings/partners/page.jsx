@@ -102,6 +102,8 @@ function PartnerSettings() {
 function PartnerCard({ partner, tenantSlug, onChanged }) {
   const [name, setName] = useState(partner.name)
   const [pct, setPct] = useState(String(partner.supplyDiscountPct))
+  const [receiptTagline, setReceiptTagline] = useState(partner.receiptTagline ?? '')
+  const [receiptFooter, setReceiptFooter] = useState(partner.receiptFooter ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -121,14 +123,17 @@ function PartnerCard({ partner, tenantSlug, onChanged }) {
 
   useEffect(() => { void loadLogins() }, [loadLogins])
 
-  const changed = name.trim() !== partner.name || Number(pct) !== partner.supplyDiscountPct
+  const changed = name.trim() !== partner.name
+    || Number(pct) !== partner.supplyDiscountPct
+    || receiptTagline.trim() !== (partner.receiptTagline ?? '')
+    || receiptFooter.trim() !== (partner.receiptFooter ?? '')
 
   async function save() {
     setError('')
     setNotice('')
     setSaving(true)
     try {
-      await api.updatePartner(partner.id, { name, supplyDiscountPct: pct })
+      await api.updatePartner(partner.id, { name, supplyDiscountPct: pct, receiptTagline, receiptFooter })
       setNotice('Saved. Sales already made keep the discount they were rung up at.')
       await onChanged()
     } catch (e) {
@@ -192,6 +197,31 @@ function PartnerCard({ partner, tenantSlug, onChanged }) {
             <input type="number" min={0} max={100} step="0.01" inputMode="decimal" value={pct} onChange={(e) => setPct(e.target.value)} />
             <span aria-hidden="true">%</span>
           </span>
+        </label>
+      </div>
+
+      <h4 className="sub partner-subhead">Receipt</h4>
+      <p className="muted small partner-hint">
+        {partner.name}’s receipts print its own name and these lines — nothing of your café’s.
+      </p>
+      <div className="partner-form">
+        <label className="field partner-field-name">
+          <span>Line under the name (address, phone)</span>
+          <input
+            value={receiptTagline}
+            onChange={(e) => setReceiptTagline(e.target.value)}
+            maxLength={160}
+            placeholder="e.g. Shop 4, Main Boulevard · 0300 1234567"
+          />
+        </label>
+        <label className="field partner-field-name">
+          <span>Receipt footer</span>
+          <input
+            value={receiptFooter}
+            onChange={(e) => setReceiptFooter(e.target.value)}
+            maxLength={200}
+            placeholder={`e.g. Thanks for ordering from ${partner.name}!`}
+          />
         </label>
         <button type="button" className="primary" disabled={!changed || saving || !name.trim()} onClick={() => void save()}>
           {saving ? 'Saving…' : 'Save'}

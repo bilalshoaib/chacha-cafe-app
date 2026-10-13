@@ -70,18 +70,20 @@ export default async function RootLayout({ children }) {
     // a logical property. Correct for every left-to-right language, which is
     // all of them bar three in constants/locales.js.
     // suppressHydrationWarning on <html>: the inline script below sets
-    // data-theme before React hydrates, so the client tree carries an
+    // data-theme and data-nav before React hydrates, so the client tree carries an
     // attribute the server render did not. That one-attribute difference is
     // expected and must not be reported as a mismatch.
     <html lang={branding.locale} dir={branding.direction} suppressHydrationWarning>
       <body suppressHydrationWarning>
-        {/* Applies the saved light/dark choice to <html> before first paint,
-            so a dark-mode device never flashes the light theme on the way in.
-            The control that writes this back is components/ThemeToggle.jsx. */}
+        {/* Applies the saved light/dark choice and the navigation layout to
+            <html> before first paint, so a device never flashes the wrong
+            theme or the wrong navigation on the way in. The controls that
+            write them back are components/ThemeToggle.jsx and
+            app/settings/appearance/page.jsx. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var t=localStorage.getItem('pos-theme');if(t==='dark')document.documentElement.dataset.theme='dark';}catch(e){}",
+              "try{var d=document.documentElement,t=localStorage.getItem('pos-theme'),n=localStorage.getItem('pos-nav');if(t==='dark')d.dataset.theme='dark';if(n==='top')d.dataset.nav='top';}catch(e){}",
           }}
         />
         {/* The stylesheets derive every colour from these two custom

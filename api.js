@@ -173,6 +173,12 @@ export const api = {
     request(`/api/partners/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   savePartnerPrices: (id, prices) =>
     request(`/api/partners/${encodeURIComponent(id)}/prices`, { method: 'PUT', body: JSON.stringify({ prices }) }),
+  createPartnerItem: (id, body) =>
+    request(`/api/partners/${encodeURIComponent(id)}/items`, { method: 'POST', body: JSON.stringify(body) }),
+  updatePartnerItem: (id, itemId, body) =>
+    request(`/api/partners/${encodeURIComponent(id)}/items/${encodeURIComponent(itemId)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deletePartnerItem: (id, itemId) =>
+    request(`/api/partners/${encodeURIComponent(id)}/items/${encodeURIComponent(itemId)}`, { method: 'DELETE' }),
   partnerReport: (id, params) =>
     request(`/api/partners/${encodeURIComponent(id)}/report?${new URLSearchParams(params)}`),
   listPartnerLogins: (id) => request(`/api/partners/${encodeURIComponent(id)}/logins`),

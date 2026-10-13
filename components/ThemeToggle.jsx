@@ -52,9 +52,11 @@ export default function ThemeToggle() {
       onClick={toggle}
       aria-pressed={dark}
       title={dark ? 'Switch to light' : 'Switch to dark'}
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      <span aria-hidden="true">{dark ? '☀' : '☾'}</span>
-      {dark ? 'Light mode' : 'Dark mode'}
+      <span className="side-nav-theme-icon" aria-hidden="true">{dark ? '☀' : '☾'}</span>
+      {/* Its own element so the top bar can show the icon alone. */}
+      <span className="side-nav-theme-label">{dark ? 'Light mode' : 'Dark mode'}</span>
     </button>
   )
 }

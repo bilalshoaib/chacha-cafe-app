@@ -24,11 +24,11 @@ import { computeInvoiceTax, invoiceTotal } from '@/lib/tax.js'
 
 const PartnerTillContext = createContext(null)
 
-export const PARTNER_ORDER_TYPES = [
-  { value: 'dine_in', label: 'Dine In', icon: '🍽️' },
-  { value: 'takeaway', label: 'Takeaway', icon: '🛍️' },
-  { value: 'delivery', label: 'Delivery', icon: '🛵' },
-]
+/**
+ * A partner's sale is always a delivery — the server holds it to that too
+ * (app/api/checkout/route.js) — so its till has no order type to choose.
+ */
+export const PARTNER_ORDER_TYPE = { value: 'delivery', label: 'Delivery', icon: '🛵' }
 
 function newLineId() {
   const c = globalThis.crypto
@@ -62,8 +62,7 @@ export function PartnerTillProvider({ partnerId, children }) {
   const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
   const [lines, setLines] = useState([])
-  const [orderType, setOrderType] = useState('dine_in')
-  const [tableNumber, setTableNumber] = useState('')
+  const orderType = PARTNER_ORDER_TYPE.value
   const [deliveryCharge, setDeliveryCharge] = useState('')
   const [customerNote, setCustomerNote] = useState('')
   const [checkingOut, setCheckingOut] = useState(false)
@@ -84,11 +83,12 @@ export function PartnerTillProvider({ partnerId, children }) {
   // price list is the price the till shows when the cashier comes back to it.
   useEffect(() => { void reload() }, [reload, pathname])
 
-  /** What the partner sells right now, each at the partner's price. */
+  /** What the partner sells right now, each at the partner's price — the café's items and its own. */
   const items = useMemo(
-    () => (data?.items ?? [])
-      .filter((i) => i.price != null && i.visible)
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    () => [
+      ...(data?.items ?? []).filter((i) => i.price != null && i.visible),
+      ...(data?.ownItems ?? []).filter((i) => i.visible).map((i) => ({ ...i, own: true })),
+    ].sort((a, b) => a.name.localeCompare(b.name)),
     [data],
   )
 
@@ -137,9 +137,7 @@ export function PartnerTillProvider({ partnerId, children }) {
   function clearOrder() {
     setLines([])
     setCustomerNote('')
-    setTableNumber('')
     setDeliveryCharge('')
-    setOrderType('dine_in')
     setError('')
   }
 
@@ -150,7 +148,7 @@ export function PartnerTillProvider({ partnerId, children }) {
     orderType,
     pricesIncludeTax: data?.tax?.pricesIncludeTax ?? true,
   }), [lines, data, orderType])
-  const dc = orderType === 'delivery' ? (Number(deliveryCharge) || 0) : 0
+  const dc = Number(deliveryCharge) || 0
   const total = invoiceTotal({ subtotal, deliveryCharge: dc, taxTotal: tax.taxTotal, inclusive: tax.inclusive })
   const itemCount = lines.reduce((s, l) => s + l.qty, 0)
 
@@ -165,7 +163,6 @@ export function PartnerTillProvider({ partnerId, children }) {
         customerNote,
         paymentMethod: null,
         orderType,
-        tableNumber,
         deliveryCharge: dc,
       })
       clearOrder()
@@ -199,9 +196,6 @@ export function PartnerTillProvider({ partnerId, children }) {
     removeLine,
     clearOrder,
     orderType,
-    setOrderType,
-    tableNumber,
-    setTableNumber,
     deliveryCharge,
     setDeliveryCharge,
     customerNote,

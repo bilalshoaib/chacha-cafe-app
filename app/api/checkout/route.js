@@ -130,7 +130,9 @@ async function handleCheckout(request, marks, stats) {
   const paymentMethod = VALID_PAYMENT_METHODS.includes(body.paymentMethod) ? body.paymentMethod : null
 
   const VALID_ORDER_TYPES = ['takeaway', 'dine_in', 'delivery']
-  const orderType = VALID_ORDER_TYPES.includes(body.orderType) ? body.orderType : null
+  // A partner kitchen's sale is always a delivery: it has no tables here and
+  // no counter of its own, so its food only ever goes out with a rider.
+  const orderType = partner ? 'delivery' : VALID_ORDER_TYPES.includes(body.orderType) ? body.orderType : null
 
   // Which table the food is going to. Kept for every order type but delivery,
   // where there is no table to go to — see lib/tableNumber.js.
