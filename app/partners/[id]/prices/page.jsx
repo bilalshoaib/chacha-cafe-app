@@ -171,7 +171,7 @@ export default function PartnerPricesPage({ params }) {
       {groups.length === 0 ? <p className="muted">No items match.</p> : groups.map((g) => (
         <section key={g.key} className="card partner-prices-group">
           <h3 className="sub">{g.label}</h3>
-          <table className="partner-prices-table">
+          <table className="partner-prices-table table-cards">
             <thead>
               <tr>
                 <th>Sell</th>
@@ -200,12 +200,12 @@ export default function PartnerPricesPage({ params }) {
                         aria-label={`${data.partner.name} sells ${i.name}`}
                       />
                     </td>
-                    <td data-label="Item">
+                    <td className="cell-card-title">
                       {i.name}{extras ? <span className="muted small"> · {extras}</span> : null}
                     </td>
                     <td data-label="Café price" className="num">{money(i.menuPrice)}</td>
                     <td data-label="Pays café" className="num">{money(i.supplyPrice)}</td>
-                    <td data-label={`${data.partner.name} price`} className="num">
+                    <td data-label={`${data.partner.name} price`} className="num cell-card-field">
                       <input
                         type="number"
                         min={0}
@@ -340,7 +340,7 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
       </datalist>
 
       {ownItems.length ? (
-        <table className="partner-prices-table partner-own-table">
+        <table className="partner-prices-table partner-own-table table-cards">
           <thead>
             <tr>
               <th>Item</th>
@@ -355,13 +355,13 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
               const e = edits[item.id] ?? { name: item.name, category: item.category, price: String(item.price), visible: item.visible }
               return (
                 <tr key={item.id} className="is-on">
-                  <td data-label="Item">
+                  <td data-label="Item" className="cell-card-field">
                     <input value={e.name} disabled={!canManage} maxLength={120} onChange={(ev) => edit(item.id, { name: ev.target.value })} aria-label="Item name" />
                   </td>
-                  <td data-label="Category">
+                  <td data-label="Category" className="cell-card-field">
                     <input value={e.category} disabled={!canManage} maxLength={60} list={listId} onChange={(ev) => edit(item.id, { category: ev.target.value })} aria-label={`Category of ${item.name}`} />
                   </td>
-                  <td data-label="Price" className="num">
+                  <td data-label="Price" className={`num${canManage ? ' cell-card-field' : ''}`}>
                     {canManage ? (
                       <input type="number" min={0} step={1} inputMode="decimal" value={e.price} onChange={(ev) => edit(item.id, { price: ev.target.value })} aria-label={`Price of ${item.name}`} />
                     ) : money(item.price)}
@@ -370,7 +370,7 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
                     <input type="checkbox" checked={!e.visible} disabled={!canManage} onChange={(ev) => edit(item.id, { visible: !ev.target.checked })} aria-label={`Hide ${item.name} for now`} />
                   </td>
                   {canManage ? (
-                    <td className="partner-own-actions">
+                    <td className="partner-own-actions cell-card-action">
                       <button type="button" className="primary sm" disabled={!isDirty(item) || busy === item.id} onClick={() => save(item)}>Save</button>
                       <button type="button" className="ghost danger sm" disabled={busy === item.id} onClick={() => remove(item)}>Remove</button>
                     </td>

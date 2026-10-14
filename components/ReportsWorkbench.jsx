@@ -43,8 +43,15 @@ function brandStats(summary) {
     // A partner kitchen's card says how its sales settle, which is the figure
     // the two businesses actually meet over.
     sub: (_s, money) => `${b.invoiceCount} invoice${b.invoiceCount === 1 ? '' : 's'}`
-      + (b.partner ? ` · café keeps ${money(b.cafeShare ?? 0)} · pay ${b.name} ${money(b.payable ?? 0)}` : ''),
+      + (b.partner ? ` · café keeps ${money(b.cafeShare ?? 0)} · pay ${b.name} ${money(b.payable ?? 0)}` : '')
+      + (b.partnerSupply ? ` · incl. ${money(b.partnerSupply)} via ${partnerNames(summary)}` : ''),
   }))
+}
+
+/** The partner kitchens by name, for saying where a counter's share came from. */
+function partnerNames(summary) {
+  const names = (summary?.brands ?? []).filter((b) => b.partner).map((b) => b.name)
+  return names.length ? names.join(', ') : 'partner kitchens'
 }
 
 const SUMMARY_STATS = [
@@ -72,9 +79,19 @@ const SUMMARY_STATS = [
     label: 'Payable to partners',
     value: (s, money) => money(s.partnerPayableTotal ?? 0),
     sub: () => 'Partner sales − café’s supply price',
-    when: (s) => (s?.brands ?? []).some((b) => b.partner),
+    // Not under one of the café's own counters, where nothing is payable.
+    when: (s) => (s?.brands ?? []).some((b) => b.partner && (!s.business || b.slug === s.business)),
   },
-  { key: 'expenses', label: 'Total expenses', value: (s, money) => money(s.expensesTotal), sub: (s) => `${s.expenseCount} entries · date spent` },
+  // Under one of the café's counters: what it earned on its items sold by a
+  // partner kitchen — the supply price, already inside net sales above.
+  {
+    key: 'partnerSupply',
+    label: 'Sold via partners',
+    value: (s, money) => money(s.partnerSupplyTotal ?? 0),
+    sub: (s) => `Your share of ${partnerNames(s)} sales · in net sales`,
+    when: (s) => (s?.partnerSupplyTotal ?? 0) > 0,
+  },
+    { key: 'expenses', label: 'Total expenses', value: (s, money) => money(s.expensesTotal), sub: (s) => `${s.expenseCount} entries · date spent` },
   {
     key: 'netAfterExpenses',
     label: 'Net after expenses',
@@ -169,7 +186,8 @@ function buildPdfHtml({ rangeLabel, summary, invoices, expenses, topSellers, sel
   <div class="stat"><span class="stat-label">Net Sales</span><span class="stat-value">${money(summary.netSalesTotal)}</span><span class="stat-sub">Excl. returns</span></div>
   <div class="stat"><span class="stat-label">Sales excl. delivery</span><span class="stat-value">${money(summary.netSalesExclDelivery ?? summary.netSalesTotal)}</span><span class="stat-sub">Net sales − delivery charges</span></div>
   <div class="stat"><span class="stat-label">Delivery charges</span><span class="stat-value">${money(summary.deliveryChargesTotal ?? 0)}</span><span class="stat-sub">${summary.deliveryOrderCount ?? 0} delivery orders</span></div>
-  ${(summary.brands ?? []).length > 1 ? (summary.brands ?? []).map((b) => `<div class="stat"><span class="stat-label">${b.name}</span><span class="stat-value">${money(b.netSales)}</span><span class="stat-sub">${b.invoiceCount} invoices${b.partner ? ` · café keeps ${money(b.cafeShare ?? 0)} · pay ${b.name} ${money(b.payable ?? 0)}` : ''}</span></div>`).join('') : ''}
+  ${(summary.brands ?? []).length > 1 ? (summary.brands ?? []).map((b) => `<div class="stat"><span class="stat-label">${b.name}</span><span class="stat-value">${money(b.netSales)}</span><span class="stat-sub">${b.invoiceCount} invoices${b.partner ? ` · café keeps ${money(b.cafeShare ?? 0)} · pay ${b.name} ${money(b.payable ?? 0)}` : ''}${b.partnerSupply ? ` · incl. ${money(b.partnerSupply)} via ${partnerNames(summary)}` : ''}</span></div>`).join('') : ''}
+  ${(summary.partnerSupplyTotal ?? 0) > 0 ? `<div class="stat"><span class="stat-label">Sold via partners</span><span class="stat-value">${money(summary.partnerSupplyTotal)}</span><span class="stat-sub">Share of ${partnerNames(summary)} sales · in net sales</span></div>` : ''}
   ${(summary.brands ?? []).some((b) => b.partner) ? `<div class="stat"><span class="stat-label">Payable to partners</span><span class="stat-value">${money(summary.partnerPayableTotal ?? 0)}</span><span class="stat-sub">Partner sales − café's supply price</span></div>` : ''}
   <div class="stat"><span class="stat-label">Invoices</span><span class="stat-value">${summary.invoiceCount}</span><span class="stat-sub">In range</span></div>
   <div class="stat"><span class="stat-label">Gross Total</span><span class="stat-value">${money(summary.grossTotal)}</span><span class="stat-sub">All invoices</span></div>

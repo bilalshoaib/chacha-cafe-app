@@ -222,3 +222,52 @@ test('a partner sale is credited to the partner’s own column', () => {
     assert.equal(JSON.stringify(out).includes('cost'), false)
   })
 }
+
+// ── The café's share, by the counter that supplied it ───────────────────────
+
+{
+  const { test } = await import('node:test')
+  const assert = (await import('node:assert/strict')).default
+  const { buildOrderLine } = await import('../lib/orderLines.js')
+  const { partnerSupplyByBrand } = await import('../lib/partners.js')
+
+  const kitchen = {
+    id: 'br-k', name: 'Kitchen', slug: 'kitchen', supplyDiscountPct: 20,
+    prices: [{ itemId: 'c-1', price: 300, visible: true }, { itemId: 'b-1', price: 600, visible: true }],
+    ownItems: [{ id: 'pi-1', name: 'Karahi', category: 'Curries', price: 1000, visible: true }],
+  }
+  const menu = {
+    items: [
+      { id: 'c-1', name: 'Latte', category: 'coffee', businessType: 'cafe', price: 250 },
+      { id: 'b-1', name: 'Zinger', category: 'burgers', businessType: 'burger', price: 500 },
+    ],
+    partners: [kitchen],
+  }
+  const brands = [{ slug: 'cafe' }, { slug: 'burger' }, { slug: 'kitchen', partner: true }]
+  const line = (refId, qty) => buildOrderLine({ kind: 'item', refId, qty }, menu, { partner: kitchen }).line
+
+  test('a partner line names the café counter that supplied it', () => {
+    assert.equal(line('c-1', 1).supplyBusinessType, 'cafe')
+    assert.equal(line('b-1', 1).supplyBusinessType, 'burger')
+  })
+
+  test('the café’s share of partner sales goes to the supplying counter', () => {
+    const out = partnerSupplyByBrand([
+      { lines: [line('c-1', 2), line('b-1', 1), line('pi-1', 1)] },
+      { lines: [line('b-1', 1)] },
+      { returned: true, lines: [line('c-1', 5)] },
+    ], brands)
+    assert.deepEqual(out.get('cafe'), { amount: 400, invoiceCount: 1 })
+    assert.deepEqual(out.get('burger'), { amount: 800, invoiceCount: 2 })
+    assert.equal(out.has('kitchen'), false)
+  })
+
+  test('an older line without its counter is placed by the item', () => {
+    const old = { ...line('b-1', 1) }
+    delete old.supplyBusinessType
+    const out = partnerSupplyByBrand([{ lines: [old] }], brands, new Map([['b-1', 'burger']]))
+    assert.equal(out.get('burger').amount, 400)
+    const unknown = partnerSupplyByBrand([{ lines: [old] }], brands)
+    assert.equal(unknown.get('cafe').amount, 400)
+  })
+}

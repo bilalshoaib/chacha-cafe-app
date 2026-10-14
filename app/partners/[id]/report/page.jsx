@@ -93,7 +93,7 @@ export default function PartnerReportPage({ params }) {
           <section className="card">
             <h3 className="sub">By item</h3>
             {s.items.length === 0 ? <p className="muted">No {name} sales in this period.</p> : (
-              <table className="partner-prices-table">
+              <table className="partner-prices-table table-cards">
                 <thead>
                   <tr>
                     <th>Item</th>
@@ -106,7 +106,7 @@ export default function PartnerReportPage({ params }) {
                 <tbody>
                   {s.items.map((r) => (
                     <tr key={r.refId ?? r.name}>
-                      <td data-label="Item">{r.name}</td>
+                      <td className="cell-card-title">{r.name}</td>
                       <td data-label="Qty" className="num">{r.qty}</td>
                       <td data-label="Sales" className="num">{money(r.sales)}</td>
                       <td data-label={`${cafeName} keeps`} className="num">{money(r.cafeShare)}</td>
@@ -121,7 +121,7 @@ export default function PartnerReportPage({ params }) {
           <section className="card">
             <h3 className="sub">Invoices ({report.invoices.length})</h3>
             {report.invoices.length === 0 ? <p className="muted">None in this period.</p> : (
-              <table className="partner-prices-table">
+              <table className="partner-prices-table table-cards">
                 <thead>
                   <tr>
                     <th>Invoice</th>
@@ -134,7 +134,7 @@ export default function PartnerReportPage({ params }) {
                 <tbody>
                   {report.invoices.map((inv) => (
                     <tr key={inv.id} className={inv.returned ? 'is-returned' : ''}>
-                      <td data-label="Invoice">{inv.id}{inv.shiftNumber != null ? ` · #${inv.shiftNumber}` : ''}</td>
+                      <td className="cell-card-title">{inv.id}{inv.shiftNumber != null ? ` · #${inv.shiftNumber}` : ''}</td>
                       <td data-label="When">{formatDateTime(inv.createdAt)}</td>
                       <td data-label="Total" className="num">{money(inv.total)}</td>
                       <td data-label={`${cafeName} keeps`} className="num">{inv.returned ? '—' : money(inv.cafeShare)}</td>

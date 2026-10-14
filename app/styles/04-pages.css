@@ -1474,36 +1474,20 @@ a.danger-ghost:hover {
     max-width: none;
   }
 
-  .partner-form > button {
+  /* The buttons share the last line: one alone fills it, and Copy and Open
+     sit side by side rather than one stretched and one adrift. */
+  .partner-form > button,
+  .partner-form > .partner-open-link {
+    flex: 1 1 0;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* The tables become cards through table-cards (08-table-cards.css); a
+     price box takes the card's width there like any other field. */
+  .partner-prices-table.table-cards td.cell-card-field input:not([type='checkbox']) {
     width: 100%;
-  }
-
-  .partner-prices-table thead {
-    display: none;
-  }
-
-  .partner-prices-table tr {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.15rem 0.75rem;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .partner-prices-table td {
-    border: 0;
-    padding: 0.1rem 0;
-    text-align: left;
-  }
-
-  .partner-prices-table td.num {
-    text-align: left;
-  }
-
-  .partner-prices-table td::before {
-    content: attr(data-label) ': ';
-    color: var(--text-muted);
-    font-size: 0.85em;
+    max-width: none;
   }
 }
 

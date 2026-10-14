@@ -3006,6 +3006,12 @@ button.invoice-edit-link:hover {
   padding: 0;
   overflow: hidden;
 }
+/* The card is flush so its table reaches the edges; a message in place of
+   the table needs the card's usual inset back. */
+.table-card-empty {
+  margin: 0;
+  padding: 1.1rem 1.15rem;
+}
 .expenses-table-card .table-scroll {
   margin: 0;
   border: none;

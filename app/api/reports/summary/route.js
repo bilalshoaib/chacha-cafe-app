@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireReportReader } from '@/lib/session'
 import { getInvoicesInRange } from '@/lib/repositories/invoicesRepository'
 import { findExpenses } from '@/lib/repositories/expensesRepository'
-import { listBrands } from '@/lib/repositories/menuRepository'
+import { listBrands, listItemBusinessTypes } from '@/lib/repositories/menuRepository'
 import { recordReportAccess } from '@/lib/audit'
 import {
   calcInvoiceSplits,
@@ -14,7 +14,7 @@ import {
   roundMoney,
 } from '@/lib/reports'
 import { netOfTax } from '@/lib/tax'
-import { partnerSettlement } from '@/lib/partners'
+import { partnerSettlement, partnerSupplyByBrand } from '@/lib/partners'
 
 /** Headline totals for the reports Summary tab. Reads no invoice line detail. */
 export async function GET(request) {
@@ -66,9 +66,18 @@ export async function GET(request) {
   // exclusive pricing the tax was never in a line total to begin with.
   let inclusiveTaxInNetSales = 0
 
+  // Every partner sale in range, whatever the business filter: the café's
+  // share of one belongs to the café's counter that supplied the item, so the
+  // Cafe and Burger reports count it even though the sale is the partner's.
+  const allPartnerSales = []
+
   for (const inv of inRange) {
     if (!matchesPayment(inv.paymentMethod ?? null, payment)) continue
     const businessType = invoiceBusinessType(inv)
+    // Narrowed to one partner, only that partner's.
+    if (partnerSlugs.has(businessType) && !(partnerSlugs.has(business) && business !== businessType)) {
+      allPartnerSales.push(inv)
+    }
     // Every tile below is filtered the same way, so the headline numbers can
     // never disagree about which invoices they cover.
     if (!matchesBusiness(businessType, business)) continue
@@ -114,11 +123,21 @@ export async function GET(request) {
     if (deliveryCharge > 0) { deliveryChargesTotal += deliveryCharge; deliveryOrderCount += 1 }
   }
 
+  // Lines sold before they named their supplying counter are placed by the
+  // item's counter today — read only when there is such a line.
+  const needsItemTypes = allPartnerSales.some((inv) => (inv.lines ?? []).some((l) => l.supplyTotal && !l.supplyBusinessType))
+  const itemTypeById = needsItemTypes ? await listItemBusinessTypes(ctx) : new Map()
+  const supplyByBrand = partnerSupplyByBrand(allPartnerSales, brands, itemTypeById)
+
   const brandSummary = brands.map((b) => {
+    const supplied = supplyByBrand.get(b.slug)
     const row = {
       id: b.id, slug: b.slug, name: b.name,
-      netSales: roundMoney(netByBrand.get(b.slug) ?? 0),
+      // A counter's sales include its share of what partner kitchens sold of
+      // its items — the supply price, which is the café's money.
+      netSales: roundMoney((netByBrand.get(b.slug) ?? 0) + (supplied?.amount ?? 0)),
       invoiceCount: countByBrand.get(b.slug) ?? 0,
+      ...(supplied ? { partnerSupply: supplied.amount, partnerSupplyCount: supplied.invoiceCount } : {}),
     }
     if (!b.partner) return row
     const settled = partnerSettlement(partnerInvoices.get(b.slug))
@@ -126,7 +145,18 @@ export async function GET(request) {
   })
 
   const filtered = business ? brandSummary.filter((b) => b.slug === business) : brandSummary
-  const netSalesTotal = roundMoney(filtered.reduce((sum, b) => sum + b.netSales, 0))
+  // Unfiltered, every sale is counted once at its full price — a partner's
+  // with it, its payable coming off below — so the supply shares already in
+  // the counters' rows are not added a second time. Filtered to one of the
+  // café's counters, that counter's share of partner sales is its own money
+  // and counts; filtered to a partner, its sales.
+  const netSalesTotal = business
+    ? roundMoney(filtered.reduce((sum, b) => sum + b.netSales, 0))
+    : roundMoney([...netByBrand.values()].reduce((sum, v) => sum + v, 0))
+  // The part of net sales that came through partner kitchens, for the tile
+  // that says so. Only under a counter's filter: unfiltered, it is inside the
+  // partners' own sales.
+  const partnerSupplyTotal = business ? roundMoney(filtered.reduce((sum, b) => sum + (b.partnerSupply ?? 0), 0)) : 0
   // What the café is holding for partner kitchens. Comes off what it keeps,
   // like tax: collected at this till, but somebody else's money.
   const partnerPayableTotal = roundMoney(filtered.reduce((sum, b) => sum + (b.payable ?? 0), 0))
@@ -164,6 +194,9 @@ export async function GET(request) {
       netSalesExclTax,
       expenseCount, expensesTotal,
       partnerPayableTotal,
+      partnerSupplyTotal,
+      // Which business the figures are narrowed to, null for all.
+      business: business ?? null,
       // Expenses come off sales the business actually keeps, which is sales
       // with the tax taken out — tax collected was never the café's to spend —
       // and with what is owed to partner kitchens taken out too.

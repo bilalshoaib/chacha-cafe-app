@@ -837,10 +837,11 @@ the two settle from the reports.
 | Owner settings: add a partner, its discount, its logins, its receipt lines | `app/settings/partners/page.jsx` *(new)* |
 | A partner's receipt prints its own name, tagline and footer — nothing of the café's | `migrations/034_partner_receipts.sql` *(new)*, `app/invoices/[invoiceId]/page.jsx` |
 | A partner's own items — food it makes itself, sold beside the café's; supply price 0, so the whole of it settles to the partner; on its till, price list and public menu | `migrations/035_partner_items.sql` *(new)*, `app/api/partners/[id]/items/**` *(new)*, `app/partners/[id]/prices/page.jsx` |
+| The café's share of a partner sale counts under the café counter that supplied each item — the Cafe and Burger reports show it ("Sold via partners"); lines freeze `supplyBusinessType` | `lib/partners.js` (`partnerSupplyByBrand`), `app/api/reports/summary/route.js`, `components/ReportsWorkbench.jsx` |
 | A partner's sale is always a delivery — no order-type choice on its till, and checkout holds it to that | `components/PartnerTill.jsx`, `app/api/checkout/route.js` |
 | Public menu for the partner's own website — `GET /api/menu-public/partners/<partner>?tenant=<café>`, CORS `*`, 60s edge cache; its prices only, built field by field so no café price, cost or discount can leak | `app/api/menu-public/partners/[slug]/route.js` *(new)*, `lib/publicMenu.js` |
 | Reports: partner column, "café keeps / pay partner", payable comes off net after expenses | `app/api/reports/summary/route.js`, `components/ReportsWorkbench.jsx`, `lib/reports.js` |
-| 25 tests | `tests/partners.test.js` *(new)* |
+| 28 tests | `tests/partners.test.js` *(new)* |
 
 **Decisions worth knowing before changing any of it:**
 

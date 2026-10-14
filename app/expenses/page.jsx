@@ -126,7 +126,7 @@ export default function ExpensesListPage() {
               { key: 'actions', label: ' ' },
             ]}
           />
-        ) : expenses.length === 0 ? <p className="muted">No expenses in this range.</p> : (
+        ) : expenses.length === 0 ? <p className="muted table-card-empty">No expenses in this range.</p> : (
           <div className="table-scroll">
             <table className="invoices-table expenses-table table-cards">
               <thead>
