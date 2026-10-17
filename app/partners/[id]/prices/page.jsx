@@ -17,9 +17,10 @@ import { roundMoney } from '@/lib/pricing.js'
  * keeps at the price it has set — so a price below what it owes shows up as a
  * loss before it is saved, not at settlement.
  *
- * "Hidden" keeps the price but takes the item off the till for now. "Website
- * name" is what the partner's public menu calls the item; the till, receipts
- * and reports keep the café's name.
+ * "Hidden" keeps the price but takes the item off the till for now. "On the
+ * website" is the name and description the partner's public menu gives the
+ * item; left blank, the café's show. The till, receipts and reports keep the
+ * café's name.
  *
  * Above them sit the partner's own items (OwnItemsCard): food it makes itself,
  * which owes the café nothing.
@@ -28,7 +29,7 @@ export default function PartnerPricesPage({ params }) {
   const { id } = use(params)
   const money = useMoney()
   const [data, setData] = useState(null)
-  // itemId → { sell, price (string, as typed), visible, displayName (as typed) }
+  // itemId → { sell, price (string, as typed), visible, displayName, description (as typed) }
   const [draft, setDraft] = useState({})
   const [filter, setFilter] = useState('')
   const [onlyMine, setOnlyMine] = useState(false)
@@ -48,6 +49,7 @@ export default function PartnerPricesPage({ params }) {
           price: i.price != null ? String(i.price) : '',
           visible: i.price != null ? i.visible : true,
           displayName: i.displayName ?? '',
+          description: i.description ?? '',
         }
       }
       setDraft(next)
@@ -84,6 +86,7 @@ export default function PartnerPricesPage({ params }) {
       if (d.sell !== (i.price != null)) return true
       if (!d.sell) return false
       return Number(d.price) !== i.price || d.visible !== i.visible || d.displayName.trim() !== (i.displayName ?? '')
+        || d.description.trim() !== (i.description ?? '')
     })
   }, [data, draft])
 
@@ -110,7 +113,13 @@ export default function PartnerPricesPage({ params }) {
         setError(`Enter a price for ${i.name}.`)
         return
       }
-      prices.push({ itemId: i.id, price: n, visible: d.visible, displayName: d.displayName.trim() || null })
+      prices.push({
+        itemId: i.id,
+        price: n,
+        visible: d.visible,
+        displayName: d.displayName.trim() || null,
+        description: d.description.trim() || null,
+      })
     }
     setSaving(true)
     try {
@@ -138,8 +147,8 @@ export default function PartnerPricesPage({ params }) {
         <div>
           <h2>{data.partner.name} — menu &amp; prices</h2>
           <p className="muted small">
-            Choose which items {data.partner.name} sells, set its prices and, if you like, the name each goes by on
-            {' '}{data.partner.name}’s website. For every item sold,
+            Choose which items {data.partner.name} sells, set its prices and, if you like, the name and description
+            {' '}each has on {data.partner.name}’s website. For every item sold,
             {' '}{data.partner.name} pays the café its menu price less {pct}%; it keeps whatever its own price is above that.
           </p>
         </div>
@@ -184,7 +193,7 @@ export default function PartnerPricesPage({ params }) {
               <tr>
                 <th>Sell</th>
                 <th>Item</th>
-                <th>Website name</th>
+                <th>On the website</th>
                 <th className="num">Café price</th>
                 <th className="num">Pays café</th>
                 <th className="num">{data.partner.name} price</th>
@@ -194,7 +203,7 @@ export default function PartnerPricesPage({ params }) {
             </thead>
             <tbody>
               {g.rows.map((i) => {
-                const d = draft[i.id] ?? { sell: false, price: '', visible: true, displayName: '' }
+                const d = draft[i.id] ?? { sell: false, price: '', visible: true, displayName: '', description: '' }
                 const n = Number(d.price)
                 const keeps = d.sell && d.price !== '' && Number.isFinite(n) ? roundMoney(n - i.supplyPrice) : null
                 const extras = formatItemExtras(i)
@@ -212,7 +221,7 @@ export default function PartnerPricesPage({ params }) {
                     <td className="cell-card-title">
                       {i.name}{extras ? <span className="muted small"> · {extras}</span> : null}
                     </td>
-                    <td data-label="Website name" className="cell-card-field">
+                    <td data-label="On the website" className="cell-card-field partner-web-cell">
                       <input
                         className="partner-web-name"
                         value={d.displayName}
@@ -221,6 +230,16 @@ export default function PartnerPricesPage({ params }) {
                         disabled={!canManage || !d.sell}
                         onChange={(e) => change(i.id, { displayName: e.target.value })}
                         aria-label={`${data.partner.name} website name for ${i.name}`}
+                      />
+                      <textarea
+                        className="partner-web-desc"
+                        rows={2}
+                        value={d.description}
+                        maxLength={300}
+                        placeholder={i.cafeDescription || 'Description (optional)'}
+                        disabled={!canManage || !d.sell}
+                        onChange={(e) => change(i.id, { description: e.target.value })}
+                        aria-label={`${data.partner.name} website description for ${i.name}`}
                       />
                     </td>
                     <td data-label="Café price" className="num">{money(i.menuPrice)}</td>
@@ -277,9 +296,9 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
   const money = useMoney()
   const partnerName = data.partner.name
   const ownItems = data.ownItems ?? []
-  // itemId → { name, category, price, visible } as typed.
+  // itemId → { name, category, price, visible, description } as typed.
   const [edits, setEdits] = useState({})
-  const [adding, setAdding] = useState({ name: '', category: '', price: '' })
+  const [adding, setAdding] = useState({ name: '', category: '', price: '', description: '' })
   const [busy, setBusy] = useState(null)
   const [error, setError] = useState('')
   const listId = `partner-cats-${partnerId}`
@@ -287,7 +306,13 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
   useEffect(() => {
     const next = {}
     for (const i of ownItems) {
-      next[i.id] = { name: i.name, category: categoryLabel(i.category, data.categories), price: String(i.price), visible: i.visible }
+      next[i.id] = {
+        name: i.name,
+        category: categoryLabel(i.category, data.categories),
+        price: String(i.price),
+        visible: i.visible,
+        description: i.description ?? '',
+      }
     }
     setEdits(next)
   }, [data]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -303,6 +328,7 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
       || categoryFromInput(e.category, data.categories) !== item.category
       || Number(e.price) !== item.price
       || e.visible !== item.visible
+      || e.description.trim() !== (item.description ?? '')
   }
 
   async function run(key, fn) {
@@ -325,8 +351,9 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
         name: adding.name,
         category: categoryFromInput(adding.category, data.categories),
         price: adding.price,
+        description: adding.description,
       })
-      setAdding({ name: '', category: adding.category, price: '' })
+      setAdding({ name: '', category: adding.category, price: '', description: '' })
     })
   }
 
@@ -337,6 +364,7 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
       category: categoryFromInput(e.category, data.categories),
       price: e.price,
       visible: e.visible,
+      description: e.description,
     }))
   }
 
@@ -372,11 +400,21 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
           </thead>
           <tbody>
             {ownItems.map((item) => {
-              const e = edits[item.id] ?? { name: item.name, category: item.category, price: String(item.price), visible: item.visible }
+              const e = edits[item.id] ?? { name: item.name, category: item.category, price: String(item.price), visible: item.visible, description: item.description ?? '' }
               return (
                 <tr key={item.id} className="is-on">
-                  <td data-label="Item" className="cell-card-field">
+                  <td data-label="Item" className="cell-card-field partner-web-cell">
                     <input value={e.name} disabled={!canManage} maxLength={120} onChange={(ev) => edit(item.id, { name: ev.target.value })} aria-label="Item name" />
+                    <textarea
+                      className="partner-web-desc"
+                      rows={2}
+                      value={e.description}
+                      maxLength={300}
+                      placeholder="Description for the website (optional)"
+                      disabled={!canManage}
+                      onChange={(ev) => edit(item.id, { description: ev.target.value })}
+                      aria-label={`Description of ${item.name}`}
+                    />
                   </td>
                   <td data-label="Category" className="cell-card-field">
                     <input value={e.category} disabled={!canManage} maxLength={60} list={listId} onChange={(ev) => edit(item.id, { category: ev.target.value })} aria-label={`Category of ${item.name}`} />
@@ -417,6 +455,10 @@ function OwnItemsCard({ partnerId, data, canManage, onChanged }) {
           <label className="field">
             <span>Price</span>
             <input type="number" min={0} step={1} inputMode="decimal" value={adding.price} placeholder="0" onChange={(e) => setAdding((a) => ({ ...a, price: e.target.value }))} required />
+          </label>
+          <label className="field partner-own-add-desc">
+            <span>Description <span className="muted">(optional)</span></span>
+            <input value={adding.description} maxLength={300} placeholder="Shown on the website menu" onChange={(e) => setAdding((a) => ({ ...a, description: e.target.value }))} />
           </label>
           <button type="submit" className="primary" disabled={busy === 'add' || !adding.name.trim() || adding.price === ''}>
             {busy === 'add' ? 'Adding…' : '＋ Add item'}

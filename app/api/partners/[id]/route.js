@@ -39,6 +39,9 @@ export async function GET(_request, { params }) {
       visible: row ? row.visible : false,
       // What the partner's website calls it; null shows the café's name.
       displayName: row?.displayName ?? null,
+      // The partner's own description, and the café's that shows when it has none.
+      description: row?.description ?? null,
+      cafeDescription: i.description ?? null,
     }
   })
 

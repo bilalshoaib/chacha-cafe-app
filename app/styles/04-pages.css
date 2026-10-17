@@ -1328,7 +1328,34 @@ a.danger-ghost:hover {
   opacity: 0.45;
 }
 
-/* The name a café item goes by on the partner's website (blank = the café's). */
+/* The name and description an item has on the partner's website (blank = the café's). */
+.partner-prices-table .partner-web-cell {
+  min-width: 14rem;
+}
+
+.partner-prices-table textarea.partner-web-desc {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.partner-prices-table textarea.partner-web-desc:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.partner-prices-table textarea.partner-web-desc:disabled {
+  opacity: 0.45;
+}
+
 .partner-prices-table input.partner-web-name {
   width: 100%;
   min-width: 10rem;
@@ -1568,6 +1595,10 @@ a.danger-ghost:hover {
 
 .partner-own-add .field:nth-child(3) {
   flex: 0 1 8rem;
+}
+
+.partner-own-add .partner-own-add-desc {
+  flex: 3 1 20rem;
 }
 
 /* A partner's till has one order type, shown rather than chosen. */

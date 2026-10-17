@@ -126,3 +126,20 @@ test('a partner’s public menu carries each item’s description, null when it 
   const byId = Object.fromEntries(toPublicPartnerMenu(described, withOwn).items.map((i) => [i.id, i.description]))
   assert.deepEqual(byId, { 'i-1': 'A crispy fillet in a soft bun.', 'i-3': null, 'pi-1': null })
 })
+
+test('a partner’s own description replaces the café’s on its public menu', () => {
+  const described = {
+    ...partnerMenu,
+    items: partnerMenu.items.map((i) => ({ ...i, description: `Café words for ${i.name}` })),
+  }
+  const k = {
+    ...kitchen,
+    prices: [
+      { itemId: 'i-1', price: 260, visible: true, description: 'Kitchen words' },
+      { itemId: 'i-3', price: 180, visible: true, description: null },
+    ],
+    ownItems: [{ id: 'pi-1', name: 'Karahi', category: 'Curries', price: 1200, visible: true, description: 'Slow cooked' }],
+  }
+  const byId = Object.fromEntries(toPublicPartnerMenu(described, k).items.map((i) => [i.id, i.description]))
+  assert.deepEqual(byId, { 'i-1': 'Kitchen words', 'i-3': 'Café words for Fries', 'pi-1': 'Slow cooked' })
+})
