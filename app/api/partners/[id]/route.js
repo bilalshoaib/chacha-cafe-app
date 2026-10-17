@@ -37,6 +37,8 @@ export async function GET(_request, { params }) {
       // null when the partner does not sell it.
       price: row ? row.price : null,
       visible: row ? row.visible : false,
+      // What the partner's website calls it; null shows the café's name.
+      displayName: row?.displayName ?? null,
     }
   })
 

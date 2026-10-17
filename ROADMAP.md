@@ -840,6 +840,8 @@ the two settle from the reports.
 | The café's share of a partner sale counts under the café counter that supplied each item — the Cafe and Burger reports show it ("Sold via partners"); lines freeze `supplyBusinessType` | `lib/partners.js` (`partnerSupplyByBrand`), `app/api/reports/summary/route.js`, `components/ReportsWorkbench.jsx` |
 | A partner's sale is always a delivery — no order-type choice on its till, and checkout holds it to that | `components/PartnerTill.jsx`, `app/api/checkout/route.js` |
 | Public menu for the partner's own website — `GET /api/menu-public/partners/<partner>?tenant=<café>`, CORS `*`, 60s edge cache; its prices only, built field by field so no café price, cost or discount can leak | `app/api/menu-public/partners/[slug]/route.js` *(new)*, `lib/publicMenu.js` |
+| A partner may give each café item it sells a website name ("Website name" on its price list); only its public menu shows it — the till, receipts and reports keep the café's name | `migrations/036_partner_item_names.sql` *(new)*, `lib/publicMenu.js`, `app/partners/[id]/prices/page.jsx` |
+| Menu items have an optional plain-text description (Menu → Add/Edit item), carried by both public menus as `description` — `null` on a partner's menu when there is none | `migrations/037_menu_item_description.sql` *(new)*, `components/MenuItemFormFields.jsx`, `app/api/menu/items/**`, `lib/publicMenu.js` |
 | Reports: partner column, "café keeps / pay partner", payable comes off net after expenses | `app/api/reports/summary/route.js`, `components/ReportsWorkbench.jsx`, `lib/reports.js` |
 | 28 tests | `tests/partners.test.js` *(new)* |
 

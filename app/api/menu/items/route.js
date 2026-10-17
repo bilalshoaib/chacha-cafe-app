@@ -7,6 +7,7 @@ import {
   optionalTrimmedString,
   newItemId,
   parseCostPrice,
+  parseItemDescription,
 } from '@/lib/repositories/menuRepository'
 import { parseMenuItemBusinessType } from '@/lib/businessTypes'
 
@@ -28,6 +29,7 @@ export async function POST(request) {
   const cat = normalizeCategory(category)
   const size = optionalTrimmedString(body.size, 60)
   const flavour = optionalTrimmedString(body.flavour, 80)
+  const description = parseItemDescription(body.description)
   const businessType = parseMenuItemBusinessType(body.businessType, { category: cat, businessType: null })
   if (businessType === null) {
     return NextResponse.json({ error: 'businessType must be cafe, burger, or both.' }, { status: 400 })
@@ -46,6 +48,7 @@ export async function POST(request) {
     costPrice: cost.value,
     ...(size ? { size } : {}),
     ...(flavour ? { flavour } : {}),
+    ...(description ? { description } : {}),
   }
   menu.items.push(item)
   await saveMenu(ctx, menu)

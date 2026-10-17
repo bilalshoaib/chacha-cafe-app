@@ -31,6 +31,7 @@ export default function MenuItemsPage() {
   const [editCategory, setEditCategory] = useState('')
   const [editSize, setEditSize] = useState('')
   const [editFlavour, setEditFlavour] = useState('')
+  const [editDescription, setEditDescription] = useState('')
   const [editBusinessType, setEditBusinessType] = useState('cafe')
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState('')
@@ -42,6 +43,7 @@ export default function MenuItemsPage() {
   const [addCategory, setAddCategory] = useState('pizza')
   const [addSize, setAddSize] = useState('')
   const [addFlavour, setAddFlavour] = useState('')
+  const [addDescription, setAddDescription] = useState('')
   const [addBusinessType, setAddBusinessType] = useState('cafe')
   const [addSaving, setAddSaving] = useState(false)
   const [addError, setAddError] = useState('')
@@ -110,6 +112,7 @@ export default function MenuItemsPage() {
     setEditCategory(item.category ?? 'other')
     setEditSize(item.size ?? '')
     setEditFlavour(item.flavour ?? '')
+    setEditDescription(item.description ?? '')
     setEditBusinessType(item.businessType === 'both' ? 'both' : itemBusinessType(item))
   }
 
@@ -125,6 +128,7 @@ export default function MenuItemsPage() {
     setAddCategory(categoryTabs[0]?.key ?? 'pizza')
     setAddSize('')
     setAddFlavour('')
+    setAddDescription('')
     setAddBusinessType('cafe')
     setAddOpen(true)
   }
@@ -153,6 +157,7 @@ export default function MenuItemsPage() {
         businessType: addBusinessType,
         ...(addSize.trim() ? { size: addSize.trim() } : {}),
         ...(addFlavour.trim() ? { flavour: addFlavour.trim() } : {}),
+        ...(addDescription.trim() ? { description: addDescription.trim() } : {}),
       })
       await refreshAll()
       setAddOpen(false)
@@ -186,6 +191,7 @@ export default function MenuItemsPage() {
         costPrice: editCostPrice,
         size: editSize.trim(),
         flavour: editFlavour.trim(),
+        description: editDescription.trim(),
         businessType: editBusinessType,
       })
       await refreshAll()
@@ -409,6 +415,7 @@ export default function MenuItemsPage() {
           businessType={addBusinessType} setBusinessType={setAddBusinessType}
           size={addSize} setSize={setAddSize}
           flavour={addFlavour} setFlavour={setAddFlavour}
+          description={addDescription} setDescription={setAddDescription}
           categoryTabs={categoryTabs}
           disabled={addSaving}
           categoryListId="menu-page-add-category-dl"
@@ -438,6 +445,7 @@ export default function MenuItemsPage() {
               businessType={editBusinessType} setBusinessType={setEditBusinessType}
               size={editSize} setSize={setEditSize}
               flavour={editFlavour} setFlavour={setEditFlavour}
+              description={editDescription} setDescription={setEditDescription}
               categoryTabs={categoryTabs}
               disabled={editSaving}
               categoryListId="edit-menu-item-category-dl"

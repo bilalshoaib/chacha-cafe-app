@@ -16,6 +16,8 @@ export default function MenuItemFormFields({
   setSize,
   flavour,
   setFlavour,
+  description = '',
+  setDescription,
   categoryTabs,
   brands = [],
   disabled = false,
@@ -112,6 +114,31 @@ export default function MenuItemFormFields({
           </label>
         </div>
       </section>
+
+      {setDescription ? (
+        <section className="form-section">
+          <h3 className="form-section-title">
+            <span className="form-section-icon" aria-hidden="true">📝</span>
+            Description <span className="form-section-note">optional</span>
+          </h3>
+          <label className="field field-wide">
+            <span className="sr-only">Description</span>
+            <textarea
+              className="menu-item-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              maxLength={300}
+              placeholder="e.g. A crispy chicken fillet in a soft bun with creamy sauce."
+              disabled={disabled}
+            />
+          </label>
+          <p className={`field-hint small${description.trim().length > 150 ? '' : ' muted'}`}>
+            Shown on the website menu, not on the till or receipts. Best kept under 150 characters
+            {description.trim() ? ` — ${description.trim().length} now` : ''}.
+          </p>
+        </section>
+      ) : null}
 
       <section className="form-section">
         <h3 className="form-section-title">

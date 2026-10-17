@@ -2395,6 +2395,22 @@ a.sm {
   border-color: var(--accent);
 }
 
+/* A menu item's description (MenuItemFormFields): a field box, two lines high. */
+.field textarea.menu-item-description {
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+  resize: vertical;
+}
+
+.field textarea.menu-item-description:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .deal-form {
   margin-top: 0.75rem;
 }

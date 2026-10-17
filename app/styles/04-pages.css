@@ -1328,6 +1328,27 @@ a.danger-ghost:hover {
   opacity: 0.45;
 }
 
+/* The name a café item goes by on the partner's website (blank = the café's). */
+.partner-prices-table input.partner-web-name {
+  width: 100%;
+  min-width: 10rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.partner-prices-table input.partner-web-name:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.partner-prices-table input.partner-web-name:disabled {
+  opacity: 0.45;
+}
+
 .partner-prices-table input[type='checkbox'],
 .partner-prices-only input[type='checkbox'] {
   width: 1.1rem;

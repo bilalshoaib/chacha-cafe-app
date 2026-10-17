@@ -6,6 +6,7 @@ import {
   normalizeCategory,
   optionalTrimmedString,
   parseCostPrice,
+  parseItemDescription,
 } from '@/lib/repositories/menuRepository'
 import { parseMenuItemBusinessType } from '@/lib/businessTypes'
 
@@ -53,6 +54,11 @@ export async function PATCH(request, { params }) {
     const f = optionalTrimmedString(flavour, 80)
     if (f) item.flavour = f
     else delete item.flavour
+  }
+  if (body.description !== undefined) {
+    const d = parseItemDescription(body.description)
+    if (d) item.description = d
+    else delete item.description
   }
 
   await saveMenu(ctx, menu)

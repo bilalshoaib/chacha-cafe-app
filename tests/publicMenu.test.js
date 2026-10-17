@@ -86,7 +86,7 @@ const kitchen = {
 
 test('a partner’s public menu carries its own prices, and only what it sells', () => {
   const pub = toPublicPartnerMenu(partnerMenu, kitchen)
-  assert.deepEqual(pub.items, [{ id: 'i-1', name: 'Zinger', category: 'burger', price: 260, size: 'large' }])
+  assert.deepEqual(pub.items, [{ id: 'i-1', name: 'Zinger', category: 'burger', price: 260, size: 'large', description: null }])
   assert.deepEqual(pub.partner, { name: 'Claude Kitchen', slug: 'claude-kitchen' })
 })
 
@@ -100,4 +100,29 @@ test('a partner’s public menu never shows the café’s price, cost or discoun
 
 test('a partner’s public menu lists only the categories it uses', () => {
   assert.deepEqual(toPublicPartnerMenu(partnerMenu, kitchen).categories.map((c) => c.key), ['burger'])
+})
+
+test('a partner’s public menu shows the name it gave a café item, else the café’s', () => {
+  const named = {
+    ...kitchen,
+    prices: [
+      { itemId: 'i-1', price: 260, visible: true, displayName: 'Crispy Chicken Burger' },
+      { itemId: 'i-3', price: 180, visible: true, displayName: null },
+    ],
+  }
+  assert.deepEqual(toPublicPartnerMenu(partnerMenu, named).items.map((i) => i.name), ['Crispy Chicken Burger', 'Fries'])
+})
+
+test('a partner’s public menu carries each item’s description, null when it has none', () => {
+  const described = {
+    ...partnerMenu,
+    items: partnerMenu.items.map((i) => (i.id === 'i-1' ? { ...i, description: 'A crispy fillet in a soft bun.' } : i)),
+  }
+  const withOwn = {
+    ...kitchen,
+    prices: [...kitchen.prices, { itemId: 'i-3', price: 180, visible: true }],
+    ownItems: [{ id: 'pi-1', name: 'Karahi', category: 'Curries', price: 1200, visible: true }],
+  }
+  const byId = Object.fromEntries(toPublicPartnerMenu(described, withOwn).items.map((i) => [i.id, i.description]))
+  assert.deepEqual(byId, { 'i-1': 'A crispy fillet in a soft bun.', 'i-3': null, 'pi-1': null })
 })

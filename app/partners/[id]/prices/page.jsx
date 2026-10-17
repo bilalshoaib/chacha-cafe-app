@@ -17,7 +17,9 @@ import { roundMoney } from '@/lib/pricing.js'
  * keeps at the price it has set — so a price below what it owes shows up as a
  * loss before it is saved, not at settlement.
  *
- * "Hidden" keeps the price but takes the item off the till for now.
+ * "Hidden" keeps the price but takes the item off the till for now. "Website
+ * name" is what the partner's public menu calls the item; the till, receipts
+ * and reports keep the café's name.
  *
  * Above them sit the partner's own items (OwnItemsCard): food it makes itself,
  * which owes the café nothing.
@@ -26,7 +28,7 @@ export default function PartnerPricesPage({ params }) {
   const { id } = use(params)
   const money = useMoney()
   const [data, setData] = useState(null)
-  // itemId → { sell, price (string, as typed), visible }
+  // itemId → { sell, price (string, as typed), visible, displayName (as typed) }
   const [draft, setDraft] = useState({})
   const [filter, setFilter] = useState('')
   const [onlyMine, setOnlyMine] = useState(false)
@@ -41,7 +43,12 @@ export default function PartnerPricesPage({ params }) {
       setData(res)
       const next = {}
       for (const i of res.items) {
-        next[i.id] = { sell: i.price != null, price: i.price != null ? String(i.price) : '', visible: i.price != null ? i.visible : true }
+        next[i.id] = {
+          sell: i.price != null,
+          price: i.price != null ? String(i.price) : '',
+          visible: i.price != null ? i.visible : true,
+          displayName: i.displayName ?? '',
+        }
       }
       setDraft(next)
     } catch (e) {
@@ -59,7 +66,7 @@ export default function PartnerPricesPage({ params }) {
     const byCat = new Map()
     for (const i of data?.items ?? []) {
       if (onlyMine && !draft[i.id]?.sell) continue
-      if (q && !`${i.name} ${formatItemExtras(i)}`.toLowerCase().includes(q)) continue
+      if (q && !`${i.name} ${draft[i.id]?.displayName ?? ''} ${formatItemExtras(i)}`.toLowerCase().includes(q)) continue
       if (!byCat.has(i.category)) byCat.set(i.category, [])
       byCat.get(i.category).push(i)
     }
@@ -76,7 +83,7 @@ export default function PartnerPricesPage({ params }) {
       if (!d) return false
       if (d.sell !== (i.price != null)) return true
       if (!d.sell) return false
-      return Number(d.price) !== i.price || d.visible !== i.visible
+      return Number(d.price) !== i.price || d.visible !== i.visible || d.displayName.trim() !== (i.displayName ?? '')
     })
   }, [data, draft])
 
@@ -103,7 +110,7 @@ export default function PartnerPricesPage({ params }) {
         setError(`Enter a price for ${i.name}.`)
         return
       }
-      prices.push({ itemId: i.id, price: n, visible: d.visible })
+      prices.push({ itemId: i.id, price: n, visible: d.visible, displayName: d.displayName.trim() || null })
     }
     setSaving(true)
     try {
@@ -131,7 +138,8 @@ export default function PartnerPricesPage({ params }) {
         <div>
           <h2>{data.partner.name} — menu &amp; prices</h2>
           <p className="muted small">
-            Choose which items {data.partner.name} sells and set its prices. For every item sold,
+            Choose which items {data.partner.name} sells, set its prices and, if you like, the name each goes by on
+            {' '}{data.partner.name}’s website. For every item sold,
             {' '}{data.partner.name} pays the café its menu price less {pct}%; it keeps whatever its own price is above that.
           </p>
         </div>
@@ -161,7 +169,7 @@ export default function PartnerPricesPage({ params }) {
         </label>
         {canManage ? (
           <button type="button" className="primary" disabled={!dirty || saving} onClick={() => void save()}>
-            {saving ? 'Saving…' : 'Save prices'}
+            {saving ? 'Saving…' : 'Save menu'}
           </button>
         ) : null}
       </section>
@@ -176,6 +184,7 @@ export default function PartnerPricesPage({ params }) {
               <tr>
                 <th>Sell</th>
                 <th>Item</th>
+                <th>Website name</th>
                 <th className="num">Café price</th>
                 <th className="num">Pays café</th>
                 <th className="num">{data.partner.name} price</th>
@@ -185,7 +194,7 @@ export default function PartnerPricesPage({ params }) {
             </thead>
             <tbody>
               {g.rows.map((i) => {
-                const d = draft[i.id] ?? { sell: false, price: '', visible: true }
+                const d = draft[i.id] ?? { sell: false, price: '', visible: true, displayName: '' }
                 const n = Number(d.price)
                 const keeps = d.sell && d.price !== '' && Number.isFinite(n) ? roundMoney(n - i.supplyPrice) : null
                 const extras = formatItemExtras(i)
@@ -202,6 +211,17 @@ export default function PartnerPricesPage({ params }) {
                     </td>
                     <td className="cell-card-title">
                       {i.name}{extras ? <span className="muted small"> · {extras}</span> : null}
+                    </td>
+                    <td data-label="Website name" className="cell-card-field">
+                      <input
+                        className="partner-web-name"
+                        value={d.displayName}
+                        maxLength={120}
+                        placeholder={i.name}
+                        disabled={!canManage || !d.sell}
+                        onChange={(e) => change(i.id, { displayName: e.target.value })}
+                        aria-label={`${data.partner.name} website name for ${i.name}`}
+                      />
                     </td>
                     <td data-label="Café price" className="num">{money(i.menuPrice)}</td>
                     <td data-label="Pays café" className="num">{money(i.supplyPrice)}</td>
